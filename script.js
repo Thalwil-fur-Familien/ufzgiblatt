@@ -1396,6 +1396,14 @@ function checkAllDone() {
 
 // Initialize on load
 function init() {
+    // 0. Version Info
+    const BUILD_VERSION = 'fb67bc8';
+    const BUILD_DATE = '2025-12-14 22:37';
+    const footer = document.getElementById('versionFooter');
+    if (footer) {
+        footer.textContent = `Build: ${BUILD_VERSION} | ${BUILD_DATE}`;
+    }
+
     // 1. Initial UI Setup (Defaults)
     // Grade 2 is default in HTML
 
