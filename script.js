@@ -968,7 +968,7 @@ function createProblemElement(problemData, isSolution) {
     return problemDiv;
 }
 
-function createSheetElement(titleText, problemDataList, isSolution) {
+function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     // Create Sheet
     const sheetDiv = document.createElement('div');
     sheetDiv.className = 'sheet';
@@ -1019,12 +1019,31 @@ function createSheetElement(titleText, problemDataList, isSolution) {
 
     sheetDiv.appendChild(grid);
 
-    // Layout adjustments: Removed Mascot and Footer per user request
+    // Layout adjustments: Removed Mascot and Footer per user request NO WAIT - User wants Page Numbers now.
+    const footer = document.createElement('div');
+    footer.className = 'sheet-footer';
+    // Style inline or in CSS? CSS is cleaner but let's do minimal changes here.
+    footer.style.position = 'absolute';
+    footer.style.bottom = '15mm';
+    footer.style.right = '15mm';
+    footer.style.fontSize = '0.9rem';
+    footer.style.color = '#7f8c8d';
+
+    // Page numbering
+    if (pageInfo) {
+        footer.textContent = `${pageInfo.current}${isSolution ? ' (Lösungen)' : ''}`;
+    }
+
+    sheetDiv.appendChild(footer);
 
     return sheetDiv;
 }
 
-let currentProblemData = [];
+
+
+// Stores an array of problem sets, one for each page. 
+// e.g. [ [problem1, problem2...], [problem1, problem2...] ]
+let currentSheetsData = [];
 let currentTitle = "";
 
 function generateSheet() {
@@ -1032,7 +1051,7 @@ function generateSheet() {
     const type = selector.value;
     currentTitle = selector.options[selector.selectedIndex].text;
 
-    // 1. Determine Count
+    // 1. Determine Count per Sheet
     let numProblems = 20;
     if (type === 'word_problems') numProblems = 8;
     if (type === 'rechenmauer_4') numProblems = 8; // 4-layer pyramids: 8 per page
@@ -1041,10 +1060,19 @@ function generateSheet() {
     else if (['mult_large', 'div_long'].includes(type)) numProblems = 8; // Grid takes space
     else if (['add_written', 'sub_written'].includes(type)) numProblems = 12; // Large formatting
 
-    // 2. Generate Data
-    currentProblemData = generateProblemsData(type, numProblems);
+    // 2. Determine Page Count
+    const pageCountInput = document.getElementById('pageCount');
+    let pageCount = parseInt(pageCountInput.value);
+    if (isNaN(pageCount) || pageCount < 1) pageCount = 1;
+    if (pageCount > 50) pageCount = 50; // Safety cap
 
-    // 3. Render
+    // 3. Generate Data for ALL pages
+    currentSheetsData = [];
+    for (let i = 0; i < pageCount; i++) {
+        currentSheetsData.push(generateProblemsData(type, numProblems));
+    }
+
+    // 4. Render
     renderCurrentState();
 }
 
@@ -1054,15 +1082,19 @@ function renderCurrentState() {
 
     wrapper.innerHTML = '';
 
-    // Render Worksheet
-    const worksheet = createSheetElement(currentTitle, currentProblemData, false);
-    wrapper.appendChild(worksheet);
+    // Loop through all generated sheets
+    currentSheetsData.forEach((sheetProblems, index) => {
+        // Render Worksheet
+        const pageInfo = { current: index + 1, total: currentSheetsData.length };
+        const worksheet = createSheetElement(currentTitle, sheetProblems, false, pageInfo);
+        wrapper.appendChild(worksheet);
 
-    // Render Solution Sheet if requested
-    if (showSolutions) {
-        const solutionSheet = createSheetElement(currentTitle, currentProblemData, true);
-        wrapper.appendChild(solutionSheet);
-    }
+        // Render Solution Sheet immediately after, if requested
+        if (showSolutions) {
+            const solutionSheet = createSheetElement(currentTitle, sheetProblems, true, pageInfo);
+            wrapper.appendChild(solutionSheet);
+        }
+    });
 }
 
 function validateInput(input) {
@@ -1108,6 +1140,8 @@ function validateInput(input) {
     if (isCorrect) {
         target.classList.add('correct');
         target.classList.remove('incorrect');
+        // valid check removed to avoid performance hit on many pages? 
+        // Actually user didn't ask for removal, but checkAllDone might need optimization or fix.
         checkAllDone();
     } else {
         target.classList.add('incorrect');
@@ -1116,25 +1150,34 @@ function validateInput(input) {
 }
 
 function checkAllDone() {
+    // Only check inputs for the sheet the user is typing in, or all? 
+    // Checking all 1000 inputs is fine.
     const inputs = document.querySelectorAll('.answer-input');
+    let allCorrect = true;
+
     inputs.forEach(input => {
+        // Skip read-only inputs (solutions)
+        if (input.readOnly) return;
+
         // Determine target for class check (parent for bricks, self for others)
         const isBrick = input.classList.contains('brick-input');
         const target = isBrick ? input.parentElement : input;
 
         // If any field is not marked correct, we aren't done.
+        // Note: Empty fields are not 'correct' yet.
         if (!target.classList.contains('correct')) {
             allCorrect = false;
         }
     });
 
+    // Mascot logic - check if element exists first
     const mascot = document.getElementById('mascot');
-    if (allCorrect) {
-        mascot.textContent = '🎉';
-        // Optional: Celebration effect, but alert might be annoying if it pops up on last keystroke immediately.
-        // let's just stick to mascot change.
-    } else {
-        // mascot.textContent = '🦊'; // Default
+    if (mascot) {
+        if (allCorrect) {
+            mascot.textContent = '🎉';
+        } else {
+            mascot.textContent = '🦊'; // Default
+        }
     }
 }
 
