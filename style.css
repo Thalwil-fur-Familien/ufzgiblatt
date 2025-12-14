@@ -466,10 +466,14 @@ input.brick-input {
         box-shadow: none;
         margin: 0;
         width: 100%;
-        height: auto;
+        height: auto !important;
+        min-height: 0 !important;
         page-break-after: always;
         break-after: page;
         border: none;
+        overflow: visible;
+        padding: 10mm !important;
+        /* Tighten padding */
     }
 
     .sheet:last-child {
@@ -477,10 +481,41 @@ input.brick-input {
         break-after: auto;
     }
 
+    /* Prevent breaking after header or title */
+    .sheet-header,
+    h1 {
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    /* Tighten vertical space in print */
+    h1 {
+        margin-bottom: 10px !important;
+        margin-top: 5px !important;
+    }
+
+    .sheet-header {
+        margin-bottom: 10px !important;
+    }
+
     #sheetsWrapper {
         transform: none !important;
         width: auto !important;
         display: block !important;
+    }
+
+    .problem-grid {
+        display: grid !important;
+        break-inside: auto;
+        /* Allow breaking inside the grid */
+        row-gap: 15px !important;
+        /* Tighter gap */
+    }
+
+    .problem {
+        break-inside: avoid;
+        /* Keep individual problems intact */
+        page-break-inside: avoid;
     }
 }
 

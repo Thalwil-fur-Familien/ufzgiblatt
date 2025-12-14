@@ -8,7 +8,7 @@ const GRADE_TOPICS = {
         { value: 'sub_20_simple', text: 'Subtraktion bis 20 (ohne Zehnerübergang)' },
         { value: 'bonds_10', text: 'Verliebte Zahlen (bis 10)' },
         { value: 'rechenmauer_10', text: 'Kleine Rechenmauern (bis 10)' },
-        { value: 'mixed', text: 'Gemischte Aufgaben' }
+
     ],
     '2': [
         { value: 'add_20', text: 'Addition bis 20 (mit Zehnerübergang)' },
@@ -24,7 +24,7 @@ const GRADE_TOPICS = {
         { value: 'rechenmauer_4', text: 'Rechenmauern (4 Ebenen)' },
         { value: 'doubling_halving', text: 'Halbieren und Verdoppeln' },
         { value: 'word_problems', text: 'Sachrechnen (Textaufgaben)' },
-        { value: 'mixed', text: 'Gemischte Aufgaben' },
+
         { value: 'time_reading', text: 'Uhrzeit lesen' },
         { value: 'visual_add_100', text: 'Hunderterfeld: Addition' }
     ],
@@ -35,7 +35,7 @@ const GRADE_TOPICS = {
         { value: 'div_100', text: 'Division (bis 100 ohne Rest)' },
         { value: 'div_remainder', text: 'Division (mit Rest - Basis)' },
         { value: 'rechenmauer_100', text: 'Grosse Rechenmauern (bis 100)' },
-        { value: 'mixed', text: 'Gemischte Aufgaben' },
+
         { value: 'time_duration', text: 'Zeitspannen' }
     ],
     '4': [
@@ -44,20 +44,20 @@ const GRADE_TOPICS = {
         { value: 'mult_large', text: 'Schriftliche Multiplikation' },
         { value: 'div_long', text: 'Schriftliche Division' },
         { value: 'rounding', text: 'Runden (10er, 100er, 1000er)' },
-        { value: 'mixed', text: 'Gemischte Aufgaben' }
+
     ],
     '5': [
         { value: 'dec_add', text: 'Dezimalzahlen: Addition' },
         { value: 'dec_sub', text: 'Dezimalzahlen: Subtraktion' },
         { value: 'mult_10_100', text: 'Malnehmen mit 10/100/1000' },
         { value: 'units', text: 'Einheiten umrechnen (m, kg, s)' },
-        { value: 'mixed', text: 'Gemischte Aufgaben' }
+
     ],
     '6': [
         { value: 'frac_simplify', text: 'Brüche: Kürzen/Erweitern' },
         { value: 'frac_add', text: 'Brüche: Addition' },
         { value: 'percent_basic', text: 'Prozentrechnung (Basis)' },
-        { value: 'mixed', text: 'Gemischte Aufgaben' }
+
     ]
 };
 
@@ -84,12 +84,8 @@ function updateCustomCheckboxes(topics) {
     const container = document.getElementById('checkboxContainer');
     container.innerHTML = '';
 
-    // Filter out 'mixed' as it is redundant for custom selection (or maybe user wants it included?)
-    // Usually custom selection is about picking specific things. Mixed basically picks random from all others.
-    // Let's exclude 'mixed' to keep it clean.
-    const filterTopics = topics.filter(t => t.value !== 'mixed');
-
-    filterTopics.forEach(t => {
+    // Use all topics except custom itself (which shouldn't be in topics anyway)
+    topics.forEach(t => {
         const div = document.createElement('div');
         div.style.display = 'flex';
         div.style.alignItems = 'center';
@@ -157,18 +153,80 @@ function generateProblemsData(type, count) {
             // Fallback if nothing selected
             return [];
         }
-    } else if (type === 'mixed') {
-        const grade = document.getElementById('gradeSelector').value;
-        availableTopics = GRADE_TOPICS[grade]
-            .filter(t => t.value !== 'mixed' && t.value !== 'word_problems' && t.value !== 'rechenmauer_4')
-            .map(t => t.value);
     }
 
-    if (type === 'mixed' || type === 'custom') {
-        for (let i = 0; i < count; i++) {
-            const randomTopic = availableTopics[getRandomInt(0, availableTopics.length - 1)];
-            data.push(generateProblem(randomTopic));
+
+    if (type === 'custom') {
+        // Advanced "Full Space" Logic for Custom
+        // 1. Define Weights (Approximate height units. Page capacity ~= 20-22)
+        const WEIGHTS = {
+            'default': 1,
+            'rechenmauer_10': 2.2, // Increased safety
+            'rechenmauer_100': 2.5,
+            'rechenmauer': 2.5,
+            'rechenmauer_4': 3.5, // 4-layers are tall
+            'time_reading': 2.5,
+            'word_problems': 2.5,
+            'visual_add_100': 4.0, // Large grid
+            // Grade 3/4
+            'add_written': 1.8,
+            'sub_written': 1.8,
+            'mult_large': 2.5, // Vertical written multiplication
+            'div_long': 2.0,   // Long division
+            'rounding': 1.2,
+            // Grade 5/6
+            'dec_add': 1.8,
+            'dec_sub': 1.8,
+            'units': 1.5,
+            'frac_add': 2.0,     // Fractions are taller
+            'frac_simplify': 1.8,
+            'percent_basic': 1.5
+        };
+
+        const PAGE_CAPACITY = 15; // Reduced to be safe for printing
+        let currentLoad = 0;
+
+        // 1. Ensure at least one of each selected type
+        // Shuffle available topics first to avoid order bias in the 'guaranteed' slots if quota is tight
+        availableTopics.sort(() => Math.random() - 0.5);
+
+        availableTopics.forEach(topic => {
+            if (currentLoad < PAGE_CAPACITY) {
+                // Determine weight first to check safety? 
+                // We prioritize "at least one" so we allow a single item even if it overflows slightly 
+                // BUT only if we aren't already super full. 
+                // Actually, let's just push it if we are under capacity.
+
+                let w = 1;
+                if (WEIGHTS[topic]) w = WEIGHTS[topic];
+                else if (topic.includes('rechenmauer')) w = 2.2;
+                else if (topic.includes('written')) w = 1.8;
+
+                data.push(generateProblem(topic));
+                currentLoad += w;
+            }
+        });
+
+        // 2. Fill the rest of the space randomly
+        // Try to fit items until we are full. If a large item doesn't fit, try others.
+        let retries = 0;
+        while (currentLoad < PAGE_CAPACITY && retries < 15) {
+            const topic = availableTopics[getRandomInt(0, availableTopics.length - 1)];
+            let w = 1;
+            if (WEIGHTS[topic]) w = WEIGHTS[topic];
+            else if (topic.includes('rechenmauer')) w = 2.2;
+            else if (topic.includes('written')) w = 1.8;
+
+            if (currentLoad + w <= PAGE_CAPACITY) {
+                data.push(generateProblem(topic));
+                currentLoad += w;
+                retries = 0; // Reset retries on success
+            } else {
+                retries++; // Try picking another topic
+            }
         }
+
+
     } else {
         for (let i = 0; i < count; i++) {
             data.push(generateProblem(type));
@@ -187,29 +245,17 @@ function generateSheet() {
     // 1. Determine Count per Sheet
     let numProblems = 20;
 
-    // Heuristic for count if custom/mixed
-    if (type === 'mixed' || type === 'custom') {
-        // As requested: Individual module always 8 elements
-        numProblems = 8;
-    } else {
-        // Specific types...
-        if (type === 'word_problems') numProblems = 8;
-        else if (type === 'rechenmauer_4') numProblems = 8;
-        else if (type.includes('rechenmauer')) numProblems = 10;
-        else if (['mult_large', 'div_long'].includes(type)) numProblems = 8;
-        else if (type === 'time_reading') numProblems = 8; // Clocks need space
-        else if (type === 'visual_add_100') numProblems = 6; // 10x10 grids are large
-        else if (type === 'rounding') numProblems = 16;
-        else if (['add_written', 'sub_written'].includes(type)) numProblems = 12;
+    // Heuristic for count
 
-        // Custom check: if time_reading is checked, limit to 8 to avoid overlap
-        if (type === 'custom') {
-            const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
-            let hasClock = false;
-            checkboxes.forEach(cb => { if (cb.value === 'time_reading') hasClock = true; });
-            if (hasClock) numProblems = 8;
-        }
-    }
+    // Specific types...
+    if (type === 'word_problems') numProblems = 8;
+    else if (type === 'rechenmauer_4') numProblems = 8;
+    else if (type.includes('rechenmauer')) numProblems = 10;
+    else if (['mult_large', 'div_long'].includes(type)) numProblems = 8;
+    else if (type === 'time_reading') numProblems = 8; // Clocks need space
+    else if (type === 'visual_add_100') numProblems = 6; // 10x10 grids are large
+    else if (type === 'rounding') numProblems = 16;
+    else if (['add_written', 'sub_written'].includes(type)) numProblems = 12;
 
     // 2. Determine Page Count
     const pageCountInput = document.getElementById('pageCount');
