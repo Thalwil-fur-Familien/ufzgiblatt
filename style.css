@@ -426,8 +426,9 @@ input.brick-input {
         page-break-inside: avoid;
     }
 
-    .controls {
-        display: none;
+    .controls,
+    #customOptions {
+        display: none !important;
     }
 
     /* Print friendly inputs */
@@ -543,4 +544,66 @@ input.brick-input {
 .fraction-bottom {
     display: block;
     text-align: center;
+}
+
+/* Visual Addition (10x10 Grid) */
+.visual-grid-100 {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 3px;
+    background: #f9f9f9;
+    padding: 5px;
+    border-radius: 4px;
+    width: fit-content;
+    margin-bottom: 5px;
+}
+
+.visual-circle {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+.circle-empty {
+    background-color: transparent;
+    border-color: #bbb;
+}
+
+/* Colors for groups */
+.circle-group-1 {
+    background-color: var(--primary-color);
+    border-color: #3a8ccf;
+}
+
+.circle-group-2 {
+    background-color: #ff6b6b;
+    border-color: #d64545;
+}
+
+.circle-group-3 {
+    background-color: #4ecdc4;
+    border-color: #3aa69e;
+}
+
+/* Input styles matching groups */
+.circle-input-group-1 {
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.circle-input-group-2 {
+    border: 2px solid #ff6b6b;
+    color: #d64545;
+    font-weight: bold;
+}
+
+.circle-input-group-3 {
+    border: 2px solid #4ecdc4;
+    color: #3aa69e;
+    font-weight: bold;
 }

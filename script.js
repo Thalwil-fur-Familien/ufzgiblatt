@@ -25,7 +25,8 @@ const GRADE_TOPICS = {
         { value: 'doubling_halving', text: 'Halbieren und Verdoppeln' },
         { value: 'word_problems', text: 'Sachrechnen (Textaufgaben)' },
         { value: 'mixed', text: 'Gemischte Aufgaben' },
-        { value: 'time_reading', text: 'Uhrzeit lesen' }
+        { value: 'time_reading', text: 'Uhrzeit lesen' },
+        { value: 'visual_add_100', text: 'Hunderterfeld: Addition' }
     ],
     '3': [
         { value: 'add_1000', text: 'Addition bis 1000' },
@@ -60,11 +61,10 @@ const GRADE_TOPICS = {
     ]
 };
 
-function updateTopicSelector() {
-    const grade = document.getElementById('gradeSelector').value;
-    const topicSelector = document.getElementById('topicSelector');
-    const topics = GRADE_TOPICS[grade];
 
+
+function updateTopicSelectorNodes(topics) {
+    const topicSelector = document.getElementById('topicSelector');
     topicSelector.innerHTML = '';
     topics.forEach(t => {
         const opt = document.createElement('option');
@@ -73,13 +73,157 @@ function updateTopicSelector() {
         topicSelector.appendChild(opt);
     });
 
+    // Add Custom Option
+    const customOpt = document.createElement('option');
+    customOpt.value = 'custom';
+    customOpt.textContent = '🛠️ Individuelle Aufgaben';
+    topicSelector.appendChild(customOpt);
+}
+
+function updateCustomCheckboxes(topics) {
+    const container = document.getElementById('checkboxContainer');
+    container.innerHTML = '';
+
+    // Filter out 'mixed' as it is redundant for custom selection (or maybe user wants it included?)
+    // Usually custom selection is about picking specific things. Mixed basically picks random from all others.
+    // Let's exclude 'mixed' to keep it clean.
+    const filterTopics = topics.filter(t => t.value !== 'mixed');
+
+    filterTopics.forEach(t => {
+        const div = document.createElement('div');
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = t.value;
+        cb.id = 'cb_' + t.value;
+        cb.checked = true; // Default all checked? Or none? Let's say all checked so it works immediately.
+        cb.style.marginRight = '8px';
+        cb.style.width = '18px';
+        cb.style.height = '18px';
+        cb.onchange = generateSheet;
+
+        const label = document.createElement('label');
+        label.htmlFor = 'cb_' + t.value;
+        label.textContent = t.text;
+        label.style.cursor = 'pointer';
+
+        div.appendChild(cb);
+        div.appendChild(label);
+        container.appendChild(div);
+    });
+}
+
+function updateTopicSelector() {
+    const grade = document.getElementById('gradeSelector').value;
+    const topicSelector = document.getElementById('topicSelector');
+    const topics = GRADE_TOPICS[grade];
+
+    updateTopicSelectorNodes(topics);
+    updateCustomCheckboxes(topics);
+
     // Set the selected value to the first topic
     if (topics.length > 0) {
         topicSelector.value = topics[0].value;
     }
 
-    // Auto-generate for the new grade/default topic
-    generateSheet();
+    // Toggle Custom Options Visibility based on selection change
+    topicSelector.onchange = function () {
+        const customDiv = document.getElementById('customOptions');
+        if (topicSelector.value === 'custom') {
+            customDiv.style.display = 'flex';
+        } else {
+            customDiv.style.display = 'none';
+        }
+        generateSheet();
+    };
+
+    // Initial State Check
+    topicSelector.onchange();
+}
+
+
+function generateProblemsData(type, count) {
+    const data = [];
+    let availableTopics = [];
+
+    if (type === 'custom') {
+        // Read checkboxes
+        const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+        checkboxes.forEach(cb => availableTopics.push(cb.value));
+
+        if (availableTopics.length === 0) {
+            // Fallback if nothing selected
+            return [];
+        }
+    } else if (type === 'mixed') {
+        const grade = document.getElementById('gradeSelector').value;
+        availableTopics = GRADE_TOPICS[grade]
+            .filter(t => t.value !== 'mixed' && t.value !== 'word_problems' && t.value !== 'rechenmauer_4')
+            .map(t => t.value);
+    }
+
+    if (type === 'mixed' || type === 'custom') {
+        for (let i = 0; i < count; i++) {
+            const randomTopic = availableTopics[getRandomInt(0, availableTopics.length - 1)];
+            data.push(generateProblem(randomTopic));
+        }
+    } else {
+        for (let i = 0; i < count; i++) {
+            data.push(generateProblem(type));
+        }
+    }
+    return data;
+}
+
+// ... (rest of logic)
+
+function generateSheet() {
+    const selector = document.getElementById('topicSelector');
+    const type = selector.value;
+    currentTitle = selector.options[selector.selectedIndex].text;
+
+    // 1. Determine Count per Sheet
+    let numProblems = 20;
+
+    // Heuristic for count if custom/mixed
+    if (type === 'mixed' || type === 'custom') {
+        // Logic to be safe? 12 is safe for pyramids.
+        numProblems = 12;
+    } else {
+        // Specific types...
+        if (type === 'word_problems') numProblems = 8;
+        else if (type === 'rechenmauer_4') numProblems = 8;
+        else if (type.includes('rechenmauer')) numProblems = 10;
+        else if (['mult_large', 'div_long'].includes(type)) numProblems = 8;
+        else if (type === 'time_reading') numProblems = 8; // Clocks need space
+        else if (type === 'visual_add_100') numProblems = 6; // 10x10 grids are large
+        else if (['add_written', 'sub_written'].includes(type)) numProblems = 12;
+
+        // Custom check: if time_reading is checked, limit to 8 to avoid overlap
+        if (type === 'custom') {
+            const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+            let hasClock = false;
+            checkboxes.forEach(cb => { if (cb.value === 'time_reading') hasClock = true; });
+            if (hasClock) numProblems = 8;
+        }
+    }
+
+    // 2. Determine Page Count
+    const pageCountInput = document.getElementById('pageCount');
+    let pageCount = parseInt(pageCountInput.value);
+    if (isNaN(pageCount) || pageCount < 1) pageCount = 1;
+    if (pageCount > 50) pageCount = 50;
+
+    // 3. Generate Data for ALL pages
+    currentSheetsData = [];
+    for (let i = 0; i < pageCount; i++) {
+        currentSheetsData.push(generateProblemsData(type, numProblems));
+    }
+
+    // 4. Render
+    renderCurrentState();
 }
 
 function getRandomInt(min, max) {
@@ -423,12 +567,52 @@ function generateProblem(type) {
                 // Grade 2 usually starts with 12h or "It is X o'clock".
                 // Let's expect Digital Format e.g. "03:15" or "3:15".
                 // Let's store standardized "h:mm" for checking.
-
                 // Maybe simplified: just numbers.
                 const minStr = minutes.toString().padStart(2, '0');
                 const answer = `${hours}:${minStr}`;
 
                 return { type: 'time_reading', hours, minutes, answer };
+            }
+
+        case 'visual_add_100':
+            {
+                // Total between 20 and 100
+                const totalVis = getRandomInt(20, 100);
+
+                // Number of parts: 2 or 3
+                const partsCount = getRandomInt(2, 3);
+                const parts = [];
+                let currentSum = 0;
+
+                for (let i = 0; i < partsCount - 1; i++) {
+                    // Ensure remaining parts have at least 1
+                    const maxVal = totalVis - currentSum - (partsCount - 1 - i);
+                    // Ensure this part has at least 1
+                    const valP = getRandomInt(1, maxVal);
+                    parts.push(valP);
+                    currentSum += valP;
+                }
+                parts.push(totalVis - currentSum);
+
+                // Create grid data (array of 100 ints: 0=empty, 1=group1, 2=group2, 3=group3)
+                const grid = new Array(100).fill(0);
+                let cursor = 0;
+                parts.forEach((p, idx) => {
+                    const groupId = idx + 1;
+                    for (let k = 0; k < p; k++) {
+                        if (cursor < 100) {
+                            grid[cursor] = groupId;
+                            cursor++;
+                        }
+                    }
+                });
+
+                return {
+                    type: 'visual_add_100',
+                    grid,
+                    parts,
+                    total: totalVis
+                };
             }
 
         case 'time_duration':
@@ -454,8 +638,8 @@ function generateProblem(type) {
 
                 return {
                     type: 'time_duration',
-                    q: `Es ist ${sH}:${sM} Uhr. Wie spät ist es in ${duration} Min?`,
-                    answer: `${eH}:${eM}`
+                    q: `Es ist ${sH}:${sM} Uhr.Wie spät ist es in ${duration} Min ? `,
+                    answer: `${eH}:${eM} `
                 };
             }
     }
@@ -472,7 +656,7 @@ function renderClock(hours, minutes) {
         const deg = i * 30;
         // We draw markers. We can reuse 'clock-marker' with rotation.
         // Standard marker is at top (12). Rotate it.
-        html += `<div class="clock-marker" style="transform: rotate(${deg}deg) translate(0, 2px)"></div>`;
+        html += `< div class="clock-marker" style = "transform: rotate(${deg}deg) translate(0, 2px)" ></div > `;
         // Wait, transform origin is center? CSS says "50% 50px". (Radius 50px).
         // "left: 50%" "margin-left: -1px".
         // Rotation rotates around center of clock. 
@@ -493,8 +677,8 @@ function renderClock(hours, minutes) {
     const minDeg = minutes * 6;
     const hourDeg = (hours % 12) * 30 + minutes * 0.5;
 
-    html += `<div class="clock-hand hand-hour" style="transform: rotate(${hourDeg}deg)"></div>`;
-    html += `<div class="clock-hand hand-minute" style="transform: rotate(${minDeg}deg)"></div>`;
+    html += `< div class="clock-hand hand-hour" style = "transform: rotate(${hourDeg}deg)" ></div > `;
+    html += `< div class="clock-hand hand-minute" style = "transform: rotate(${minDeg}deg)" ></div > `;
 
     html += '</div>';
     return html;
@@ -560,7 +744,7 @@ function generatePyramid(maxTop, levels = 3) {
 function renderWrittenMultiplicationSolution(a, b) {
     const sA = a.toString();
     const sB = b.toString();
-    let html = `<div class="written-vertical" style="align-items: flex-end; font-size:1rem;">
+    let html = `< div class="written-vertical" style = "align-items: flex-end; font-size:1rem;" >
                 <div class="written-row">${sA} &middot; ${sB}</div>
                 <div class="written-line"></div>`;
 
@@ -568,39 +752,19 @@ function renderWrittenMultiplicationSolution(a, b) {
         const digit = parseInt(sB[i]);
         const partial = a * digit;
         const paddingRight = sB.length - 1 - i;
-        html += `<div class="written-row" style="padding-right: ${paddingRight}ch;">${partial}</div>`;
+        html += `< div class="written-row" style = "padding-right: ${paddingRight}ch;" > ${partial}</div > `;
     }
 
-    html += `<div class="written-line"></div>
-        <div class="written-row"><strong>${a * b}</strong></div>
-    </div>`;
+    html += `< div class="written-line" ></div >
+                    <div class="written-row"><strong>${a * b}</strong></div>
+    </div > `;
 
     return html;
 }
 
 // --- NEW RENDERING ARCHITECTURE ---
 
-function generateProblemsData(type, count) {
-    const data = [];
 
-    if (type === 'mixed') {
-        const grade = document.getElementById('gradeSelector').value;
-        // Get all topics for this grade, excluding 'mixed', 'word_problems', and 'rechenmauer_4' (too large)
-        const availableTopics = GRADE_TOPICS[grade]
-            .filter(t => t.value !== 'mixed' && t.value !== 'word_problems' && t.value !== 'rechenmauer_4')
-            .map(t => t.value);
-
-        for (let i = 0; i < count; i++) {
-            const randomTopic = availableTopics[getRandomInt(0, availableTopics.length - 1)];
-            data.push(generateProblem(randomTopic));
-        }
-    } else {
-        for (let i = 0; i < count; i++) {
-            data.push(generateProblem(type));
-        }
-    }
-    return data;
-}
 
 function createProblemElement(problemData, isSolution) {
     const problemDiv = document.createElement('div');
@@ -616,16 +780,16 @@ function createProblemElement(problemData, isSolution) {
         const correctClass = isSolution ? 'correct-answer-show' : ''; // custom class if needed
 
         problemDiv.innerHTML = `
-                <div style="font-size: 14pt; margin-bottom:10px;">${problemData.q}</div>
-                <div style="display:flex; gap:10px; align-items:center; width:100%; justify-content: flex-end;">
-                    <span>Antwort:</span>
-                    <input type="number" class="answer-input ${correctClass}" style="width:100px;" 
-                           data-expected="${problemData.a}" 
-                           value="${answerVal}" 
-                           oninput="validateInput(this)" 
-                           ${isSolution ? 'readonly style="color:var(--primary-color); font-weight:bold;"' : ''}>
-                </div>
-            `;
+                    < div style = "font-size: 14pt; margin-bottom:10px;" > ${problemData.q}</div >
+                        <div style="display:flex; gap:10px; align-items:center; width:100%; justify-content: flex-end;">
+                            <span>Antwort:</span>
+                            <input type="number" class="answer-input ${correctClass}" style="width:100px;"
+                                data-expected="${problemData.a}"
+                                value="${answerVal}"
+                                oninput="validateInput(this)"
+                                ${isSolution ? 'readonly style="color:var(--primary-color); font-weight:bold;"' : ''}>
+                        </div>
+                `;
 
     } else if (problemData.type === 'pyramid') {
         const v = problemData.values;
@@ -640,13 +804,13 @@ function createProblemElement(problemData, isSolution) {
             if (isHidden) {
                 const valueToFill = isSolution ? val : '';
                 const style = isSolution ? 'color:var(--primary-color); font-weight:bold;' : '';
-                return `<div class="brick input"><input type="number" class="brick-input answer-input" 
-                            data-expected="${val}" 
-                            value="${valueToFill}"
-                            oninput="validateInput(this)"
-                            ${isSolution ? 'readonly' : ''} style="${style}"></div>`;
+                return `< div class="brick input" > <input type="number" class="brick-input answer-input"
+                    data-expected="${val}"
+                    value="${valueToFill}"
+                    oninput="validateInput(this)"
+                    ${isSolution ? 'readonly' : ''} style="${style}"></div>`;
             } else {
-                return `<div class="brick">${val}</div>`;
+                return `< div class="brick" > ${val}</div > `;
             }
         };
 
@@ -686,7 +850,7 @@ function createProblemElement(problemData, isSolution) {
         const style = isSolution ? 'color:var(--primary-color); font-weight:bold;' : '';
 
         problemDiv.innerHTML = `
-                <span class="number">${a}</span>
+                    < span class="number" > ${a}</span >
                 <span class="operator">${op}</span>
                 <input type="number" class="answer-input" style="width:50px; margin:0 5px; ${style}" 
                        data-expected="${expected}" 
@@ -897,11 +1061,16 @@ function createProblemElement(problemData, isSolution) {
         problemDiv.style.flexDirection = 'column';
         problemDiv.innerHTML = `
             ${clockHtml}
-            <div style="margin-top:10px; display:flex; align-items:center; gap:5px;">
-                <input type="text" class="answer-input" style="width:60px; text-align:center;" 
-                       placeholder="hh:mm" 
-                       data-expected="${answer}" 
-                       value="${valAns}" 
+            <div style="margin-top:10px; display:flex; align-items:center; gap:2px;">
+                <input type="number" class="answer-input" style="width:45px; text-align:center;" 
+                       data-expected="${answer.split(':')[0]}" 
+                       value="${isSolution ? answer.split(':')[0] : ''}" 
+                       oninput="validateInput(this)" 
+                       ${isSolution ? 'readonly' : ''}>
+                <span style="font-weight:bold; font-size:1.2rem;">:</span>
+                <input type="number" class="answer-input" style="width:45px; text-align:center;" 
+                       data-expected="${answer.split(':')[1]}" 
+                       value="${isSolution ? answer.split(':')[1] : ''}" 
                        oninput="validateInput(this)" 
                        ${isSolution ? 'readonly' : ''}>
                  <span style="margin-left:5px;">Uhr</span>
@@ -927,23 +1096,64 @@ function createProblemElement(problemData, isSolution) {
             </div>
         `;
 
+    } else if (problemData.type === 'visual_add_100') {
+        const { grid, parts, total } = problemData;
+
+        // 1. Render Grid
+        let gridHtml = '<div class="visual-grid-100">';
+        grid.forEach(val => {
+            const className = val === 0 ? 'circle-empty' : `circle-group-${val}`;
+            gridHtml += `<div class="visual-circle ${className}"></div>`;
+        });
+        gridHtml += '</div>';
+
+        // 2. Render Equation Inputs
+        // Form: [Count1] + [Count2] = [Total]
+        let inputsHtml = '<div style="display:flex; align-items:center; gap:5px; margin-top:10px;">';
+        parts.forEach((p, idx) => {
+            const valAns = isSolution ? p : '';
+            // Match input border color to group? We can use classes for that.
+            inputsHtml += `<input type="number" class="answer-input circle-input-group-${idx + 1}" style="width:50px; text-align:center;" 
+                        data-expected="${p}" 
+                        value="${valAns}" 
+                        oninput="validateInput(this)" 
+                        ${isSolution ? 'readonly' : ''}>`;
+
+            if (idx < parts.length - 1) {
+                inputsHtml += '<span style="font-weight:bold;">+</span>';
+            }
+        });
+        inputsHtml += '<span style="font-weight:bold;">=</span>';
+
+        const totalAns = isSolution ? total : '';
+        inputsHtml += `<input type="number" class="answer-input" style="width:60px; text-align:center; font-weight:bold;" 
+                    data-expected="${total}" 
+                    value="${totalAns}" 
+                    oninput="validateInput(this)" 
+                    ${isSolution ? 'readonly' : ''}>`;
+
+        inputsHtml += '</div>';
+
+        problemDiv.style.flexDirection = 'column';
+        problemDiv.innerHTML = gridHtml + inputsHtml;
+
     } else if (problemData.type === 'standard') {
         // Reuse standard logic but explicitly handle here if needed, or fall through?
-        // actually 'standard' maps to default block below if we don't catch it. 
-        // But wait, the default block expects {a,b,op} directly on problemData or construct.
-        // My generateProblem returns {type:'standard', ...}. 
+        // actually 'standard' maps to default block below if we don't catch it.
+        // But wait, the default block expects {a, b, op} directly on problemData or construct.
+        // My generateProblem returns {type:'standard', ...}.
         // So I need to set vars for the fall-through or render here.
 
         const { a, b, op, answer } = problemData;
         const valAns = isSolution ? answer : '';
 
         problemDiv.innerHTML = `
-                <span class="number" style="width:auto;">${a}</span>
-                <span class="operator">${op}</span>
-                <span class="number" style="width:auto;">${b}</span>
-                <span class="equals">=</span>
-                <input type="number" class="answer-input" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
-            `;
+                                                                            <span class="number" style="width:auto;">${a}</span>
+                                                                            <span class="operator">${op}</span>
+                                                                            <span class="number" style="width:auto;">${b}</span>
+                                                                            <span class="equals">=</span>
+                                                                            <input type="number" class="answer-input" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+                                                                                `;
 
     } else {
         // Legacy Fallback (for Grade 1-3 types not migrated to specific 'type' yet)
@@ -958,12 +1168,12 @@ function createProblemElement(problemData, isSolution) {
         const style = isSolution ? 'color:var(--primary-color); font-weight:bold;' : '';
 
         problemDiv.innerHTML = `
-                <span class="number">${a}</span>
-                <span class="operator">${op}</span>
-                <span class="number">${b}</span>
-                <span class="equals">=</span>
-                <input type="number" class="answer-input" style="${style}" data-expected="${expected}" value="${val}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
-            `;
+                                                                                <span class="number">${a}</span>
+                                                                                <span class="operator">${op}</span>
+                                                                                <span class="number">${b}</span>
+                                                                                <span class="equals">=</span>
+                                                                                <input type="number" class="answer-input" style="${style}" data-expected="${expected}" value="${val}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+                                                                                    `;
     }
     return problemDiv;
 }
@@ -977,9 +1187,9 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     const header = document.createElement('div');
     header.className = 'sheet-header';
     header.innerHTML = `
-        <div class="header-field">Name: <span class="line"></span></div>
-        <div class="header-field">Datum: <span class="line"></span></div>
-     `;
+                                                                                    <div class="header-field">Name: <span class="line"></span></div>
+                                                                                    <div class="header-field">Datum: <span class="line"></span></div>
+                                                                                    `;
     sheetDiv.appendChild(header);
 
     // Title
@@ -1046,35 +1256,7 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
 let currentSheetsData = [];
 let currentTitle = "";
 
-function generateSheet() {
-    const selector = document.getElementById('topicSelector');
-    const type = selector.value;
-    currentTitle = selector.options[selector.selectedIndex].text;
 
-    // 1. Determine Count per Sheet
-    let numProblems = 20;
-    if (type === 'word_problems') numProblems = 8;
-    if (type === 'rechenmauer_4') numProblems = 8; // 4-layer pyramids: 8 per page
-    else if (type.includes('rechenmauer')) numProblems = 10; // 3-layer pyramids: 10 per page
-    else if (type === 'mixed') numProblems = 12; // Mixed needs to be safe for pyramids
-    else if (['mult_large', 'div_long'].includes(type)) numProblems = 8; // Grid takes space
-    else if (['add_written', 'sub_written'].includes(type)) numProblems = 12; // Large formatting
-
-    // 2. Determine Page Count
-    const pageCountInput = document.getElementById('pageCount');
-    let pageCount = parseInt(pageCountInput.value);
-    if (isNaN(pageCount) || pageCount < 1) pageCount = 1;
-    if (pageCount > 50) pageCount = 50; // Safety cap
-
-    // 3. Generate Data for ALL pages
-    currentSheetsData = [];
-    for (let i = 0; i < pageCount; i++) {
-        currentSheetsData.push(generateProblemsData(type, numProblems));
-    }
-
-    // 4. Render
-    renderCurrentState();
-}
 
 function renderCurrentState() {
     const wrapper = document.getElementById('sheetsWrapper');
@@ -1150,7 +1332,7 @@ function validateInput(input) {
 }
 
 function checkAllDone() {
-    // Only check inputs for the sheet the user is typing in, or all? 
+    // Only check inputs for the sheet the user is typing in, or all?
     // Checking all 1000 inputs is fine.
     const inputs = document.querySelectorAll('.answer-input');
     let allCorrect = true;

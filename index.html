@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mathe Arbeitsblatt Generator - 2. Klasse</title>
+    <title>Mathe Arbeitsblatt Generator</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -36,6 +36,14 @@
         <button class="btn-generate" onclick="generateSheet()">✨ Neu erstellen</button>
         <!-- Check button removed in favor of real-time validation -->
         <button class="btn-print" onclick="window.print()">🖨️ Drucken</button>
+    </div>
+
+    <div class="controls" id="customOptions"
+        style="display:none; flex-direction:column; align-items:flex-start; margin-top:-1rem; font-family:'Nunito',sans-serif;">
+        <div style="margin-bottom:10px; font-weight:bold;">Wähle die Aufgabentypen:</div>
+        <div id="checkboxContainer" style="display:flex; flex-wrap:wrap; gap:15px;">
+            <!-- Checkboxes populated by JS -->
+        </div>
     </div>
 
     <div id="sheetsWrapper">
