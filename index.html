@@ -226,6 +226,79 @@
             color: #c0392b;
         }
 
+        .clock-marker {
+            position: absolute;
+            top: 2px;
+            width: 2px;
+            height: 6px;
+            background: #666;
+            left: 50%;
+            margin-left: -1px;
+            transform-origin: 50% 48px;
+            /* Radius 50px - top 2px = 48px pivot? */
+            /* Actually if container is 100x100, center is 50,50. 
+               If marker is at top:2px, its center-x is 50. Its y starts at 2.
+               Pivot should be at y=50.
+               So dist from 2 to 50 is 48.
+               So origin y should be 48px?
+               Let's try. */
+        }
+
+        .clock-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .clock-face {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #333;
+            border-radius: 50%;
+            position: relative;
+            background: white;
+            margin: 0 auto;
+        }
+
+        .clock-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: #333;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        .clock-hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            background: #333;
+            border-radius: 2px;
+        }
+
+        .hand-hour {
+            width: 4px;
+            height: 30px;
+            /* 30% of size */
+            margin-left: -2px;
+            z-index: 2;
+        }
+
+        .hand-minute {
+            width: 2px;
+            height: 40px;
+            /* 40% of size */
+            margin-left: -1px;
+            z-index: 3;
+            background: #000;
+        }
+
         .footer {
             position: absolute;
             /* Fix footer to bottom */
@@ -418,27 +491,22 @@
             print-color-adjust: exact;
         }
 
-        /* Fractions */
+        /* Fraction Display */
         .fraction {
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
+            display: inline-block;
+            text-align: center;
             vertical-align: middle;
             margin: 0 5px;
-            font-size: 0.9em;
         }
 
         .fraction-top {
-            border-bottom: 2px solid #000;
-            padding: 0 5px;
             display: block;
-            width: 100%;
-            text-align: center;
+            border-bottom: 1px solid black;
+            padding: 0 2px;
         }
 
         .fraction-bottom {
             display: block;
-            width: 100%;
             text-align: center;
         }
     </style>
@@ -499,7 +567,8 @@
                 { value: 'rechenmauer_4', text: 'Rechenmauern (4 Ebenen)' },
                 { value: 'doubling_halving', text: 'Halbieren und Verdoppeln' },
                 { value: 'word_problems', text: 'Sachrechnen (Textaufgaben)' },
-                { value: 'mixed', text: 'Gemischte Aufgaben' }
+                { value: 'mixed', text: 'Gemischte Aufgaben' },
+                { value: 'time_reading', text: 'Uhrzeit lesen' }
             ],
             '3': [
                 { value: 'add_1000', text: 'Addition bis 1000' },
@@ -508,7 +577,8 @@
                 { value: 'div_100', text: 'Division (bis 100 ohne Rest)' },
                 { value: 'div_remainder', text: 'Division (mit Rest - Basis)' },
                 { value: 'rechenmauer_100', text: 'Große Rechenmauern (bis 100)' },
-                { value: 'mixed', text: 'Gemischte Aufgaben' }
+                { value: 'mixed', text: 'Gemischte Aufgaben' },
+                { value: 'time_duration', text: 'Zeitspannen' }
             ],
             '4': [
                 { value: 'add_written', text: 'Schriftliche Addition (bis 1 Mio)' },
@@ -879,8 +949,98 @@
                         let answer = Math.round(val / place) * place;
                         return { type: 'rounding', val, place, answer };
                     }
+
+                case 'time_reading':
+                    {
+                        // Grade 2: Analog Clock -> Digital "hh:mm"
+                        // Difficulties: 5 min intervals? Quarter hours?
+                        // Let's mix: 50% 5-min steps, 30% quarters, 20% full/half.
+                        // Actually all are 5-min steps (multiplier of 5).
+                        // Minutes: 0, 5, 10... 55.
+                        const minutes = getRandomInt(0, 11) * 5;
+                        const hours = getRandomInt(1, 12);
+
+                        // Answer string "hh:mm". Pad minutes.
+                        // For solution, we might accept variations? 
+                        // But let's stick to standard 12h format for reading or 24h?
+                        // Grade 2 usually starts with 12h or "It is X o'clock".
+                        // Let's expect Digital Format e.g. "03:15" or "3:15".
+                        // Let's store standardized "h:mm" for checking.
+
+                        // Maybe simplified: just numbers.
+                        const minStr = minutes.toString().padStart(2, '0');
+                        const answer = `${hours}:${minStr}`;
+
+                        return { type: 'time_reading', hours, minutes, answer };
+                    }
+
+                case 'time_duration':
+                    {
+                        // Grade 3: Duration logic.
+                        // "Es ist 14:10. Wie spät ist es in 40 Minuten?"
+                        const startH = getRandomInt(6, 18);
+                        const startM = getRandomInt(0, 11) * 5;
+                        const duration = getRandomInt(1, 12) * 5; // 5 to 60 mins (actually max 12*5=60)
+
+                        // Calculate end
+                        let endM = startM + duration;
+                        let endH = startH;
+                        if (endM >= 60) {
+                            endH += Math.floor(endM / 60);
+                            endM %= 60;
+                        }
+
+                        const sH = startH.toString(); // .padStart(2,'0') not strictly needed but nice
+                        const sM = startM.toString().padStart(2, '0');
+                        const eH = endH.toString();
+                        const eM = endM.toString().padStart(2, '0');
+
+                        return {
+                            type: 'time_duration',
+                            q: `Es ist ${sH}:${sM} Uhr. Wie spät ist es in ${duration} Min?`,
+                            answer: `${eH}:${eM}`
+                        };
+                    }
             }
             return { a, b, op };
+        }
+
+        function renderClock(hours, minutes) {
+            // Helper to generate clock HTML
+            let html = '<div class="clock-face"><div class="clock-center"></div>';
+
+            // Markers for 12, 3, 6, 9
+            // 0 deg = 12. 90 deg = 3.
+            for (let i = 0; i < 12; i++) {
+                const deg = i * 30;
+                // We draw markers. We can reuse 'clock-marker' with rotation.
+                // Standard marker is at top (12). Rotate it.
+                html += `<div class="clock-marker" style="transform: rotate(${deg}deg) translate(0, 2px)"></div>`;
+                // Wait, transform origin is center? CSS says "50% 50px". (Radius 50px).
+                // "left: 50%" "margin-left: -1px".
+                // Rotation rotates around center of clock. 
+                // The marker is defined as top? 
+                // "height: 6px". 
+                // If I rotate 0deg, it's at top? 
+                // If origin is "50% 50px", that means origin is 50px DOWN from the marker's top? 
+                // If marker is at top (top:0?), then 50px down is center. 
+                // Let's refine CSS for marker pos.
+                // CSS: "left: 50%", "transform-origin: 50% 50px".
+                // We need to position marker visually at top initially.
+                // "top: 0" isn't set in CSS. Default static? No absolute.
+                // Let's add "top: 0" to CSS or inline.
+                // Actually simpler:
+            }
+
+            // Hands
+            const minDeg = minutes * 6;
+            const hourDeg = (hours % 12) * 30 + minutes * 0.5;
+
+            html += `<div class="clock-hand hand-hour" style="transform: rotate(${hourDeg}deg)"></div>`;
+            html += `<div class="clock-hand hand-minute" style="transform: rotate(${minDeg}deg)"></div>`;
+
+            html += '</div>';
+            return html;
         }
 
         function generatePyramid(maxTop, levels = 3) {
@@ -1315,6 +1475,45 @@
                          <input type="number" class="answer-input" style="width:80px;" 
                                 data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
                     `;
+            } else if (problemData.type === 'time_reading') {
+                const { hours, minutes, answer } = problemData;
+                const valAns = isSolution ? answer : '';
+
+                const clockHtml = renderClock(hours, minutes);
+
+                problemDiv.style.flexDirection = 'column';
+                problemDiv.innerHTML = `
+                    ${clockHtml}
+                    <div style="margin-top:10px; display:flex; align-items:center; gap:5px;">
+                        <input type="text" class="answer-input" style="width:60px; text-align:center;" 
+                               placeholder="hh:mm" 
+                               data-expected="${answer}" 
+                               value="${valAns}" 
+                               oninput="validateInput(this)" 
+                               ${isSolution ? 'readonly' : ''}>
+                         <span style="margin-left:5px;">Uhr</span>
+                    </div>
+                `;
+
+            } else if (problemData.type === 'time_duration') {
+                const { q, answer } = problemData;
+                const valAns = isSolution ? answer : '';
+
+                problemDiv.style.flexDirection = 'column';
+                problemDiv.style.alignItems = 'flex-start';
+                problemDiv.innerHTML = `
+                    <div style="margin-bottom:8px;">${q}</div>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <span>Antwort:</span>
+                        <input type="text" class="answer-input" style="width:60px;" 
+                               data-expected="${answer}" 
+                               value="${valAns}" 
+                               oninput="validateInput(this)" 
+                               ${isSolution ? 'readonly' : ''}>
+                         <span>Uhr</span>
+                    </div>
+                `;
+
             } else if (problemData.type === 'standard') {
                 // Reuse standard logic but explicitly handle here if needed, or fall through?
                 // actually 'standard' maps to default block below if we don't catch it. 
@@ -1454,20 +1653,46 @@
         }
 
         function validateInput(input) {
-            const expected = parseInt(input.dataset.expected);
-            const value = parseInt(input.value);
+            const expectedStr = input.dataset.expected.trim();
+            const valueStr = input.value.trim();
 
-            // For pyramids, the parent brick needs styling
             const isBrick = input.classList.contains('brick-input');
             const target = isBrick ? input.parentElement : input;
 
-            if (isNaN(value)) {
-                // If empty or invalid, just remove classes for neutral state
+            if (!valueStr) {
                 target.classList.remove('correct', 'incorrect');
                 return;
             }
 
-            if (value === expected) {
+            let isCorrect = false;
+
+            // 1. Direct String Match (covers "3:15", "1/2")
+            if (valueStr === expectedStr) {
+                isCorrect = true;
+            }
+            // 2. Numeric Match (covers "12" vs "12.0" or "012")
+            // Use Number() which is stricter than parseInt/parseFloat (no partial parsing)
+            else {
+                const expNum = Number(expectedStr);
+                const valNum = Number(valueStr);
+
+                // Check if both are valid numbers and equal
+                if (!isNaN(expNum) && !isNaN(valNum) && Math.abs(expNum - valNum) < 0.00001) {
+                    isCorrect = true;
+                }
+            }
+
+            // 3. Normalized Time Match (Handle 3:15 vs 03:15)
+            // If expected has colon, try normalizing time
+            if (!isCorrect && expectedStr.includes(':') && valueStr.includes(':')) {
+                const [eH, eM] = expectedStr.split(':').map(Number);
+                const [vH, vM] = valueStr.split(':').map(Number);
+                if (eH === vH && eM === vM) {
+                    isCorrect = true;
+                }
+            }
+
+            if (isCorrect) {
                 target.classList.add('correct');
                 target.classList.remove('incorrect');
                 checkAllDone();
@@ -1479,12 +1704,13 @@
 
         function checkAllDone() {
             const inputs = document.querySelectorAll('.answer-input');
-            let allCorrect = true;
             inputs.forEach(input => {
-                const expected = parseInt(input.dataset.expected);
-                const value = parseInt(input.value);
-                // If any input is not correct or is empty, it's not all done
-                if (isNaN(value) || value !== expected) {
+                // Determine target for class check (parent for bricks, self for others)
+                const isBrick = input.classList.contains('brick-input');
+                const target = isBrick ? input.parentElement : input;
+
+                // If any field is not marked correct, we aren't done.
+                if (!target.classList.contains('correct')) {
                     allCorrect = false;
                 }
             });
