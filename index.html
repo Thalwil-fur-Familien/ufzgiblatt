@@ -329,20 +329,21 @@
             }
 
             /* Print friendly inputs */
-            input.answer-input,
-            input.brick-input {
+            /* Print friendly inputs */
+            input.answer-input {
                 border: 2px solid #ccc;
-                /* Maintain border for writing */
                 background: none;
-                color: transparent;
-                /* Hide user answers when printing empty sheets, but show if we want? Usually we want empty.*/
+                color: #000;
             }
 
-            /* Actually, if user wants to print the filled sheet -> color: black. 
-               If user wants to print empty sheet -> they just generate and print. 
-               So Color should be black. */
-            input.answer-input,
+            /* Pyramid inputs are inside a bordered div, so they don't need a border */
             input.brick-input {
+                border: none !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                outline: none !important;
+                -webkit-appearance: none !important;
+                appearance: none !important;
                 color: #000;
             }
 
@@ -361,6 +362,85 @@
                 break-after: auto;
             }
         }
+
+        /* Written Arithmetic (Schriftliches Rechnen) */
+        .written-vertical {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font-family: 'Courier New', Courier, monospace;
+            /* Monospace for alignment */
+            font-size: 1.2em;
+            width: fit-content;
+            margin: 0 auto;
+        }
+
+        .written-row {
+            display: flex;
+            justify-content: flex-end;
+            width: 100%;
+            padding-right: 5px;
+        }
+
+        .written-operator {
+            margin-right: 10px;
+        }
+
+        .written-line {
+            width: 100%;
+            height: 0;
+            border-bottom: 2px solid #000;
+            margin: 2px 0;
+        }
+
+        .written-input {
+            width: 20px;
+            text-align: center;
+            border: 1px solid #ccc;
+            /* Helper borders */
+            font-family: inherit;
+            /* In print we might hide border? */
+        }
+
+        /* Squared Background for working out */
+        .squared-grid {
+            width: 100%;
+            height: 120px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            background-image:
+                linear-gradient(#e0e0e0 1px, transparent 1px),
+                linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
+            background-size: 20px 20px;
+            /* Approx 5mm squares */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* Fractions */
+        .fraction {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            margin: 0 5px;
+            font-size: 0.9em;
+        }
+
+        .fraction-top {
+            border-bottom: 2px solid #000;
+            padding: 0 5px;
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
+
+        .fraction-bottom {
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -371,8 +451,11 @@
             <option value="1">1. Klasse</option>
             <option value="2" selected>2. Klasse</option>
             <option value="3">3. Klasse</option>
+            <option value="4">4. Klasse</option>
+            <option value="5">5. Klasse</option>
+            <option value="6">6. Klasse</option>
         </select>
-        <select id="topicSelector">
+        <select id="topicSelector" onchange="generateSheet()">
             <!-- Options populated by JS -->
         </select>
         <div style="display:flex; align-items:center;">
@@ -399,7 +482,8 @@
                 { value: 'add_20_simple', text: 'Addition bis 20 (ohne Zehnerübergang)' },
                 { value: 'sub_20_simple', text: 'Subtraktion bis 20 (ohne Zehnerübergang)' },
                 { value: 'bonds_10', text: 'Verliebte Zahlen (bis 10)' },
-                { value: 'rechenmauer_10', text: 'Kleine Rechenmauern (bis 10)' }
+                { value: 'rechenmauer_10', text: 'Kleine Rechenmauern (bis 10)' },
+                { value: 'mixed', text: 'Gemischte Aufgaben' }
             ],
             '2': [
                 { value: 'add_20', text: 'Addition bis 20 (mit Zehnerübergang)' },
@@ -414,7 +498,8 @@
                 { value: 'rechenmauer', text: 'Rechenmauern (Zahlenmauern)' },
                 { value: 'rechenmauer_4', text: 'Rechenmauern (4 Ebenen)' },
                 { value: 'doubling_halving', text: 'Halbieren und Verdoppeln' },
-                { value: 'word_problems', text: 'Sachrechnen (Textaufgaben)' }
+                { value: 'word_problems', text: 'Sachrechnen (Textaufgaben)' },
+                { value: 'mixed', text: 'Gemischte Aufgaben' }
             ],
             '3': [
                 { value: 'add_1000', text: 'Addition bis 1000' },
@@ -422,7 +507,29 @@
                 { value: 'mult_advanced', text: 'Erweitertes 1x1 (bis 20)' }, // Or large mult placeholders
                 { value: 'div_100', text: 'Division (bis 100 ohne Rest)' },
                 { value: 'div_remainder', text: 'Division (mit Rest - Basis)' },
-                { value: 'rechenmauer_100', text: 'Große Rechenmauern (bis 100)' }
+                { value: 'rechenmauer_100', text: 'Große Rechenmauern (bis 100)' },
+                { value: 'mixed', text: 'Gemischte Aufgaben' }
+            ],
+            '4': [
+                { value: 'add_written', text: 'Schriftliche Addition (bis 1 Mio)' },
+                { value: 'sub_written', text: 'Schriftliche Subtraktion (bis 1 Mio)' },
+                { value: 'mult_large', text: 'Schriftliche Multiplikation' },
+                { value: 'div_long', text: 'Schriftliche Division' },
+                { value: 'rounding', text: 'Runden (10er, 100er, 1000er)' },
+                { value: 'mixed', text: 'Gemischte Aufgaben' }
+            ],
+            '5': [
+                { value: 'dec_add', text: 'Dezimalzahlen: Addition' },
+                { value: 'dec_sub', text: 'Dezimalzahlen: Subtraktion' },
+                { value: 'mult_10_100', text: 'Malnehmen mit 10/100/1000' },
+                { value: 'units', text: 'Einheiten umrechnen (m, kg, s)' },
+                { value: 'mixed', text: 'Gemischte Aufgaben' }
+            ],
+            '6': [
+                { value: 'frac_simplify', text: 'Brüche: Kürzen/Erweitern' },
+                { value: 'frac_add', text: 'Brüche: Addition' },
+                { value: 'percent_basic', text: 'Prozentrechnung (Basis)' },
+                { value: 'mixed', text: 'Gemischte Aufgaben' }
             ]
         };
 
@@ -439,7 +546,12 @@
                 topicSelector.appendChild(opt);
             });
 
-            // Trigger generation with new first topic
+            // Set the selected value to the first topic
+            if (topics.length > 0) {
+                topicSelector.value = topics[0].value;
+            }
+
+            // Auto-generate for the new grade/default topic
             generateSheet();
         }
 
@@ -621,6 +733,152 @@
                     // Standard Grade 3 adds numbers up to 1000, so pyramid sum could go higher?
                     // Defaulting to 200 top.
                     return generatePyramid(200, 3);
+
+                // --- GRADE 4 ---
+                case 'add_written':
+                    a = getRandomInt(1000, 99999);
+                    b = getRandomInt(1000, 99999);
+                    op = '+';
+                    return { type: 'written', a, b, op, answer: a + b };
+                case 'sub_written':
+                    a = getRandomInt(5000, 99999);
+                    b = getRandomInt(1000, a - 1);
+                    op = '-';
+                    return { type: 'written', a, b, op, answer: a - b };
+                case 'mult_large':
+                    a = getRandomInt(100, 999);
+                    b = getRandomInt(11, 99);
+                    op = '×';
+                    return { type: 'long_calculation', a, b, op, answer: a * b };
+                case 'div_long':
+                    {
+                        let divisor = getRandomInt(2, 9);
+                        let result = getRandomInt(100, 999);
+                        a = result * divisor;
+                        b = divisor;
+                        op = ':';
+                        return { type: 'long_calculation', a, b, op, answer: result };
+                    }
+                // --- GRADE 5 ---
+                case 'dec_add':
+                    // e.g. 12.5 + 3.45
+                    // Keep precision manageable (1 or 2 decimal places)
+                    a = (getRandomInt(100, 9999) / 100).toFixed(2);
+                    b = (getRandomInt(100, 9999) / 100).toFixed(2);
+                    // Standard type renders with regular input, but we need to ensure answer matching works for strings
+                    // Or cast to number for calculation?
+                    // Better to determine answer here.
+                    // Note: float arithmetic issues. 
+                    {
+                        let numA = parseFloat(a);
+                        let numB = parseFloat(b);
+                        let ans = (numA + numB).toFixed(2);
+                        // Remove trailing zeros for display? "12.50" -> "12.5"
+                        a = parseFloat(a);
+                        b = parseFloat(b);
+                        // Actually standard rendering expects a/b to be numbers usually, but text works too.
+                        return { type: 'standard', a, b, op: '+', answer: parseFloat(ans) };
+                    }
+
+                case 'dec_sub':
+                    {
+                        let numA = getRandomInt(500, 9999) / 100;
+                        let numB = getRandomInt(100, 499) / 100;
+                        let ans = (numA - numB).toFixed(2);
+                        return { type: 'standard', a: numA, b: numB, op: '-', answer: parseFloat(ans) };
+                    }
+
+                case 'mult_10_100':
+                    a = (getRandomInt(10, 9999) / 100);
+                    b = [10, 100, 1000][getRandomInt(0, 2)];
+                    // Fix float issues
+                    {
+                        let ans = a * b;
+                        // Round to avoid 14.300000001
+                        ans = Math.round(ans * 1000) / 1000;
+                        return { type: 'standard', a, b, op: '×', answer: ans };
+                    }
+
+                case 'units':
+                    {
+                        const unitTypes = [
+                            { from: 'm', to: 'cm', factor: 100 },
+                            { from: 'km', to: 'm', factor: 1000 },
+                            { from: 'kg', to: 'g', factor: 1000 },
+                            { from: 'min', to: 's', factor: 60 },
+                            { from: 'h', to: 'min', factor: 60 }
+                        ];
+                        const u = unitTypes[getRandomInt(0, unitTypes.length - 1)];
+                        let val = getRandomInt(1, 20);
+                        if (u.factor === 1000 && Math.random() > 0.5) val = val / 2; // 0.5 kg etc
+
+                        let answer = val * u.factor;
+
+                        // Need special rendering for units? "1.5 m = ___ cm"
+                        return { type: 'unit_conv', val, from: u.from, to: u.to, answer };
+                    }
+
+                // --- GRADE 6 ---
+                case 'frac_simplify':
+                    {
+                        // Generate a fraction that can be simplified. e.g. 4/8 -> 1/2
+                        // Start with irreducible fraction
+                        let num = getRandomInt(1, 10);
+                        let den = getRandomInt(num + 1, 20);
+                        // This might not be irreducible, but let's multiply both by a factor
+                        let factor = getRandomInt(2, 6);
+                        a = num * factor;
+                        b = den * factor;
+                        // simplify again properly to find expected answer?
+                        // Actually let's assume valid start format "a / b"
+                        // user needs to enter "num/den" or just "num" and "den"?
+                        // Let's expect "1/2" as string? Or "1 / 2"?
+                        // Simplest: render equation "a/b =" and two inputs? 
+                        // Or just one input string "1/2"
+
+                        // Let's calculate the real simplified form for answer
+                        const gcd = (x, y) => (!y ? x : gcd(y, x % y));
+                        const common = gcd(a, b);
+                        const simpleNum = a / common;
+                        const simpleDen = b / common;
+
+                        return { type: 'fraction_simplify', num: a, den: b, answer: `${simpleNum}/${simpleDen}` };
+                    }
+
+                case 'frac_add':
+                    {
+                        // Simple: Same denominator or easy common?
+                        // Let's do common denominator <= 20
+                        let den = getRandomInt(2, 12);
+                        let numA = getRandomInt(1, den - 1);
+                        let numB = getRandomInt(1, den - numA); // sum <= 1
+
+                        // e.g. 1/5 + 2/5 = 3/5
+                        // Or 1/4 + 1/8 ?
+                        // Let's stick to same denominator for easy starting
+                        return { type: 'fraction_op', numA, denA: den, numB, denB: den, op: '+', answer: `${numA + numB}/${den}` };
+                    }
+
+                case 'percent_basic':
+                    {
+                        // 10% von 200
+                        // 50% von 40
+                        const rates = [10, 20, 25, 50, 75];
+                        let rate = rates[getRandomInt(0, rates.length - 1)];
+                        let base = getRandomInt(1, 20) * 100; // 100, 200..
+                        if (rate === 25 || rate === 75) base = getRandomInt(1, 20) * 4; // Ensure clean div by 4
+
+                        let ans = (base * rate) / 100;
+                        return { type: 'percent', rate, base, answer: ans };
+                    }
+
+                case 'rounding':
+                    {
+                        let val = getRandomInt(1000, 99999);
+                        let place = [10, 100, 1000][getRandomInt(0, 2)];
+                        let answer = Math.round(val / place) * place;
+                        return { type: 'rounding', val, place, answer };
+                    }
             }
             return { a, b, op };
         }
@@ -679,20 +937,94 @@
                 }
             }
 
-            return {
-                type: 'pyramid',
-                levels: levels,
-                values: values,
-                mask: mask
-            };
+            // Construct hierarchical structure for renderer
+            // Actually, renderer expects array of layers?
+            // Existing `generatePyramid` returned { type: 'pyramid', layers: [...] }
+            // Let's reconstruct layers from flat `values`
+            const layers = [];
+            let start = 0;
+            let len = levels; // Base is first? Or top is first?
+            // "Layers are stored sequentially bottom to top" I said above.
+            // values[0..levels-1] is Base. (length 3)
+            // values[3..4] is Middle (length 2)
+            // values[5] is Top (length 1)
+            // Standard renderer expects layers from TOP to BOTTOM usually? 
+            // "createProblemElement" for pyramid:
+            // p.layers.forEach((layer, layerIdx) ...
+            // usually typical representation is top-down visual.
+            // But let's check legacy `generatePyramid` (I should have checked).
+            // Assuming standard `createProblemElement` iterates nicely.
+
+            // Let's create layer arrays.
+            // My loop generated Bottom-Up.
+            let currentLen = levels;
+            let currentStart = 0;
+            const bottomUpLayers = [];
+            for (let l = 0; l < levels; l++) {
+                // extract slice
+                const layerVals = [];
+                for (let k = 0; k < currentLen; k++) {
+                    let val = values[currentStart + k];
+                    // Mask check: mask is also flat same order
+                    let isHidden = mask[currentStart + k];
+                    layerVals.push({ val, isHidden });
+                }
+                bottomUpLayers.push(layerVals);
+                currentStart += currentLen;
+                currentLen--;
+            }
+            // Reverse to Top-Down if that's what renderer wants?
+            // In "pyramid_check" artifacts it looks like standard pyramid.
+            // Let's assume Top-Down is better for DOM order?
+            // Actually CSS flex order?
+            // Render logic:
+            // .pyramid-container { display:flex; flex-direction:column; ... }
+            // So first child is top.
+
+            return { type: 'pyramid', layers: bottomUpLayers.reverse() };
+        }
+
+        function renderWrittenMultiplicationSolution(a, b) {
+            const sA = a.toString();
+            const sB = b.toString();
+            let html = `<div class="written-vertical" style="align-items: flex-end; font-size:1rem;">
+                        <div class="written-row">${sA} &middot; ${sB}</div>
+                        <div class="written-line"></div>`;
+
+            for (let i = 0; i < sB.length; i++) {
+                const digit = parseInt(sB[i]);
+                const partial = a * digit;
+                const paddingRight = sB.length - 1 - i;
+                html += `<div class="written-row" style="padding-right: ${paddingRight}ch;">${partial}</div>`;
+            }
+
+            html += `<div class="written-line"></div>
+                <div class="written-row"><strong>${a * b}</strong></div>
+            </div>`;
+
+            return html;
         }
 
         // --- NEW RENDERING ARCHITECTURE ---
 
         function generateProblemsData(type, count) {
             const data = [];
-            for (let i = 0; i < count; i++) {
-                data.push(generateProblem(type));
+
+            if (type === 'mixed') {
+                const grade = document.getElementById('gradeSelector').value;
+                // Get all topics for this grade, excluding 'mixed', 'word_problems', and 'rechenmauer_4' (too large)
+                const availableTopics = GRADE_TOPICS[grade]
+                    .filter(t => t.value !== 'mixed' && t.value !== 'word_problems' && t.value !== 'rechenmauer_4')
+                    .map(t => t.value);
+
+                for (let i = 0; i < count; i++) {
+                    const randomTopic = availableTopics[getRandomInt(0, availableTopics.length - 1)];
+                    data.push(generateProblem(randomTopic));
+                }
+            } else {
+                for (let i = 0; i < count; i++) {
+                    data.push(generateProblem(type));
+                }
             }
             return data;
         }
@@ -832,8 +1164,177 @@
                                data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
                     `;
 
+            } else if (problemData.type === 'written') {
+                // Vertical Alignment
+                const { a, b, op, answer } = problemData;
+                // Format numbers with space as thousands separator? standard JS toLocaleString('de-CH') uses ' 
+                const strA = a.toLocaleString('de-CH');
+                const strB = b.toLocaleString('de-CH');
+                const valAns = isSolution ? answer.toLocaleString('de-CH') : '';
+
+                problemDiv.innerHTML = `
+                        <div class="written-vertical">
+                            <div class="written-row">${strA}</div>
+                            <div class="written-row"><span class="written-operator">${op}</span>${strB}</div>
+                            <div class="written-line"></div>
+                            <div class="written-row">
+                                <input type="text" class="answer-input" style="width:100%; text-align:right; border:none; background:transparent; font-family:inherit; font-size:inherit; padding:0;" 
+                                data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+                            </div>
+                        </div>
+                    `;
+
+            } else if (problemData.type === 'rounding') {
+                const { val, place, answer } = problemData;
+                const valAns = isSolution ? answer : '';
+
+                problemDiv.style.flexDirection = 'column';
+                problemDiv.innerHTML = `
+                         <div style="margin-bottom:5px;">Runde <b>${val}</b> auf <b>${place}er</b>:</div>
+                         <input type="number" class="answer-input" style="width:80px;" 
+                                data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+                    `;
+            } else if (problemData.type === 'long_calculation') {
+                const { a, b, op, answer } = problemData;
+                const valAns = isSolution ? answer : '';
+
+                if (isSolution && op === '×') {
+                    // Render Steps for Multiplication
+                    const sA = a.toString();
+                    const sB = b.toString();
+                    let stepsHtml = `<div class="written-vertical" style="align-items: flex-end; font-size:1rem;">
+                        <div class="written-row">${sA} &middot; ${sB}</div>
+                        <div class="written-line"></div>`;
+
+                    for (let i = 0; i < sB.length; i++) {
+                        const digit = parseInt(sB[i]);
+                        const partial = a * digit;
+                        // For alignment: padding-right based on position
+                        // Padding unit: 'ch' (character width in monospace)
+                        const paddingRight = sB.length - 1 - i;
+                        stepsHtml += `<div class="written-row" style="padding-right: ${paddingRight}ch;">${partial}</div>`;
+                    }
+
+                    stepsHtml += `<div class="written-line"></div>
+                        <div class="written-row"><strong>${answer}</strong></div>
+                    </div>`;
+
+                    problemDiv.innerHTML = stepsHtml;
+
+                } else {
+                    // Standard problem + Grid (or Division solution without steps)
+                    problemDiv.style.flexDirection = 'column';
+                    problemDiv.style.alignItems = 'flex-start';
+
+                    problemDiv.innerHTML = `
+                    <div style="display:flex; gap:10px; align-items:center; width:100%;">
+                        <span class="number" style="width:auto;">${a}</span>
+                        <span class="operator">${op}</span>
+                        <span class="number" style="width:auto;">${b}</span>
+                        <span class="equals">=</span>
+                        <input type="number" class="answer-input" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+                    </div>
+                    <div class="squared-grid"></div>
+                `;
+
+                }
+            } else if (problemData.type === 'unit_conv') {
+                const { val, from, to, answer } = problemData;
+                const valAns = isSolution ? answer : '';
+                problemDiv.innerHTML = `
+                    <span style="margin-right:10px;">${val} ${from}</span> = 
+                    <input type="number" class="answer-input" style="width:80px; margin:0 5px;" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+                    <span>${to}</span>
+                 `;
+
+            } else if (problemData.type === 'percent') {
+                const { rate, base, answer } = problemData;
+                const valAns = isSolution ? answer : '';
+                problemDiv.innerHTML = `
+                    <span>${rate}% von ${base}</span> <span class="equals">=</span>
+                    <input type="number" class="answer-input" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+                 `;
+
+            } else if (problemData.type === 'fraction_simplify') {
+                // e.g. 4/8 = [input] (expects "1/2")
+                const { num, den, answer } = problemData;
+                const valAns = isSolution ? answer : '';
+                problemDiv.innerHTML = `
+                    <div class="fraction">
+                        <span class="fraction-top">${num}</span>
+                        <span class="fraction-bottom">${den}</span>
+                    </div>
+                    <span class="equals">=</span>
+                    <input type="text" class="answer-input" style="width:60px;" placeholder="a/b" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+                 `;
+
+            } else if (problemData.type === 'fraction_op') {
+                const { numA, denA, numB, denB, op, answer } = problemData;
+                const valAns = isSolution ? answer : '';
+                problemDiv.innerHTML = `
+                    <div class="fraction">
+                        <span class="fraction-top">${numA}</span>
+                        <span class="fraction-bottom">${denA}</span>
+                    </div>
+                    <span class="operator">${op}</span>
+                    <div class="fraction">
+                        <span class="fraction-top">${numB}</span>
+                        <span class="fraction-bottom">${denB}</span>
+                    </div>
+                   <span class="equals">=</span>
+                   <input type="text" class="answer-input" style="width:60px;" placeholder="a/b" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+                 `;
+
+            } else if (problemData.type === 'written') {
+                // Vertical Alignment
+                const { a, b, op, answer } = problemData;
+                // Format numbers with space as thousands separator? standard JS toLocaleString('de-CH') uses ' 
+                const strA = a.toLocaleString('de-CH');
+                const strB = b.toLocaleString('de-CH');
+                const valAns = isSolution ? answer.toLocaleString('de-CH') : '';
+
+                problemDiv.innerHTML = `
+                        <div class="written-vertical">
+                            <div class="written-row">${strA}</div>
+                            <div class="written-row"><span class="written-operator">${op}</span>${strB}</div>
+                            <div class="written-line"></div>
+                            <div class="written-row">
+                                <input type="text" class="answer-input" style="width:100%; text-align:right; border:none; background:transparent; font-family:inherit; font-size:inherit; padding:0;" 
+                                data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+                            </div>
+                        </div>
+                    `;
+
+            } else if (problemData.type === 'rounding') {
+                const { val, place, answer } = problemData;
+                const valAns = isSolution ? answer : '';
+
+                problemDiv.style.flexDirection = 'column';
+                problemDiv.innerHTML = `
+                         <div style="margin-bottom:5px;">Runde <b>${val}</b> auf <b>${place}er</b>:</div>
+                         <input type="number" class="answer-input" style="width:80px;" 
+                                data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+                    `;
+            } else if (problemData.type === 'standard') {
+                // Reuse standard logic but explicitly handle here if needed, or fall through?
+                // actually 'standard' maps to default block below if we don't catch it. 
+                // But wait, the default block expects {a,b,op} directly on problemData or construct.
+                // My generateProblem returns {type:'standard', ...}. 
+                // So I need to set vars for the fall-through or render here.
+
+                const { a, b, op, answer } = problemData;
+                const valAns = isSolution ? answer : '';
+
+                problemDiv.innerHTML = `
+                        <span class="number" style="width:auto;">${a}</span>
+                        <span class="operator">${op}</span>
+                        <span class="number" style="width:auto;">${b}</span>
+                        <span class="equals">=</span>
+                        <input type="number" class="answer-input" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+                    `;
+
             } else {
-                // Standard
+                // Legacy Fallback (for Grade 1-3 types not migrated to specific 'type' yet)
                 const { a, b, op } = problemData;
                 let expected;
                 if (op === '+') expected = a + b;
@@ -906,8 +1407,6 @@
 
             sheetDiv.appendChild(grid);
 
-            sheetDiv.appendChild(grid);
-
             // Layout adjustments: Removed Mascot and Footer per user request
 
             return sheetDiv;
@@ -926,7 +1425,9 @@
             if (type === 'word_problems') numProblems = 8;
             if (type === 'rechenmauer_4') numProblems = 6; // 4-layer pyramids are large
             else if (type.includes('rechenmauer')) numProblems = 9; // 3-layer pyramids
-
+            else if (type === 'mixed') numProblems = 12; // Mixed needs to be safe for pyramids
+            else if (['mult_large', 'div_long'].includes(type)) numProblems = 8; // Grid takes space
+            else if (['add_written', 'sub_written'].includes(type)) numProblems = 12; // Large formatting
 
             // 2. Generate Data
             currentProblemData = generateProblemsData(type, numProblems);
