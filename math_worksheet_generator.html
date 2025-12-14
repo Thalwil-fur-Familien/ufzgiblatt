@@ -372,7 +372,7 @@
             <!-- Options populated by JS -->
         </select>
         <button class="btn-generate" onclick="generateSheet()">✨ Neue Aufgaben</button>
-        <button class="btn-check" onclick="checkResults()">✔️ Prüfen</button>
+        <!-- Check button removed in favor of real-time validation -->
         <button class="btn-print" onclick="window.print()">🖨️ Drucken</button>
     </div>
 
@@ -692,7 +692,7 @@
                         <div style="font-size: 14pt; margin-bottom:10px;">${problemData.q}</div>
                         <div style="display:flex; gap:10px; align-items:center; width:100%; justify-content: flex-end;">
                             <span>Antwort:</span>
-                            <input type="number" class="answer-input" style="width:100px;" data-expected="${problemData.a}">
+                            <input type="number" class="answer-input" style="width:100px;" data-expected="${problemData.a}" oninput="validateInput(this)">
                         </div>
                     `;
 
@@ -705,7 +705,7 @@
                         const val = v[idx];
                         const isHidden = m[idx];
                         if (isHidden) {
-                            return `<div class="brick input"><input type="number" class="brick-input answer-input" data-expected="${val}"></div>`;
+                            return `<div class="brick input"><input type="number" class="brick-input answer-input" data-expected="${val}" oninput="validateInput(this)"></div>`;
                         } else {
                             return `<div class="brick">${val}</div>`;
                         }
@@ -740,7 +740,7 @@
                     problemDiv.innerHTML = `
                         <span class="number">${a}</span>
                         <span class="operator">${op}</span>
-                        <input type="number" class="answer-input" style="width:50px; margin:0 5px;" data-expected="${expected}">
+                        <input type="number" class="answer-input" style="width:50px; margin:0 5px;" data-expected="${expected}" oninput="validateInput(this)">
                         <span class="equals">=</span>
                         <span class="number">${sum}</span>
                     `;
@@ -757,9 +757,9 @@
                         <span class="operator">${op}</span>
                         <span class="number">${b}</span>
                         <span class="equals">=</span>
-                        <input type="number" class="answer-input" style="width:40px; margin-right:5px;" data-expected="${quotient}">
+                        <input type="number" class="answer-input" style="width:40px; margin-right:5px;" data-expected="${quotient}" oninput="validateInput(this)">
                         <span style="font-size:12pt; margin-right:5px;">R</span>
-                        <input type="number" class="answer-input" style="width:40px;" data-expected="${remainder}">
+                        <input type="number" class="answer-input" style="width:40px;" data-expected="${remainder}" oninput="validateInput(this)">
                     `;
 
                 } else {
@@ -776,7 +776,7 @@
                         <span class="operator">${op}</span>
                         <span class="number">${b}</span>
                         <span class="equals">=</span>
-                        <input type="number" class="answer-input" data-expected="${expected}">
+                        <input type="number" class="answer-input" data-expected="${expected}" oninput="validateInput(this)">
                     `;
                 }
                 container.appendChild(problemDiv);
@@ -786,38 +786,49 @@
             mascotElement.textContent = mascots[getRandomInt(0, mascots.length - 1)];
         }
 
-        function checkResults() {
-            const inputs = document.querySelectorAll('.answer-input');
-            let correctCount = 0;
-            let total = 0;
+        function validateInput(input) {
+            const expected = parseInt(input.dataset.expected);
+            const value = parseInt(input.value);
 
+            // For pyramids, the parent brick needs styling
+            const isBrick = input.classList.contains('brick-input');
+            const target = isBrick ? input.parentElement : input;
+
+            if (isNaN(value)) {
+                // If empty or invalid, just remove classes for neutral state
+                target.classList.remove('correct', 'incorrect');
+                return;
+            }
+
+            if (value === expected) {
+                target.classList.add('correct');
+                target.classList.remove('incorrect');
+                checkAllDone();
+            } else {
+                target.classList.add('incorrect');
+                target.classList.remove('correct');
+            }
+        }
+
+        function checkAllDone() {
+            const inputs = document.querySelectorAll('.answer-input');
+            let allCorrect = true;
             inputs.forEach(input => {
-                // Skip if empty? No, mark as wrong or ignore. Let's mark wrong if empty or wrong.
-                total++;
                 const expected = parseInt(input.dataset.expected);
                 const value = parseInt(input.value);
-
-                // For pyramids, the parent brick needs styling
-                const isBrick = input.classList.contains('brick-input');
-                const target = isBrick ? input.parentElement : input;
-
-                if (!isNaN(value) && value === expected) {
-                    target.classList.add('correct');
-                    target.classList.remove('incorrect');
-                    correctCount++;
-                } else {
-                    target.classList.add('incorrect');
-                    target.classList.remove('correct');
+                // If any input is not correct or is empty, it's not all done
+                if (isNaN(value) || value !== expected) {
+                    allCorrect = false;
                 }
             });
 
             const mascot = document.getElementById('mascot');
-            if (correctCount === total) {
+            if (allCorrect) {
                 mascot.textContent = '🎉';
-                alert(`Perfekt! Alle ${total} Aufgaben sind richtig! Super gemacht! 🌟`);
+                // Optional: Celebration effect, but alert might be annoying if it pops up on last keystroke immediately.
+                // let's just stick to mascot change.
             } else {
-                mascot.textContent = '🤔';
-                // Optional: Don't alert for partial, just show colors.
+                // mascot.textContent = '🦊'; // Default
             }
         }
 
