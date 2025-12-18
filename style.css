@@ -850,12 +850,9 @@ input.triangle-field {
     max-height: 100%;
 }
 
-@media print {
 
-    .qr-hidden,
-    .logo-hidden {
-        display: none !important;
-    }
+.qr-hidden {
+    display: none !important;
 }
 
 /* Sheet Logo */
