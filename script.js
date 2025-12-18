@@ -1447,7 +1447,7 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     header.innerHTML = `
                                                                                     <div class="header-field">Name: <span class="line"></span></div>
                                                                                     <div class="header-field">Datum: <span class="line"></span></div>
-                                                                                    <div class="header-field" style="width:100px;"></div> <!-- Spacer for QR Code -->
+                                                                                    <div class="header-field" style="width:120px;"></div> <!-- Spacer for QR Code -->
                                                                                     `;
     sheetDiv.appendChild(header);
 
@@ -1736,8 +1736,8 @@ function renderQRCode(url) {
         container.innerHTML = '';
         new QRCode(container, {
             text: url,
-            width: 85,
-            height: 85,
+            width: 100,
+            height: 100,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.H
