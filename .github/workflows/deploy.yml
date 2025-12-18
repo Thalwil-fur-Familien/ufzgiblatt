@@ -1,34 +1,39 @@
-name: Deploy static content to Pages
+name: Multistage Deployment
 
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
+    branches: [main, dev, 'feature/**']
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  contents: write
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  # --- STAGE 1: Deploy Previews (Feature & Dev Branches) ---
+  deploy-preview:
+    if: github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/feature/')
+    environment: staging
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/checkout@v4
+      - name: Deploy to Subfolder
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          path: '.'
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          destination_dir: preview/${{ github.ref_name }}
+          keep_files: true
+
+  # --- STAGE 2: Deploy to Production (Main Branch) ---
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'
+    environment: production   # This triggers the "Manual Approval" gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Root
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          # No destination_dir means it goes to the root URL
+          keep_files: true
