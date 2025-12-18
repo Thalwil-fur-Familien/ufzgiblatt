@@ -1740,14 +1740,8 @@ function renderQRCode(url) {
             height: 100,
             colorDark: "#000000",
             colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
+            correctLevel: QRCode.CorrectLevel.L
         });
-
-        // Add Logo Overlay
-        const logo = document.createElement('img');
-        logo.src = 'images/Thalwil_Familien_Logo.png';
-        logo.className = 'qr-logo';
-        container.appendChild(logo);
     });
 }
 

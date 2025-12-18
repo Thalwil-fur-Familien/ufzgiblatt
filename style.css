@@ -843,22 +843,9 @@ input.triangle-field {
 }
 
 .qr-code-container canvas,
-.qr-code-container img:not(.qr-logo) {
+.qr-code-container img {
     max-width: 100%;
     max-height: 100%;
-}
-
-.qr-logo {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 30px;
-    /* ~30% of 100px */
-    height: 30px;
-    background: white;
-    padding: 2px;
-    border-radius: 4px;
 }
 
 .qr-hidden {
