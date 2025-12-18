@@ -47,6 +47,7 @@ const GRADE_TOPICS = {
         { value: 'time_reading', text: 'Uhrzeit lesen' },
         { value: 'visual_add_100', text: 'Hunderterfeld: Addition' },
         { value: 'rechendreiecke', text: 'Rechendreiecke (bis 20)' },
+        { value: 'rechenstrich', text: 'Rechenstrich (Addition)' },
         { value: 'married_100', text: '💍 Verheiratete Zahlen (bis 100)' }
     ],
     '3': [
@@ -209,7 +210,8 @@ function generateProblemsData(type, count) {
             'percent_basic': 1.5,
             'rechendreiecke': 1.9, // 15 / 8 ~= 1.875, so 1.9 ensures max 7-8
             'house': 2.5,
-            'married_100': 1.0
+            'married_100': 1.0,
+            'rechenstrich': 2.5
         };
 
         const PAGE_CAPACITY = 15; // Reduced to be safe for printing
@@ -293,6 +295,7 @@ function generateSheet(keepSeed = false) {
     else if (type === 'rounding') numProblems = 16;
     else if (type.includes('rechendreiecke')) numProblems = 8;
     else if (['add_written', 'sub_written'].includes(type)) numProblems = 12;
+    else if (type === 'rechenstrich') numProblems = 6;
 
     // 2. Determine Page Count
     const pageCountInput = document.getElementById('pageCount');
@@ -784,6 +787,8 @@ function generateProblem(type) {
         case 'married_100':
             const onlyMultiplesOf10 = document.getElementById('marriedMultiplesOf10').checked;
             return generateMarriedNumbers(onlyMultiplesOf10);
+        case 'rechenstrich':
+            return generateRechenstrich();
     }
     return { a, b, op };
 }
@@ -1385,6 +1390,64 @@ function createProblemElement(problemData, isSolution) {
         problemDiv.style.flexDirection = 'column';
         problemDiv.innerHTML = gridHtml + inputsHtml;
 
+    } else if (problemData.type === 'rechenstrich') {
+        const { start, jump1, mid, jump2, sum } = problemData;
+        const sJ1 = isSolution ? jump1 : '';
+        const sMid = isSolution ? mid : '';
+        const sJ2 = isSolution ? jump2 : '';
+        const sSum = isSolution ? sum : '';
+
+        const style = isSolution ? 'style="color:var(--primary-color); font-weight:bold;"' : '';
+        const readonlyAttr = isSolution ? 'readonly' : '';
+
+        problemDiv.style.flexDirection = 'column';
+        problemDiv.style.alignItems = 'center';
+        problemDiv.style.padding = '20px 0';
+
+        // Equation at the top
+        const equationHtml = `<div style="font-size: 1.2rem; margin-bottom: 20px;">
+            ${start} + ${jump1 + jump2} = <input type="number" class="answer-input" style="width:70px;" data-expected="${sum}" value="${sSum}" oninput="validateInput(this)" ${readonlyAttr} ${style}>
+        </div>`;
+
+        // Rechenstrich Visualization
+        const vizHtml = `
+            <div class="rechenstrich-container" style="position:relative; width:300px; height:80px; margin-top:20px;">
+                <!-- Main Line -->
+                <div style="position:absolute; top:50px; left:0; width:100%; height:2px; background:#000;"></div>
+                
+                <!-- Start Point -->
+                <div class="rechenstrich-station rechenstrich-fixed" style="left:0; top:55px;">${start}</div>
+                
+                <!-- Jump 1 (Tens) -->
+                <svg style="position:absolute; top:10px; left:0; width:66.6%; height:40px; overflow:visible;">
+                    <path d="M 0 40 Q 50 0 100 40" fill="none" stroke="var(--primary-color)" stroke-width="2" vector-effect="non-scaling-stroke" style="transform: scaleX(2); transform-origin: left;"></path>
+                </svg>
+                <div class="rechenstrich-jump" style="left:33.3%; top:15px;">
+                    +<input type="number" class="rechenstrich-input small" data-expected="${jump1}" value="${sJ1}" oninput="validateInput(this)" ${readonlyAttr} ${style}>
+                </div>
+                
+                <!-- Mid Point -->
+                <div class="rechenstrich-station" style="left:66.6%; top:55px;">
+                    <input type="number" class="rechenstrich-input" data-expected="${mid}" value="${sMid}" oninput="validateInput(this)" ${readonlyAttr} ${style}>
+                </div>
+                
+                <!-- Jump 2 (Ones) -->
+                <svg style="position:absolute; top:10px; left:66.6%; width:33.3%; height:40px; overflow:visible;">
+                    <path d="M 0 40 Q 25 10 50 40" fill="none" stroke="var(--primary-color)" stroke-width="2" vector-effect="non-scaling-stroke" style="transform: scaleX(2); transform-origin: left;"></path>
+                </svg>
+                <div class="rechenstrich-jump" style="left:83.3%; top:15px;">
+                    +<input type="number" class="rechenstrich-input small" data-expected="${jump2}" value="${sJ2}" oninput="validateInput(this)" ${readonlyAttr} ${style}>
+                </div>
+                
+                <!-- End Point -->
+                <div class="rechenstrich-station rechenstrich-fixed" style="left:100%; top:55px;">
+                    <input type="number" class="rechenstrich-input" data-expected="${sum}" value="${sSum}" oninput="validateInput(this)" ${readonlyAttr} ${style}>
+                </div>
+            </div>
+        `;
+
+        problemDiv.innerHTML = equationHtml + vizHtml;
+
     } else if (problemData.type === 'standard') {
         // Reuse standard logic but explicitly handle here if needed, or fall through?
         // actually 'standard' maps to default block below if we don't catch it.
@@ -1867,6 +1930,25 @@ function generateHouse(roofNum) {
         type: 'house',
         roof: roofNum,
         floors
+    };
+}
+
+function generateRechenstrich() {
+    const a = getRandomInt(10, 60);
+    const b = getRandomInt(11, 39);
+    const sum = a + b;
+
+    // Split b into tens and ones
+    const tens = Math.floor(b / 10) * 10;
+    const ones = b % 10;
+
+    return {
+        type: 'rechenstrich',
+        start: a,
+        jump1: tens,
+        mid: a + tens,
+        jump2: ones,
+        sum: sum
     };
 }
 
