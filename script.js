@@ -6,7 +6,7 @@ const GRADE_TOPICS = {
         { value: 'sub_10', text: 'Subtraktion bis 10' },
         { value: 'add_20_simple', text: 'Addition bis 20 (ohne Zehnerübergang)' },
         { value: 'sub_20_simple', text: 'Subtraktion bis 20 (ohne Zehnerübergang)' },
-        { value: 'bonds_10', text: 'Verliebte Zahlen (bis 10)' },
+        { value: 'bonds_10', text: '❤️ Verliebte Zahlen (bis 10)' },
         { value: 'rechenmauer_10', text: 'Kleine Rechenmauern (bis 10)' },
 
     ],
@@ -28,7 +28,8 @@ const GRADE_TOPICS = {
 
         { value: 'time_reading', text: 'Uhrzeit lesen' },
         { value: 'visual_add_100', text: 'Hunderterfeld: Addition' },
-        { value: 'rechendreiecke', text: 'Rechendreiecke (bis 20)' }
+        { value: 'rechendreiecke', text: 'Rechendreiecke (bis 20)' },
+        { value: 'married_100', text: '💍 Verheiratete Zahlen (bis 100)' }
     ],
     '3': [
         { value: 'add_1000', text: 'Addition bis 1000' },
@@ -131,11 +132,11 @@ function updateTopicSelector() {
     // Toggle Custom Options Visibility based on selection change
     topicSelector.onchange = function () {
         const customDiv = document.getElementById('customOptions');
-        if (topicSelector.value === 'custom') {
-            customDiv.style.display = 'flex';
-        } else {
-            customDiv.style.display = 'none';
-        }
+        const marriedDiv = document.getElementById('marriedOptions');
+
+        customDiv.style.display = (topicSelector.value === 'custom') ? 'flex' : 'none';
+        marriedDiv.style.display = (topicSelector.value === 'married_100') ? 'flex' : 'none';
+
         generateSheet();
     };
 
@@ -186,7 +187,8 @@ function generateProblemsData(type, count) {
             'frac_simplify': 1.8,
             'percent_basic': 1.5,
             'rechendreiecke': 1.9, // 15 / 8 ~= 1.875, so 1.9 ensures max 7-8
-            'house': 2.5
+            'house': 2.5,
+            'married_100': 1.0
         };
 
         const PAGE_CAPACITY = 15; // Reduced to be safe for printing
@@ -737,8 +739,26 @@ function generateProblem(type) {
             return generateHouse(20);
         case 'zahlenhaus_100':
             return generateHouse(100);
+        case 'married_100':
+            const onlyMultiplesOf10 = document.getElementById('marriedMultiplesOf10').checked;
+            return generateMarriedNumbers(onlyMultiplesOf10);
     }
     return { a, b, op };
+}
+
+function generateMarriedNumbers(onlyMultiplesOf10) {
+    let a;
+    if (onlyMultiplesOf10) {
+        a = getRandomInt(0, 10) * 10;
+    } else {
+        // Ensure a mix of "easy" (multiples of 10) and "hard" numbers
+        if (Math.random() < 0.3) {
+            a = getRandomInt(0, 10) * 10;
+        } else {
+            a = getRandomInt(1, 99);
+        }
+    }
+    return { type: 'married_numbers', a: a, sum: 100, op: '+' };
 }
 
 function renderClock(hours, minutes) {
@@ -955,6 +975,26 @@ function createProblemElement(problemData, isSolution) {
                 <span class="number" style="text-align:right;">${a}</span>
                 <span class="operator">${op || '+'}</span>
                 <input type="number" class="answer-input" style="width:60px; text-align:center; ${style}" 
+                       data-expected="${expected}" 
+                       value="${val}"
+                       oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+                <span class="equals">=</span>
+                <span class="number" style="text-align:left;">${sum}</span>
+            `;
+
+    } else if (problemData.type === 'married_numbers') {
+        const { a, sum, op } = problemData;
+        const expected = sum - a;
+        const val = isSolution ? expected : '';
+        const style = isSolution ? 'color:var(--primary-color); font-weight:bold;' : '';
+
+        problemDiv.style.justifyContent = 'center';
+        problemDiv.style.gap = '15px';
+
+        problemDiv.innerHTML = `
+                <span class="number" style="text-align:right;">${a}</span>
+                <span class="operator">${op || '+'}</span>
+                <input type="number" class="answer-input" style="width:70px; text-align:center; ${style}" 
                        data-expected="${expected}" 
                        value="${val}"
                        oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
