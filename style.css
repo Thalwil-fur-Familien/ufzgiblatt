@@ -840,7 +840,6 @@ input.triangle-field {
     align-items: center;
     background: white;
     padding: 5px;
-    border: 1px solid #eee;
     z-index: 10;
 }
 
