@@ -23,14 +23,7 @@ body {
     font-weight: bold;
 }
 
-.site-logo {
-    position: fixed;
-    top: 15px;
-    left: 15px;
-    width: 80px;
-    /* Reduced size as requested */
-    z-index: 1000;
-}
+
 
 /* Control Panel (Screen Only) */
 .controls {
@@ -821,9 +814,7 @@ input.triangle-field {
 
     .controls,
     #customOptions,
-    .site-logo {
-        display: none !important;
-    }
+
 
     /* ... rest of print styles */
 }
