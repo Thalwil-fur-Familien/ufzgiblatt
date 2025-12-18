@@ -1,3 +1,21 @@
+// Seeded Random Number Generator (Mulberry32)
+let globalSeed = Math.floor(Math.random() * 0xFFFFFFFF);
+let seededRandom = mulberry32(globalSeed);
+
+function mulberry32(a) {
+    return function () {
+        var t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+}
+
+function setSeed(seed) {
+    globalSeed = seed;
+    seededRandom = mulberry32(globalSeed);
+}
+
 const mascots = ['🦊', '🦉', '🦁', '🐼', '🐨', '🐯', '🦄', '🦖'];
 
 const GRADE_TOPICS = {
@@ -140,8 +158,11 @@ function updateTopicSelector() {
         generateSheet();
     };
 
-    // Initial State Check
-    topicSelector.onchange();
+    // Initial selection visibility sync
+    const customDiv = document.getElementById('customOptions');
+    const marriedDiv = document.getElementById('marriedOptions');
+    if (customDiv) customDiv.style.display = (topicSelector.value === 'custom') ? 'flex' : 'none';
+    if (marriedDiv) marriedDiv.style.display = (topicSelector.value === 'married_100') ? 'flex' : 'none';
 }
 
 
@@ -196,7 +217,7 @@ function generateProblemsData(type, count) {
 
         // 1. Ensure at least one of each selected type
         // Shuffle available topics first to avoid order bias in the 'guaranteed' slots if quota is tight
-        availableTopics.sort(() => Math.random() - 0.5);
+        availableTopics.sort(() => seededRandom() - 0.5);
 
         availableTopics.forEach(topic => {
             if (currentLoad < PAGE_CAPACITY) {
@@ -245,7 +266,14 @@ function generateProblemsData(type, count) {
 
 // ... (rest of logic)
 
-function generateSheet() {
+function generateSheet(keepSeed = false) {
+    if (!keepSeed) {
+        setSeed(Math.floor(Math.random() * 0xFFFFFFFF));
+    } else {
+        // Reset generator with current seed to ensure same sequence if re-rendering same state
+        setSeed(globalSeed);
+    }
+
     const selector = document.getElementById('topicSelector');
     const type = selector.value;
     currentTitle = selector.options[selector.selectedIndex].text;
@@ -300,6 +328,19 @@ function updateURLState() {
     const count = document.getElementById('pageCount').value;
     params.set('count', count);
 
+    // Options
+    const showSolutions = document.getElementById('solutionToggle').checked;
+    if (showSolutions) params.set('solutions', '1');
+
+    const marriedMultiples = document.getElementById('marriedMultiplesOf10').checked;
+    if (marriedMultiples) params.set('marriedM', '1');
+
+    const hideQR = document.getElementById('hideQR').checked;
+    if (hideQR) params.set('hideQR', '1');
+
+    // Seed
+    params.set('seed', globalSeed.toString());
+
     // Custom params
     if (topic === 'custom') {
         const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
@@ -311,10 +352,13 @@ function updateURLState() {
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState({}, '', newUrl);
+
+    // Also update QR Code on existing sheets
+    renderQRCode(window.location.href);
 }
 
 function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+    return Math.floor(seededRandom() * (max - min + 1)) + min;
 }
 
 function generateProblem(type) {
@@ -420,7 +464,7 @@ function generateProblem(type) {
             break;
         case 'doubling_halving':
             {
-                const isDouble = Math.random() < 0.5;
+                const isDouble = seededRandom() < 0.5;
                 if (isDouble) {
                     // Double: 1..50 -> 2..100
                     a = getRandomInt(1, 50);
@@ -568,7 +612,7 @@ function generateProblem(type) {
                 ];
                 const u = unitTypes[getRandomInt(0, unitTypes.length - 1)];
                 let val = getRandomInt(1, 20);
-                if (u.factor === 1000 && Math.random() > 0.5) val = val / 2; // 0.5 kg etc
+                if (u.factor === 1000 && seededRandom() > 0.5) val = val / 2; // 0.5 kg etc
 
                 let answer = val * u.factor;
 
@@ -752,7 +796,7 @@ function generateMarriedNumbers(onlyMultiplesOf10) {
         a = getRandomInt(0, 10) * 10;
     } else {
         // Ensure a mix of "easy" (multiples of 10) and "hard" numbers
-        if (Math.random() < 0.3) {
+        if (seededRandom() < 0.3) {
             a = getRandomInt(0, 10) * 10;
         } else {
             a = getRandomInt(1, 99);
@@ -1389,12 +1433,21 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     const sheetDiv = document.createElement('div');
     sheetDiv.className = 'sheet';
 
+    // QR Code Container
+    const qrContainer = document.createElement('div');
+    qrContainer.className = 'qr-code-container';
+    if (document.getElementById('hideQR').checked) {
+        qrContainer.classList.add('qr-hidden');
+    }
+    sheetDiv.appendChild(qrContainer);
+
     // Header
     const header = document.createElement('div');
     header.className = 'sheet-header';
     header.innerHTML = `
                                                                                     <div class="header-field">Name: <span class="line"></span></div>
                                                                                     <div class="header-field">Datum: <span class="line"></span></div>
+                                                                                    <div class="header-field" style="width:100px;"></div> <!-- Spacer for QR Code -->
                                                                                     `;
     sheetDiv.appendChild(header);
 
@@ -1578,11 +1631,9 @@ function init() {
     loadStateFromURL();
 
     // 3. Generate initial sheet
-    // If loadStateFromURL called updateTopicSelector, it might have triggered check? 
-    // updateTopicSelector does NOT generateSheet automatically unless we told it to?
-    // Actually updateTopicSelector just updates options. logic is separate.
-    // Let's ensure generateSheet is called once.
-    generateSheet();
+    // If seed was loaded, generateSheet(true) will use it.
+    // Otherwise it will generate a new one.
+    generateSheet(true);
 
     // 4. Scale
     autoScaleSheet();
@@ -1647,6 +1698,57 @@ function loadStateFromURL() {
             pageInput.value = count;
         }
     }
+
+    // 4. Options
+    if (params.has('solutions')) {
+        document.getElementById('solutionToggle').checked = params.get('solutions') === '1';
+    }
+    if (params.has('marriedM')) {
+        document.getElementById('marriedMultiplesOf10').checked = params.get('marriedM') === '1';
+    }
+    if (params.has('hideQR')) {
+        document.getElementById('hideQR').checked = params.get('hideQR') === '1';
+    }
+
+    // 5. Seed
+    if (params.has('seed')) {
+        globalSeed = parseInt(params.get('seed'));
+        // We will call generateSheet(true) in init to use this seed
+    }
+}
+
+function toggleQRVisibility() {
+    const hide = document.getElementById('hideQR').checked;
+    const qrContainers = document.querySelectorAll('.qr-code-container');
+    qrContainers.forEach(container => {
+        if (hide) {
+            container.classList.add('qr-hidden');
+        } else {
+            container.classList.remove('qr-hidden');
+        }
+    });
+    updateURLState();
+}
+
+function renderQRCode(url) {
+    const containers = document.querySelectorAll('.qr-code-container');
+    containers.forEach(container => {
+        container.innerHTML = '';
+        new QRCode(container, {
+            text: url,
+            width: 85,
+            height: 85,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        // Add Logo Overlay
+        const logo = document.createElement('img');
+        logo.src = 'images/Thalwil_Familien_Logo.png';
+        logo.className = 'qr-logo';
+        container.appendChild(logo);
+    });
 }
 
 window.onload = init;
@@ -1710,7 +1812,7 @@ function generateTriangle(maxSum) {
         attempts++;
     } while ((o1 > maxSum || o2 > maxSum || o3 > maxSum) && attempts < 100);
 
-    const maskMode = Math.random() < 0.5 ? 'inner' : 'outer';
+    const maskMode = seededRandom() < 0.5 ? 'inner' : 'outer';
 
     return {
         type: 'triangle',
@@ -1737,7 +1839,7 @@ function generateHouse(roofNum) {
 
         usedValues.add(sideA);
         const sideB = roofNum - sideA;
-        const hiddenSide = Math.random() < 0.5 ? 0 : 1; // 0 for A, 1 for B
+        const hiddenSide = seededRandom() < 0.5 ? 0 : 1; // 0 for A, 1 for B
         floors.push({ a: sideA, b: sideB, hiddenSide });
     }
 
