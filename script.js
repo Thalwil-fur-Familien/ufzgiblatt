@@ -23,10 +23,12 @@ const GRADE_TOPICS = {
         { value: 'rechenmauer', text: 'Rechenmauern (3 Ebenen)' },
         { value: 'rechenmauer_4', text: 'Rechenmauern (4 Ebenen)' },
         { value: 'doubling_halving', text: 'Halbieren und Verdoppeln' },
+        { value: 'zahlenhaus_20', text: 'Zahlenhaus (bis 20)' },
         { value: 'word_problems', text: 'Sachrechnen (Textaufgaben)' },
 
         { value: 'time_reading', text: 'Uhrzeit lesen' },
-        { value: 'visual_add_100', text: 'Hunderterfeld: Addition' }
+        { value: 'visual_add_100', text: 'Hunderterfeld: Addition' },
+        { value: 'rechendreiecke', text: 'Rechendreiecke (bis 20)' }
     ],
     '3': [
         { value: 'add_1000', text: 'Addition bis 1000' },
@@ -36,7 +38,9 @@ const GRADE_TOPICS = {
         { value: 'div_remainder', text: 'Division (mit Rest - Basis)' },
         { value: 'rechenmauer_100', text: 'Grosse Rechenmauern (bis 100)' },
 
-        { value: 'time_duration', text: 'Zeitspannen' }
+        { value: 'time_duration', text: 'Zeitspannen' },
+        { value: 'rechendreiecke_100', text: 'Rechendreiecke (bis 100)' },
+        { value: 'zahlenhaus_100', text: 'Zahlenhaus (bis 100)' }
     ],
     '4': [
         { value: 'add_written', text: 'Schriftliche Addition (bis 1 Mio)' },
@@ -180,7 +184,9 @@ function generateProblemsData(type, count) {
             'units': 1.5,
             'frac_add': 2.0,     // Fractions are taller
             'frac_simplify': 1.8,
-            'percent_basic': 1.5
+            'percent_basic': 1.5,
+            'rechendreiecke': 1.9, // 15 / 8 ~= 1.875, so 1.9 ensures max 7-8
+            'house': 2.5
         };
 
         const PAGE_CAPACITY = 15; // Reduced to be safe for printing
@@ -255,6 +261,7 @@ function generateSheet() {
     else if (type === 'time_reading') numProblems = 8; // Clocks need space
     else if (type === 'visual_add_100') numProblems = 6; // 10x10 grids are large
     else if (type === 'rounding') numProblems = 16;
+    else if (type.includes('rechendreiecke')) numProblems = 8;
     else if (['add_written', 'sub_written'].includes(type)) numProblems = 12;
 
     // 2. Determine Page Count
@@ -720,6 +727,16 @@ function generateProblem(type) {
                     answer: `${eH}:${eM}`
                 };
             }
+        case 'rechendreiecke':
+            return generateTriangle(20);
+        case 'rechendreiecke_100':
+            return generateTriangle(100);
+        case 'zahlenhaus_10':
+            return generateHouse(10);
+        case 'zahlenhaus_20':
+            return generateHouse(20);
+        case 'zahlenhaus_100':
+            return generateHouse(100);
     }
     return { a, b, op };
 }
@@ -1076,6 +1093,70 @@ function createProblemElement(problemData, isSolution) {
             <span>${rate}% von ${base}</span> <span class="equals">=</span>
             <input type="number" class="answer-input" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
          `;
+
+    } else if (problemData.type === 'triangle') {
+        const { inner, outer, maskMode } = problemData;
+        const isInnerHidden = maskMode === 'inner';
+
+        const renderField = (val, expected, isHidden) => {
+            if (isHidden) {
+                const solutionVal = isSolution ? expected : '';
+                const style = isSolution ? 'color:var(--primary-color); font-weight:bold;' : '';
+                return `<input type="number" class="answer-input triangle-field" data-expected="${expected}" value="${solutionVal}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''} style="${style}">`;
+            } else {
+                return `<div class="triangle-field static">${val}</div>`;
+            }
+        };
+
+        problemDiv.classList.add('triangle-problem');
+        problemDiv.innerHTML = `
+            <div class="triangle-container">
+                <svg viewBox="0 0 200 180" class="triangle-svg">
+                    <polygon points="100,20 180,150 20,150" fill="none" stroke="#ddd" stroke-width="2"/>
+                </svg>
+                <div class="triangle-pos corner-top">${renderField(inner[0], inner[0], isInnerHidden)}</div>
+                <div class="triangle-pos corner-right">${renderField(inner[1], inner[1], isInnerHidden)}</div>
+                <div class="triangle-pos corner-left">${renderField(inner[2], inner[2], isInnerHidden)}</div>
+                <div class="triangle-pos side-right">${renderField(outer[0], outer[0], !isInnerHidden)}</div>
+                <div class="triangle-pos side-bottom">${renderField(outer[1], outer[1], !isInnerHidden)}</div>
+                <div class="triangle-pos side-left">${renderField(outer[2], outer[2], !isInnerHidden)}</div>
+            </div>
+        `;
+
+    } else if (problemData.type === 'house') {
+        const { roof, floors } = problemData;
+        problemDiv.classList.add('house-problem');
+
+        let floorsHtml = '';
+        floors.forEach(f => {
+            const valA = (f.hiddenSide === 0) ? (isSolution ? f.a : '') : f.a;
+            const valB = (f.hiddenSide === 1) ? (isSolution ? f.b : '') : f.b;
+            const isHiddenA = f.hiddenSide === 0;
+            const isHiddenB = f.hiddenSide === 1;
+
+            const styleA = (isHiddenA && isSolution) ? 'color:var(--primary-color); font-weight:bold;' : '';
+            const styleB = (isHiddenB && isSolution) ? 'color:var(--primary-color); font-weight:bold;' : '';
+
+            floorsHtml += `
+                <div class="house-floor">
+                    <div class="house-cell ${isHiddenA ? 'input' : 'static'}">
+                        ${isHiddenA ? `<input type="number" class="answer-input house-input" data-expected="${f.a}" value="${valA}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''} style="${styleA}">` : f.a}
+                    </div>
+                    <div class="house-cell ${isHiddenB ? 'input' : 'static'}">
+                        ${isHiddenB ? `<input type="number" class="answer-input house-input" data-expected="${f.b}" value="${valB}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''} style="${styleB}">` : f.b}
+                    </div>
+                </div>
+            `;
+        });
+
+        problemDiv.innerHTML = `
+            <div class="house-container">
+                <div class="house-roof">${roof}</div>
+                <div class="house-body">
+                    ${floorsHtml}
+                </div>
+            </div>
+        `;
 
     } else if (problemData.type === 'fraction_simplify') {
         // e.g. 4/8 = [input] (expects "1/2")
@@ -1450,14 +1531,6 @@ function checkAllDone() {
 
 // Initialize on load
 function init() {
-    // 0. Version Info
-    const BUILD_VERSION = 'fb67bc8';
-    const BUILD_DATE = '2025-12-14 22:37';
-    const footer = document.getElementById('versionFooter');
-    if (footer) {
-        footer.textContent = `Build: ${BUILD_VERSION} | ${BUILD_DATE}`;
-    }
-
     // 1. Initial UI Setup (Defaults)
     // Grade 2 is default in HTML
 
@@ -1580,3 +1653,59 @@ function autoScaleSheet() {
         wrapper.style.height = 'auto';
     }
 }
+
+function generateTriangle(maxSum) {
+    let i1, i2, i3, o1, o2, o3;
+    let attempts = 0;
+    do {
+        // max(o) = max(i + i). So max(i) ~ maxSum / 2.
+        const maxInner = Math.floor(maxSum / 1.5); // Allow slightly larger inner for variety but check sums
+        i1 = getRandomInt(1, maxInner);
+        i2 = getRandomInt(1, maxInner);
+        i3 = getRandomInt(1, maxInner);
+
+        o1 = i1 + i2;
+        o2 = i2 + i3;
+        o3 = i3 + i1;
+        attempts++;
+    } while ((o1 > maxSum || o2 > maxSum || o3 > maxSum) && attempts < 100);
+
+    const maskMode = Math.random() < 0.5 ? 'inner' : 'outer';
+
+    return {
+        type: 'triangle',
+        inner: [i1, i2, i3],
+        outer: [o1, o2, o3],
+        maskMode
+    };
+}
+
+function generateHouse(roofNum) {
+    const floorsCount = getRandomInt(3, 5);
+    const floors = [];
+
+    // Ensure variety in decompositions
+    const usedValues = new Set();
+
+    for (let i = 0; i < floorsCount; i++) {
+        let sideA;
+        let attempts = 0;
+        do {
+            sideA = getRandomInt(0, roofNum);
+            attempts++;
+        } while (usedValues.has(sideA) && attempts < 20);
+
+        usedValues.add(sideA);
+        const sideB = roofNum - sideA;
+        const hiddenSide = Math.random() < 0.5 ? 0 : 1; // 0 for A, 1 for B
+        floors.push({ a: sideA, b: sideB, hiddenSide });
+    }
+
+    return {
+        type: 'house',
+        roof: roofNum,
+        floors
+    };
+}
+
+

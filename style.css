@@ -655,12 +655,164 @@ input.brick-input {
     font-weight: bold;
 }
 
-#versionFooter {
-    margin-top: 2rem;
-    font-size: 0.8rem;
-    color: #888;
+/* Rechendreiecke (Calculation Triangles) */
+.triangle-problem {
+    display: flex;
+    justify-content: center;
+    padding: 15px 0;
+}
+
+.triangle-container {
+    position: relative;
+    width: 200px;
+    height: 180px;
+}
+
+.triangle-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.triangle-pos {
+    position: absolute;
+    transform: translate(-50%, -50%);
+}
+
+.triangle-field {
+    width: 45px;
+    height: 35px;
+    background: white;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     text-align: center;
-    font-family: monospace;
+    font-size: 14pt;
+    font-family: 'Comic Neue', cursive;
+}
+
+input.triangle-field {
+    outline: none;
+}
+
+.triangle-field.static {
+    border: none;
+    background: transparent;
+    font-weight: bold;
+}
+
+/* Positioning (relative to 200x180 svg) */
+.corner-top {
+    top: 20px;
+    left: 100px;
+}
+
+.corner-right {
+    top: 150px;
+    left: 180px;
+}
+
+.corner-left {
+    top: 150px;
+    left: 20px;
+}
+
+.side-right {
+    top: 85px;
+    left: 140px;
+}
+
+.side-bottom {
+    top: 150px;
+    left: 100px;
+}
+
+.side-left {
+    top: 85px;
+    left: 60px;
+}
+
+/* Zahlenhäuser (Number Houses) */
+.house-problem {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+.house-container {
+    width: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.house-roof {
+    width: 100%;
+    height: 60px;
+    background: #f8f9fa;
+    border: 2px solid #ddd;
+    border-bottom: none;
+    clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding-bottom: 5px;
+    font-size: 18pt;
+    font-weight: bold;
+    color: #444;
+}
+
+.house-body {
+    width: 100%;
+    border: 2px solid #ddd;
+    background: white;
+}
+
+.house-floor {
+    display: flex;
+    border-bottom: 1px solid #eee;
+}
+
+.house-floor:last-child {
+    border-bottom: none;
+}
+
+.house-cell {
+    flex: 1;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14pt;
+    border-right: 1px solid #eee;
+}
+
+.house-cell:last-child {
+    border-right: none;
+}
+
+.house-input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    text-align: center;
+    font-family: inherit;
+    font-size: inherit;
+    background: transparent;
+    outline: none;
+}
+
+.house-cell.input {
+    background: #fff;
+}
+
+.house-cell.static {
+    background: #fcfcfc;
+    color: #444;
 }
 
 @media print {
@@ -668,7 +820,6 @@ input.brick-input {
 
     .controls,
     #customOptions,
-    #versionFooter,
     .site-logo {
         display: none !important;
     }
