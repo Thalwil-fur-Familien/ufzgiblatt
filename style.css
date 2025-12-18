@@ -868,3 +868,58 @@ input.triangle-field {
 .logo-hidden {
     display: none !important;
 }
+
+/* Rechenstrich */
+.rechenstrich-container {
+    margin-top: 10px;
+    background: white;
+}
+
+.rechenstrich-station {
+    position: absolute;
+    transform: translate(-50%, 5px);
+    /* Center under the point */
+}
+
+.rechenstrich-fixed {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.rechenstrich-input {
+    width: 35px !important;
+    height: 25px !important;
+    padding: 0 !important;
+    text-align: center;
+    font-size: 0.9rem !important;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background-color: #fff;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.rechenstrich-input.correct {
+    border-color: #2ecc71;
+    background-color: #e8f8f5;
+    color: #27ae60;
+}
+
+.rechenstrich-input.incorrect {
+    border-color: #e74c3c;
+    background-color: #fadbd8;
+    color: #c0392b;
+}
+
+.rechenstrich-input.small {
+    width: 30px !important;
+}
+
+.rechenstrich-jump {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    color: var(--primary-color);
+}
