@@ -38,10 +38,17 @@
         <button class="btn-generate" onclick="generateSheet()">✨ Neu erstellen</button>
         <!-- Check button removed in favor of real-time validation -->
         <button class="btn-print" onclick="window.print()">🖨️ Drucken</button>
-        <div style="display:flex; align-items:center;">
-            <input type="checkbox" id="hideQR" style="width:20px; height:20px; margin-right:5px;"
-                onchange="toggleQRVisibility()">
-            <label for="hideQR">QR-Code ausblenden</label>
+        <div style="display:flex; align-items:center; gap: 15px;">
+            <div style="display:flex; align-items:center;">
+                <input type="checkbox" id="hideQR" style="width:20px; height:20px; margin-right:5px;"
+                    onchange="toggleQRVisibility()">
+                <label for="hideQR">QR-Code ausblenden</label>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <input type="checkbox" id="hideLogo" style="width:20px; height:20px; margin-right:5px;"
+                    onchange="toggleLogoVisibility()">
+                <label for="hideLogo">Logo ausblenden</label>
+            </div>
         </div>
     </div>
 

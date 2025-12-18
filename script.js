@@ -335,11 +335,9 @@ function updateURLState() {
     const marriedMultiples = document.getElementById('marriedMultiplesOf10').checked;
     if (marriedMultiples) params.set('marriedM', '1');
 
-    const hideQR = document.getElementById('hideQR').checked;
-    if (hideQR) params.set('hideQR', '1');
-
-    // Seed
-    params.set('seed', globalSeed.toString());
+    if (document.getElementById('hideQR').checked) params.set('hideQR', '1');
+    if (document.getElementById('hideLogo').checked) params.set('hideLogo', '1');
+    if (globalSeed) params.set('seed', globalSeed.toString());
 
     // Custom params
     if (topic === 'custom') {
@@ -1441,13 +1439,25 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     }
     sheetDiv.appendChild(qrContainer);
 
+    // Sheet Logo (Top Left)
+    const sheetLogo = document.createElement('img');
+    sheetLogo.src = 'images/Thalwil_Familien_Logo.png';
+    sheetLogo.className = 'sheet-logo';
+    if (document.getElementById('hideLogo').checked) {
+        sheetLogo.classList.add('logo-hidden');
+    }
+    sheetDiv.appendChild(sheetLogo);
+
     // Header
     const header = document.createElement('div');
     header.className = 'sheet-header';
     header.innerHTML = `
-                                                                                    <div class="header-field">Name: <span class="line"></span></div>
-                                                                                    <div class="header-field">Datum: <span class="line"></span></div>
-                                                                                    <div class="header-field" style="width:120px;"></div> <!-- Spacer for QR Code -->
+                                                                                    <div style="width:100px;"></div> <!-- Spacer for Logo -->
+                                                                                    <div style="display:flex; gap: 40px;">
+                                                                                        <div class="header-field">Name: <span class="line"></span></div>
+                                                                                        <div class="header-field">Datum: <span class="line"></span></div>
+                                                                                    </div>
+                                                                                    <div style="width:100px;"></div> <!-- Spacer for QR Code -->
                                                                                     `;
     sheetDiv.appendChild(header);
 
@@ -1709,6 +1719,9 @@ function loadStateFromURL() {
     if (params.has('hideQR')) {
         document.getElementById('hideQR').checked = params.get('hideQR') === '1';
     }
+    if (params.has('hideLogo')) {
+        document.getElementById('hideLogo').checked = params.get('hideLogo') === '1';
+    }
 
     // 5. Seed
     if (params.has('seed')) {
@@ -1725,6 +1738,19 @@ function toggleQRVisibility() {
             container.classList.add('qr-hidden');
         } else {
             container.classList.remove('qr-hidden');
+        }
+    });
+    updateURLState();
+}
+
+function toggleLogoVisibility() {
+    const hide = document.getElementById('hideLogo').checked;
+    const logos = document.querySelectorAll('.sheet-logo');
+    logos.forEach(logo => {
+        if (hide) {
+            logo.classList.add('logo-hidden');
+        } else {
+            logo.classList.remove('logo-hidden');
         }
     });
     updateURLState();

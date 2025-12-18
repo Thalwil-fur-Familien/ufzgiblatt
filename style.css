@@ -163,6 +163,8 @@ button:hover {
 .sheet-header {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    height: 100px;
     margin-bottom: 20px;
     /* Reduced margin */
     padding-bottom: 10px;
@@ -829,8 +831,8 @@ input.triangle-field {
 /* QR Code */
 .qr-code-container {
     position: absolute;
-    top: 10px;
-    right: 15px;
+    top: 10mm;
+    right: 10mm;
     width: 100px;
     height: 100px;
     display: flex;
@@ -848,12 +850,25 @@ input.triangle-field {
     max-height: 100%;
 }
 
-.qr-hidden {
-    display: none !important;
-}
-
 @media print {
-    .qr-hidden {
+
+    .qr-hidden,
+    .logo-hidden {
         display: none !important;
     }
+}
+
+/* Sheet Logo */
+.sheet-logo {
+    position: absolute;
+    top: 10mm;
+    left: 10mm;
+    height: 100px;
+    width: 100px;
+    object-fit: contain;
+    z-index: 10;
+}
+
+.logo-hidden {
+    display: none !important;
 }
