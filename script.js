@@ -209,7 +209,9 @@ function generateProblemsData(type, count) {
             'frac_simplify': 1.8,
             'percent_basic': 1.5,
             'rechendreiecke': 1.9, // 15 / 8 ~= 1.875, so 1.9 ensures max 7-8
-            'house': 2.5,
+            'zahlenhaus_10': 3.75,
+            'zahlenhaus_20': 3.75,
+            'zahlenhaus_100': 3.75,
             'married_100': 1.0,
             'rechenstrich': 2.5
         };
@@ -232,6 +234,8 @@ function generateProblemsData(type, count) {
                 if (WEIGHTS[topic]) w = WEIGHTS[topic];
                 else if (topic.includes('rechenmauer')) w = 2.2;
                 else if (topic.includes('written')) w = 1.8;
+                else if (topic.includes('rechendreiecke')) w = 1.9;
+                else if (topic.includes('zahlenhaus')) w = 3.75;
 
                 data.push(generateProblem(topic));
                 currentLoad += w;
@@ -296,6 +300,7 @@ function generateSheet(keepSeed = false) {
     else if (type.includes('rechendreiecke')) numProblems = 8;
     else if (['add_written', 'sub_written'].includes(type)) numProblems = 12;
     else if (type === 'rechenstrich') numProblems = 6;
+    else if (type.includes('zahlenhaus')) numProblems = 4;
 
     // 2. Determine Page Count
     const pageCountInput = document.getElementById('pageCount');
