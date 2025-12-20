@@ -145,9 +145,11 @@ function updateTopicSelector() {
     topicSelector.onchange = function () {
         const customDiv = document.getElementById('customOptions');
         const marriedDiv = document.getElementById('marriedOptions');
+        const timeDiv = document.getElementById('timeOptions');
 
         customDiv.style.display = (topicSelector.value === 'custom') ? 'flex' : 'none';
         marriedDiv.style.display = (topicSelector.value === 'married_100') ? 'flex' : 'none';
+        timeDiv.style.display = (topicSelector.value === 'time_reading') ? 'flex' : 'none';
 
         generateSheet();
     };
@@ -155,8 +157,10 @@ function updateTopicSelector() {
     // Initial selection visibility sync
     const customDiv = document.getElementById('customOptions');
     const marriedDiv = document.getElementById('marriedOptions');
+    const timeDiv = document.getElementById('timeOptions');
     if (customDiv) customDiv.style.display = (topicSelector.value === 'custom') ? 'flex' : 'none';
     if (marriedDiv) marriedDiv.style.display = (topicSelector.value === 'married_100') ? 'flex' : 'none';
+    if (timeDiv) timeDiv.style.display = (topicSelector.value === 'time_reading') ? 'flex' : 'none';
 }
 
 
@@ -242,6 +246,12 @@ function updateURLState() {
 
     const marriedMultiples = document.getElementById('marriedMultiplesOf10').checked;
     if (marriedMultiples) params.set('marriedM', '1');
+
+    const showHours = document.getElementById('showHours').checked;
+    if (showHours) params.set('showH', '1');
+
+    const showMinutes = document.getElementById('showMinutes').checked;
+    if (showMinutes) params.set('showM', '1');
 
     if (document.getElementById('hideQR').checked) params.set('hideQR', '1');
     if (document.getElementById('hideLogo').checked) params.set('hideLogo', '1');
@@ -733,8 +743,10 @@ function createProblemElement(problemData, isSolution) {
     } else if (problemData.type === 'time_reading') {
         const { hours, minutes, answer } = problemData;
         const valAns = isSolution ? answer : '';
+        const showHours = document.getElementById('showHours').checked;
+        const showMinutes = document.getElementById('showMinutes').checked;
 
-        const clockHtml = renderClock(hours, minutes);
+        const clockHtml = renderClock(hours, minutes, showHours, showMinutes);
 
         problemDiv.style.flexDirection = 'column';
         problemDiv.innerHTML = `
@@ -1260,22 +1272,20 @@ function loadStateFromURL() {
                 const customContainer = document.getElementById('customOptions');
                 customContainer.style.display = 'flex'; // show it
 
-                // Populate checkboxes if needed (updateTopicSelector did it, but let's be sure)
-                // updateCustomCheckboxes was called by updateTopicSelector() -> triggering?
-                // Actually updateCustomCheckboxes resets checked status to TRUE by default.
-                // We need to overwrite that if custom param exists.
-
                 if (params.has('custom')) {
                     const customVal = params.get('custom').split(',');
-                    // Uncheck all first? Or check only matches?
                     const allCbs = document.querySelectorAll('#checkboxContainer input[type="checkbox"]');
                     allCbs.forEach(cb => {
                         cb.checked = customVal.includes(cb.value);
                     });
                 }
             } else {
-                const customContainer = document.getElementById('customOptions');
-                customContainer.style.display = 'none';
+                // Trigger visibility updates (married, time options etc)
+                // Since updateTopicSelector attached the handler, we can call it.
+                // This ensures options like "timeOptions" become visible.
+                if (typeof topicSel.onchange === 'function') {
+                    topicSel.onchange();
+                }
             }
         }
     }
@@ -1302,12 +1312,19 @@ function loadStateFromURL() {
     if (params.has('hideLogo')) {
         document.getElementById('hideLogo').checked = params.get('hideLogo') === '1';
     }
+    if (params.has('showH')) {
+        document.getElementById('showHours').checked = params.get('showH') === '1';
+    }
+    if (params.has('showM')) {
+        document.getElementById('showMinutes').checked = params.get('showM') === '1';
+    }
 
     // 5. Seed
     if (params.has('seed')) {
         setSeed(parseInt(params.get('seed')));
         // We will call generateSheet(true) in init to use this seed
     }
+
 }
 
 function toggleQRVisibility() {
@@ -1352,16 +1369,42 @@ function renderQRCode(url) {
 }
 
 
-function renderClock(hours, minutes) {
+function renderClock(hours, minutes, showHours = false, showMinutes = false) {
     let html = '<div class="clock-face"><div class="clock-center"></div>';
+
+    // Hours (Inner, Green)
+    if (showHours) {
+        for (let i = 1; i <= 12; i++) {
+            const angleDeg = i * 30;
+            // Radius: 30 (inner)
+            html += `<div class="clock-number-hour" style="transform: rotate(${angleDeg}deg) translate(0, -38px) rotate(-${angleDeg}deg)">${i}</div>`;
+        }
+    }
+
+    // Minutes (Outer, BlueViolet)
+    if (showMinutes) {
+        for (let i = 1; i <= 12; i++) {
+            const angleDeg = i * 30;
+            const minVal = i * 5;
+            // Radius: 65 (outer, extended)
+            html += `<div class="clock-number-minute" style="transform: rotate(${angleDeg}deg) translate(0, -65px) rotate(-${angleDeg}deg)">${minVal}</div>`;
+        }
+    }
+
     for (let i = 0; i < 12; i++) {
         const deg = i * 30;
         html += `<div class="clock-marker" style="transform: rotate(${deg}deg) translate(0, 2px)"></div>`;
     }
+
     const minDeg = minutes * 6;
     const hourDeg = (hours % 12) * 30 + minutes * 0.5;
-    html += `<div class="clock-hand hand-hour" style="transform: rotate(${hourDeg}deg)"></div>`;
-    html += `<div class="clock-hand hand-minute" style="transform: rotate(${minDeg}deg)"></div>`;
+
+    // Hand colors
+    const hColor = showHours ? 'green' : '#333';
+    const mColor = showMinutes ? 'blueviolet' : '#000';
+
+    html += `<div class="clock-hand hand-hour" style="background:${hColor}; transform: rotate(${hourDeg}deg)"></div>`;
+    html += `<div class="clock-hand hand-minute" style="background:${mColor}; transform: rotate(${minDeg}deg)"></div>`;
     html += '</div>';
     return html;
 }

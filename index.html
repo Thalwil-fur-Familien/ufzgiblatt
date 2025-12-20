@@ -66,6 +66,15 @@
         <label for="marriedMultiplesOf10">Nur Zehnerzahlen (z.B. 30 + 70)</label>
     </div>
 
+    <div class="controls" id="timeOptions"
+        style="display:none; align-items:center; margin-top:-1rem; font-family:'Nunito',sans-serif; gap:10px;">
+        <input type="checkbox" id="showHours" style="width:20px; height:20px;" onchange="generateSheet(true)">
+        <label for="showHours" style="color:green; font-weight:bold;">Stunden</label>
+
+        <input type="checkbox" id="showMinutes" style="width:20px; height:20px;" onchange="generateSheet(true)">
+        <label for="showMinutes" style="color:blueviolet; font-weight:bold;">Minuten</label>
+    </div>
+
     <div id="sheetsWrapper">
         <!-- Sheets will be inserted here -->
     </div>
