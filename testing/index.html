@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mathe Arbeitsblatt Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+
+<body>
+
+
+    <div class="controls">
+        <select id="gradeSelector" onchange="updateTopicSelector(); generateSheet();">
+            <option value="1">1. Klasse</option>
+            <option value="2">2. Klasse</option>
+            <option value="3">3. Klasse</option>
+            <option value="4">4. Klasse</option>
+            <option value="5">5. Klasse</option>
+            <option value="6">6. Klasse</option>
+        </select>
+        <select id="topicSelector" onchange="generateSheet()">
+            <!-- Options populated by JS -->
+        </select>
+        <div style="display:flex; align-items:center;">
+            <label for="pageCount"
+                style="font-weight:bold; margin-right:5px; font-family:'Nunito',sans-serif;">Anzahl:</label>
+            <input type="number" id="pageCount" value="1" min="1" max="50" oninput="generateSheet(true)"
+                style="width:50px; padding:12px; border-radius:12px; border:2px solid #ddd; font-family:'Nunito',sans-serif; font-size:1rem; outline:none; text-align:center;">
+        </div>
+        <div style="display:flex; align-items:center;">
+            <input type="checkbox" id="solutionToggle" style="width:20px; height:20px; margin-right:5px;"
+                onchange="renderCurrentState(); updateURLState();">
+            <label for="solutionToggle">Lösungsblatt</label>
+        </div>
+        <button class="btn-generate" onclick="generateSheet()">✨ Neu erstellen</button>
+        <!-- Check button removed in favor of real-time validation -->
+        <button class="btn-print" onclick="window.print()">🖨️ Drucken</button>
+        <div style="display:flex; align-items:center; gap: 15px;">
+            <div style="display:flex; align-items:center;">
+                <input type="checkbox" id="hideLogo" style="width:20px; height:20px; margin-right:5px;"
+                    onchange="toggleLogoVisibility()">
+                <label for="hideLogo">Logo ausblenden</label>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <input type="checkbox" id="hideQR" style="width:20px; height:20px; margin-right:5px;"
+                    onchange="toggleQRVisibility()">
+                <label for="hideQR">QR-Code ausblenden</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls" id="customOptions"
+        style="display:none; flex-direction:column; align-items:flex-start; margin-top:-1rem; font-family:'Nunito',sans-serif;">
+        <div style="margin-bottom:10px; font-weight:bold;">Wähle die Aufgabentypen:</div>
+        <div id="checkboxContainer" style="display:flex; flex-wrap:wrap; gap:15px;">
+            <!-- Checkboxes populated by JS -->
+        </div>
+    </div>
+
+    <div class="controls" id="marriedOptions"
+        style="display:none; align-items:center; margin-top:-1rem; font-family:'Nunito',sans-serif; gap:10px;">
+        <input type="checkbox" id="marriedMultiplesOf10" style="width:20px; height:20px;" onchange="generateSheet()">
+        <label for="marriedMultiplesOf10">Nur Zehnerzahlen (z.B. 30 + 70)</label>
+    </div>
+
+    <div class="controls" id="moneyOptions"
+        style="display:none; align-items:center; margin-top:-1rem; font-family:'Nunito',sans-serif; gap:10px;">
+        <span style="font-weight:bold;">Währung:</span>
+
+        <input type="checkbox" id="currencyCHF" value="CHF" checked onchange="generateSheet()">
+        <label for="currencyCHF">CHF</label>
+
+        <input type="checkbox" id="currencyEUR" value="EUR" onchange="generateSheet()">
+        <label for="currencyEUR">EUR</label>
+    </div>
+
+    <div class="controls" id="timeOptions"
+        style="display:none; align-items:center; margin-top:-1rem; font-family:'Nunito',sans-serif; gap:10px;">
+        <input type="checkbox" id="showHours" style="width:20px; height:20px;" onchange="generateSheet(true)">
+        <label for="showHours" style="color:green; font-weight:bold;">Stunden</label>
+
+        <input type="checkbox" id="showMinutes" style="width:20px; height:20px;" onchange="generateSheet(true)">
+        <label for="showMinutes" style="color:blueviolet; font-weight:bold;">Minuten</label>
+    </div>
+
+    <div id="sheetsWrapper">
+        <!-- Sheets will be inserted here -->
+    </div>
+
+
+
+    <script type="module" src="script.js"></script>
+
+    <footer class="site-footer">
+        <a href="https://github.com/Thalwil-fur-Familien/ufzgiblatt/issues/new" target="_blank" class="btn-github">
+            <svg class="github-icon" viewBox="0 0 16 16" width="20" height="20" aria-hidden="true">
+                <path fill="currentColor"
+                    d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z">
+                </path>
+            </svg>
+            Feedback & Fehler melden
+        </a>
+    </footer>
+</body>
+
+</html>
