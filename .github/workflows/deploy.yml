@@ -2,38 +2,36 @@ name: Multistage Deployment
 
 on:
   push:
-    branches: [main, dev, 'feature/**']
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  # --- STAGE 1: Deploy Previews (Feature & Dev Branches) ---
-  deploy-preview:
-    if: github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/feature/')
-    environment: staging
+  # --- STAGE 1: Deploy to Testing (Automatic on Push) ---
+  deploy-testing:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy to Subfolder
+      - name: Deploy to Testing Subfolder
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .
-          destination_dir: preview/${{ github.ref_name }}
+          destination_dir: testing
           keep_files: true
 
-  # --- STAGE 2: Deploy to Production (Main Branch) ---
+  # --- STAGE 2: Deploy to Production (Manual Trigger) ---
   deploy-prod:
-    if: github.ref == 'refs/heads/main'
-    environment: production   # This triggers the "Manual Approval" gate
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy to Root
+      - name: Deploy to Root (Production)
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .
-          # No destination_dir means it goes to the root URL
           keep_files: true
