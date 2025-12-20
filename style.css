@@ -288,7 +288,7 @@ input.answer-input.incorrect {
     border-radius: 50%;
     position: relative;
     background: white;
-    margin: 0 auto;
+    margin: 25px auto;
 }
 
 .clock-center {
@@ -1064,4 +1064,49 @@ input.triangle-field {
 
 .coins-container {
     padding: 5px 0;
+}
+
+.clock-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin-left: -10px;
+    margin-top: -10px;
+    text-align: center;
+    line-height: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+}
+
+.clock-number-hour {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin-left: -10px;
+    margin-top: -10px;
+    text-align: center;
+    line-height: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: green;
+}
+
+.clock-number-minute {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin-left: -10px;
+    margin-top: -10px;
+    text-align: center;
+    line-height: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    color: blueviolet;
 }
