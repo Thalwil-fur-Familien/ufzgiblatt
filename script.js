@@ -26,7 +26,7 @@ const GRADE_TOPICS = {
         { value: 'sub_20_simple', text: 'Subtraktion bis 20 (ohne Zehnerübergang)' },
         { value: 'bonds_10', text: '❤️ Verliebte Zahlen (bis 10)' },
         { value: 'rechenmauer_10', text: 'Kleine Rechenmauern (bis 10)' },
-
+        { value: 'money_10', text: '💰 Geld (Münzen bis 10 Fr)' },
     ],
     '2': [
         { value: 'add_20', text: 'Addition bis 20 (mit Zehnerübergang)' },
@@ -48,7 +48,8 @@ const GRADE_TOPICS = {
         { value: 'visual_add_100', text: 'Hunderterfeld: Addition' },
         { value: 'rechendreiecke', text: 'Rechendreiecke (bis 20)' },
         { value: 'rechenstrich', text: 'Rechenstrich (Addition)' },
-        { value: 'married_100', text: '💍 Verheiratete Zahlen (bis 100)' }
+        { value: 'married_100', text: '💍 Verheiratete Zahlen (bis 100)' },
+        { value: 'money_100', text: '💰 Geld (Münzen & Noten bis 100 Fr)' }
     ],
     '3': [
         { value: 'add_1000', text: 'Addition bis 1000' },
@@ -213,7 +214,9 @@ function generateProblemsData(type, count) {
             'zahlenhaus_20': 3.75,
             'zahlenhaus_100': 3.75,
             'married_100': 1.0,
-            'rechenstrich': 2.5
+            'rechenstrich': 2.5,
+            'money_10': 3.0,
+            'money_100': 4.0
         };
 
         const PAGE_CAPACITY = 15; // Reduced to be safe for printing
@@ -236,6 +239,8 @@ function generateProblemsData(type, count) {
                 else if (topic.includes('written')) w = 1.8;
                 else if (topic.includes('rechendreiecke')) w = 1.9;
                 else if (topic.includes('zahlenhaus')) w = 3.75;
+                else if (topic.includes('money_10')) w = 3.0;
+                else if (topic.includes('money_100')) w = 4.0;
 
                 data.push(generateProblem(topic));
                 currentLoad += w;
@@ -300,6 +305,7 @@ function generateSheet(keepSeed = false) {
     else if (type.includes('rechendreiecke')) numProblems = 8;
     else if (['add_written', 'sub_written'].includes(type)) numProblems = 12;
     else if (type === 'rechenstrich') numProblems = 6;
+    else if (['money_10', 'money_100'].includes(type)) numProblems = (type === 'money_10' ? 6 : 4);
     else if (type.includes('zahlenhaus')) numProblems = 4;
 
     // 2. Determine Page Count
@@ -794,6 +800,10 @@ function generateProblem(type) {
             return generateMarriedNumbers(onlyMultiplesOf10);
         case 'rechenstrich':
             return generateRechenstrich();
+        case 'money_10':
+            return generateMoneyProblem(10);
+        case 'money_100':
+            return generateMoneyProblem(100);
     }
     return { a, b, op };
 }
@@ -1453,6 +1463,93 @@ function createProblemElement(problemData, isSolution) {
 
         problemDiv.innerHTML = equationHtml + vizHtml;
 
+    } else if (problemData.type === 'money') {
+        const { items, answer } = problemData;
+        const valAns = isSolution ? answer.toFixed(2) : '';
+        const readonlyAttr = isSolution ? 'readonly' : '';
+        const style = isSolution ? 'style="color:var(--primary-color); font-weight:bold;"' : '';
+
+        problemDiv.style.flexDirection = 'column';
+        problemDiv.style.alignItems = 'center';
+        problemDiv.style.padding = '10px 0';
+        problemDiv.style.gap = '10px';
+
+        const COIN_IMAGES = {
+            '5': 'images/coins/smt_coin_5_fr_back.png',
+            '2': 'images/coins/smt_coin_2_fr_back.png',
+            '1': 'images/coins/smt_coin_1_fr_back.png',
+            '0.5': 'images/coins/smt_coin_50rp_back.png',
+            '0.2': 'images/coins/smt_coin_20rp_back.png',
+            '0.1': 'images/coins/smt_coin_10rp_back.png',
+            '0.05': 'images/coins/smt_coin_5rp_back.png'
+        };
+
+        const NOTE_IMAGES = {
+            '10': 'images/banknotes/CHF10_8_front.jpg',
+            '20': 'images/banknotes/CHF20_8_front.jpg',
+            '50': 'images/banknotes/CHF50_8_front.jpg',
+            '100': 'images/banknotes/CHF100_8_front.jpg',
+            '200': 'images/banknotes/CHF200_8_front.jpg',
+            '1000': 'images/banknotes/CHF1000_8_front.jpg'
+        };
+
+        const COIN_SCALES = {
+            '5': 76,      // 78 * 0.97
+            '2': 66,      // 68 * 0.97
+            '1': 56,      // 58 * 0.97
+            '0.5': 44,    // 45 * 0.97
+            '0.2': 50,    // 52 * 0.97
+            '0.1': 46,    // 47 * 0.97
+            '0.05': 42    // 43 * 0.97
+        };
+
+        const banknotes = items.filter(val => val >= 10);
+        const coins = items.filter(val => val < 10);
+
+        let itemsHtml = '<div class="money-collection" style="display:flex; flex-direction:column; align-items:center; gap:10px; max-width:400px; min-height:100px;">';
+
+        // Banknotes Container
+        if (banknotes.length > 0) {
+            const overlapClass = banknotes.length >= 2 ? 'overlapping' : '';
+            itemsHtml += `<div class="banknotes-container ${overlapClass}" style="display:flex; flex-wrap:nowrap; justify-content:center; align-items:center;">`;
+            banknotes.forEach((val, idx) => {
+                const imgPath = NOTE_IMAGES[val.toString()] || '';
+                const label = val + ' Fr.';
+                if (imgPath) {
+                    itemsHtml += `<img src="${imgPath}" class="money-note-img" style="width:107px; height:auto; object-fit:contain; border-radius:2px; box-shadow:1px 2px 4px rgba(0,0,0,0.2); z-index:${idx};" alt="${label}">`;
+                } else {
+                    itemsHtml += `<div class="money-note m-${val}">${label}</div>`;
+                }
+            });
+            itemsHtml += '</div>';
+        }
+
+        // Coins Container
+        if (coins.length > 0) {
+            itemsHtml += '<div class="coins-container" style="display:flex; flex-wrap:wrap; justify-content:center; gap:12px; align-items:center;">';
+            coins.forEach(val => {
+                const label = val < 1 ? (Math.round(val * 100)) + ' Rp.' : val + ' Fr.';
+                const imgPath = COIN_IMAGES[val.toString()] || '';
+                const size = COIN_SCALES[val.toString()] || 50;
+                if (imgPath) {
+                    itemsHtml += `<img src="${imgPath}" class="money-coin-img" style="width:${size}px; height:${size}px; object-fit:contain;" alt="${label}">`;
+                } else {
+                    itemsHtml += `<div class="money-coin m-${val.toString().replace('.', '_')}">${label}</div>`;
+                }
+            });
+            itemsHtml += '</div>';
+        }
+
+        itemsHtml += '</div>';
+
+        const inputHtml = `<div style="display:flex; align-items:center; gap:10px; font-weight:bold;">
+            <span>Total:</span>
+            <input type="number" step="0.05" class="answer-input" style="width:100px;" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${readonlyAttr} ${style}>
+            <span>Fr.</span>
+        </div>`;
+
+        problemDiv.innerHTML = itemsHtml + inputHtml;
+
     } else if (problemData.type === 'standard') {
         // Reuse standard logic but explicitly handle here if needed, or fall through?
         // actually 'standard' maps to default block below if we don't catch it.
@@ -1954,6 +2051,47 @@ function generateRechenstrich() {
         mid: a + tens,
         jump2: ones,
         sum: sum
+    };
+}
+
+function generateMoneyProblem(maxVal) {
+    const coins = [0.05, 0.10, 0.20, 0.50, 1, 2, 5];
+    const notes = [10, 20, 50, 100].filter(n => n <= maxVal);
+
+    // Choose a target sum
+    let target;
+    if (maxVal <= 10) {
+        target = (getRandomInt(10, 200) * 0.05); // 0.50 to 10.00
+    } else {
+        target = (getRandomInt(10, 100) * 1.0); // 10 to 100
+    }
+
+    target = Math.round(target * 20) / 20; // Ensure 0.05 step
+
+    let remaining = target;
+    const items = [];
+
+    // Greedy selection with some variety
+    const available = [...notes.reverse(), ...coins.reverse()];
+
+    for (const val of available) {
+        while (remaining >= val - 0.001 && items.length < 10) {
+            // limit items so they fit
+            items.push(val);
+            remaining -= val;
+        }
+    }
+
+    // If we have a lot of items, maybe simplify? 
+    // Actually greedy is fine for kids.
+
+    // Shuffle
+    items.sort(() => seededRandom() - 0.5);
+
+    return {
+        type: 'money',
+        items: items,
+        answer: target
     };
 }
 

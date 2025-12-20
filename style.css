@@ -141,8 +141,7 @@ button:hover {
     background: var(--sheet-bg);
     width: 210mm;
     min-height: 297mm;
-    padding: 15mm;
-    /* Reduced padding */
+    padding: 10mm;
     box-sizing: border-box;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     position: relative;
@@ -157,10 +156,9 @@ button:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 100px;
-    margin-bottom: 20px;
-    /* Reduced margin */
-    padding-bottom: 10px;
+    height: 60px;
+    margin-bottom: 5px;
+    padding-bottom: 5px;
 }
 
 .header-field {
@@ -178,10 +176,8 @@ button:hover {
 h1 {
     text-align: center;
     color: var(--primary-color);
-    margin-bottom: 25px;
-    /* Reduced margin */
+    margin-bottom: 15px;
     font-size: 22pt;
-    /* Slightly smaller */
     margin-top: 0;
 }
 
@@ -189,8 +185,7 @@ h1 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     column-gap: 40px;
-    row-gap: 25px;
-    /* Reduced gap */
+    row-gap: 10px;
 }
 
 .problem {
@@ -815,9 +810,9 @@ input.triangle-field {
 
     .controls,
     #customOptions,
-
-
-    /* ... rest of print styles */
+    .site-footer {
+        display: none !important;
+    }
 }
 
 /* QR Code */
@@ -955,4 +950,118 @@ input.triangle-field {
 
 .github-icon {
     flex-shrink: 0;
+}
+
+/* Money Styles */
+.money-collection {
+    padding: 5px;
+}
+
+.money-coin {
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    text-align: center;
+    line-height: 1;
+}
+
+.money-note {
+    width: 65px;
+    height: 35px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    border-radius: 4px;
+    box-shadow: 2px 3px 5px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Note Colors (Swiss Style) */
+.m-10 {
+    background: #eec12e;
+}
+
+/* Yellow */
+.m-20 {
+    background: #d02c34;
+}
+
+/* Red */
+.m-50 {
+    background: #1d8b4e;
+}
+
+/* Green */
+.m-100 {
+    background: #2358a6;
+}
+
+/* Blue */
+
+/* Coin Styles */
+.m-5 {
+    width: 45px;
+    height: 45px;
+    background: #ffd700;
+    color: #b8860b;
+    border-color: #daa520;
+}
+
+.m-2 {
+    width: 40px;
+    height: 40px;
+    background: #e0e0e0;
+    color: #666;
+    border-color: #ccc;
+}
+
+.m-1 {
+    width: 35px;
+    height: 35px;
+    background: #e0e0e0;
+    color: #666;
+    border-color: #ccc;
+}
+
+.m-0_5 {
+    width: 32px;
+    height: 32px;
+    background: #e0e0e0;
+    color: #666;
+    border-color: #ccc;
+}
+
+.m-0_2,
+.m-0_1,
+.m-0_05 {
+    width: 28px;
+    height: 28px;
+    background: #cd7f32;
+    color: #5c4033;
+    border-color: #a0522d;
+}
+
+.banknotes-container.overlapping .money-note-img {
+    margin-right: -42px;
+}
+
+.banknotes-container.overlapping .money-note-img:last-child {
+    margin-right: 0;
+}
+
+.banknotes-container {
+    padding: 2px 0;
+}
+
+.coins-container {
+    padding: 5px 0;
 }
