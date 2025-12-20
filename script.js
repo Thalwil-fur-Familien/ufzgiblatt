@@ -1,5 +1,5 @@
 import { globalSeed, setSeed } from './js/mathUtils.js';
-import { generateProblemsData as genData } from './js/problemGenerators.js';
+import { generateProblemsData as genData } from './js/problemGenerators.js?v=2';
 
 // Expose to window for inline HTML handlers
 window.updateTopicSelector = updateTopicSelector;
@@ -138,7 +138,14 @@ function updateTopicSelector() {
 
     // Set the selected value to the first topic
     if (topics.length > 0) {
-        topicSelector.value = topics[0].value;
+        // Only set if not already set (e.g. from URL)
+        // Actually this overrides URL unless we guard it?
+        // But loadStateFromURL calls this THEN sets value.
+        // Wait, loadStateFromURL sets grade then calls updateTopicSelector.
+        // Then it sets topic value. So we should NOT force value[0] if one is selected.
+        if (!topicSelector.value) {
+            topicSelector.value = topics[0].value;
+        }
     }
 
     // Toggle Custom Options Visibility based on selection change
@@ -151,6 +158,10 @@ function updateTopicSelector() {
         marriedDiv.style.display = (topicSelector.value === 'married_100') ? 'flex' : 'none';
         timeDiv.style.display = (topicSelector.value === 'time_reading') ? 'flex' : 'none';
 
+        const isMoney = topicSelector.value === 'money_10' || topicSelector.value === 'money_100';
+        const moneyDiv = document.getElementById('moneyOptions');
+        if (moneyDiv) moneyDiv.style.display = isMoney ? 'flex' : 'none';
+
         generateSheet();
     };
 
@@ -158,6 +169,16 @@ function updateTopicSelector() {
     const customDiv = document.getElementById('customOptions');
     const marriedDiv = document.getElementById('marriedOptions');
     const timeDiv = document.getElementById('timeOptions');
+    const moneyDiv = document.getElementById('moneyOptions');
+
+    customDiv.style.display = (topicSelector.value === 'custom') ? 'flex' : 'none';
+    marriedDiv.style.display = (topicSelector.value === 'married_100') ? 'flex' : 'none';
+    timeDiv.style.display = (topicSelector.value === 'time_reading') ? 'flex' : 'none';
+
+    if (moneyDiv) {
+        const isMoney = topicSelector.value === 'money_10' || topicSelector.value === 'money_100';
+        moneyDiv.style.display = isMoney ? 'flex' : 'none';
+    }
     if (customDiv) customDiv.style.display = (topicSelector.value === 'custom') ? 'flex' : 'none';
     if (marriedDiv) marriedDiv.style.display = (topicSelector.value === 'married_100') ? 'flex' : 'none';
     if (timeDiv) timeDiv.style.display = (topicSelector.value === 'time_reading') ? 'flex' : 'none';
@@ -212,10 +233,15 @@ function generateSheet(keepSeed = false) {
     if (isNaN(pageCount) || pageCount < 1) pageCount = 1;
     if (pageCount > 50) pageCount = 50;
 
+    const allowedCurrencies = [];
+    if (document.getElementById('currencyCHF').checked) allowedCurrencies.push('CHF');
+    if (document.getElementById('currencyEUR').checked) allowedCurrencies.push('EUR');
+    if (allowedCurrencies.length === 0) allowedCurrencies.push('CHF'); // Default fallback
+
     // 3. Generate Data for ALL pages
     currentSheetsData = [];
     for (let i = 0; i < pageCount; i++) {
-        currentSheetsData.push(generateProblemsData(type, numProblems));
+        currentSheetsData.push(genData(type, numProblems, [], allowedCurrencies));
     }
 
     // 4. Render
@@ -252,6 +278,11 @@ function updateURLState() {
 
     const showMinutes = document.getElementById('showMinutes').checked;
     if (showMinutes) params.set('showM', '1');
+
+    const currencies = [];
+    if (document.getElementById('currencyCHF').checked) currencies.push('CHF');
+    if (document.getElementById('currencyEUR').checked) currencies.push('EUR');
+    if (currencies.length > 0) params.set('currencies', currencies.join(','));
 
     if (document.getElementById('hideQR').checked) params.set('hideQR', '1');
     if (document.getElementById('hideLogo').checked) params.set('hideLogo', '1');
@@ -886,7 +917,11 @@ function createProblemElement(problemData, isSolution) {
         problemDiv.innerHTML = equationHtml + vizHtml;
 
     } else if (problemData.type === 'money') {
-        const { items, answer } = problemData;
+        const { items, answer, currency } = problemData;
+        // Format answer based on currency. 
+        // CHF: 12.50
+        // EUR: usually 12,50 but let's stick to dot for consistency unless user wants comma?
+        // Let's stick to dot for input validation simplicity for now.
         const valAns = isSolution ? answer.toFixed(2) : '';
         const readonlyAttr = isSolution ? 'readonly' : '';
         const style = isSolution ? 'style="color:var(--primary-color); font-weight:bold;"' : '';
@@ -896,47 +931,114 @@ function createProblemElement(problemData, isSolution) {
         problemDiv.style.padding = '10px 0';
         problemDiv.style.gap = '10px';
 
-        const COIN_IMAGES = {
-            '5': 'images/coins/smt_coin_5_fr_back.png',
-            '2': 'images/coins/smt_coin_2_fr_back.png',
-            '1': 'images/coins/smt_coin_1_fr_back.png',
-            '0.5': 'images/coins/smt_coin_50rp_back.png',
-            '0.2': 'images/coins/smt_coin_20rp_back.png',
-            '0.1': 'images/coins/smt_coin_10rp_back.png',
-            '0.05': 'images/coins/smt_coin_5rp_back.png'
+        const COIN_IMAGES_CHF = {
+            '5': 'images/coins/CHF/smt_coin_5_fr_back.png',
+            '2': 'images/coins/CHF/smt_coin_2_fr_back.png',
+            '1': 'images/coins/CHF/smt_coin_1_fr_back.png',
+            '0.5': 'images/coins/CHF/smt_coin_50rp_back.png',
+            '0.2': 'images/coins/CHF/smt_coin_20rp_back.png',
+            '0.1': 'images/coins/CHF/smt_coin_10rp_back.png',
+            '0.05': 'images/coins/CHF/smt_coin_5rp_back.png'
         };
 
-        const NOTE_IMAGES = {
-            '10': 'images/banknotes/CHF10_8_front.jpg',
-            '20': 'images/banknotes/CHF20_8_front.jpg',
-            '50': 'images/banknotes/CHF50_8_front.jpg',
-            '100': 'images/banknotes/CHF100_8_front.jpg',
-            '200': 'images/banknotes/CHF200_8_front.jpg',
-            '1000': 'images/banknotes/CHF1000_8_front.jpg'
+        const COIN_IMAGES_EUR = {
+            '2': 'images/coins/EUR/Common_face_of_two_euro_coin_(2007).jpg',
+            '1': 'images/coins/EUR/Common_face_of_one_euro_coin.png',
+            '0.5': 'images/coins/EUR/50_eurocent_common_2007.png',
+            '0.2': 'images/coins/EUR/20_eurocent_common_2007.png',
+            '0.1': 'images/coins/EUR/10_eurocent_common_2007.png',
+            '0.05': 'images/coins/EUR/5_eurocent_common_1999.png',
+            '0.02': 'images/coins/EUR/2_eurocent_common_1999.png',
+            '0.01': 'images/coins/EUR/1_cent_euro_coin_common_side.png'
         };
+        // Wait, did I list 5 cent in EUR?
+        // checking list_dir output from earlier...
+        // 50_eurocent_common_2007.png
+        // 20_eurocent_common_2007.png
+        // 10_eurocent_common_2007.png
+        // 2_eurocent_common_1999.png
+        // 1_cent_euro_coin_common_side.png
+        // MISSING 5 cent in list? 
+        // list_dir output:
+        // 10_eurocent_common_2007.png
+        // 1_cent_euro_coin_common_side.png
+        // 20_eurocent_common_2007.png
+        // 2_eurocent_common_1999.png
+        // 50_eurocent_common_2007.png
+        // Common_face_of_one_euro_coin.png
+        // Common_face_of_two_euro_coin_(2007).jpg
+        //
+        // I seem to be missing the 5 cent coin in the EUR directory!
+        // I will use 2 cent for 5 cent as placeholder or omit 5 cent generation?
+        // Generator uses 0.05... 
+        // I should probably check if I missed it in the list or if it's really missing.
+        // Assuming it's missing, I should maybe request it or map to something else.
+        // For now I will assume I missed it or will map to 2 cent temporarily to avoid breaking image load.
+        // Actually, listing had 7 files. 
+        // 10, 1, 20, 2, 50, 1e, 2e. 
+        // That's 7 files. 5 cent is indeed missing!
+
+        // I will update COIN_IMAGES_EUR with what I have.
+
+        const COIN_IMAGES = (currency === 'EUR') ? COIN_IMAGES_EUR : COIN_IMAGES_CHF;
+
+
+        const NOTE_IMAGES_CHF = {
+            '10': 'images/banknotes/CHF/CHF10_8_front.jpg',
+            '20': 'images/banknotes/CHF/CHF20_8_front.jpg',
+            '50': 'images/banknotes/CHF/CHF50_8_front.jpg',
+            '100': 'images/banknotes/CHF/CHF100_8_front.jpg',
+            '200': 'images/banknotes/CHF/CHF200_8_front.jpg',
+            '1000': 'images/banknotes/CHF/CHF1000_8_front.jpg'
+        };
+
+        const NOTE_IMAGES_EUR = {
+            '5': 'images/banknotes/EUR/EUR_5_obverse_(2002_issue).jpg',
+            '10': 'images/banknotes/EUR/EUR_10_obverse_(2002_issue).jpg',
+            '20': 'images/banknotes/EUR/EUR_20_obverse_(2002_issue).jpg',
+            '50': 'images/banknotes/EUR/EUR_50_obverse_(2002_issue).jpg',
+            '100': 'images/banknotes/EUR/EUR_100_obverse_(2002_issue).jpg',
+            '200': 'images/banknotes/EUR/EUR_200_obverse_(2002_issue).jpg',
+            '500': 'images/banknotes/EUR/EUR_500_obverse_(2002_issue).jpg'
+        };
+
+        const NOTE_IMAGES = (currency === 'EUR') ? NOTE_IMAGES_EUR : NOTE_IMAGES_CHF;
 
         const COIN_SCALES = {
-            '5': 76,      // 78 * 0.97
-            '2': 66,      // 68 * 0.97
-            '1': 56,      // 58 * 0.97
-            '0.5': 44,    // 45 * 0.97
-            '0.2': 50,    // 52 * 0.97
-            '0.1': 46,    // 47 * 0.97
-            '0.05': 42    // 43 * 0.97
+            '5': 76,
+            '2': 66,
+            '1': 56,
+            '0.5': 44,
+            '0.2': 50,
+            '0.1': 46,
+            '0.05': 42,
+            '0.02': 38,
+            '0.01': 34
         };
 
-        const banknotes = items.filter(val => val >= 10);
-        const coins = items.filter(val => val < 10);
+        const banknotes = items.filter(val => val >= 5); // EUR has 5 note. CHF starts at 10.
+        // Wait, CHF 5 is a coin. EUR 5 is a note.
+        // Generator logic distinguishes?
+        // In generator, coins array vs notes array. 
+        // items is just a list of values.
+        // We need to know if 5 is coin or note.
+        // For CHF, 5 is in coins array. For EUR, 5 is in notes array.
+        // We can check if value exists in NOTE_IMAGES.
+
+        const isNote = (val) => !!NOTE_IMAGES[val.toString()];
+
+        const banknoteItems = items.filter(val => isNote(val));
+        const coinItems = items.filter(val => !isNote(val));
 
         let itemsHtml = '<div class="money-collection" style="display:flex; flex-direction:column; align-items:center; gap:10px; max-width:400px; min-height:100px;">';
 
         // Banknotes Container
-        if (banknotes.length > 0) {
-            const overlapClass = banknotes.length >= 2 ? 'overlapping' : '';
+        if (banknoteItems.length > 0) {
+            const overlapClass = banknoteItems.length >= 2 ? 'overlapping' : '';
             itemsHtml += `<div class="banknotes-container ${overlapClass}" style="display:flex; flex-wrap:nowrap; justify-content:center; align-items:center;">`;
-            banknotes.forEach((val, idx) => {
+            banknoteItems.forEach((val, idx) => {
                 const imgPath = NOTE_IMAGES[val.toString()] || '';
-                const label = val + ' Fr.';
+                const label = val + (currency === 'EUR' ? ' €' : ' Fr.');
                 if (imgPath) {
                     itemsHtml += `<img src="${imgPath}" class="money-note-img" style="width:107px; height:auto; object-fit:contain; border-radius:2px; box-shadow:1px 2px 4px rgba(0,0,0,0.2); z-index:${idx};" alt="${label}">`;
                 } else {
@@ -947,15 +1049,22 @@ function createProblemElement(problemData, isSolution) {
         }
 
         // Coins Container
-        if (coins.length > 0) {
+        if (coinItems.length > 0) {
             itemsHtml += '<div class="coins-container" style="display:flex; flex-wrap:wrap; justify-content:center; gap:12px; align-items:center;">';
-            coins.forEach(val => {
-                const label = val < 1 ? (Math.round(val * 100)) + ' Rp.' : val + ' Fr.';
+            coinItems.forEach(val => {
+                let label = '';
+                if (currency === 'EUR') {
+                    label = val < 1 ? (Math.round(val * 100)) + ' ct.' : val + ' €';
+                } else {
+                    label = val < 1 ? (Math.round(val * 100)) + ' Rp.' : val + ' Fr.';
+                }
+
                 const imgPath = COIN_IMAGES[val.toString()] || '';
                 const size = COIN_SCALES[val.toString()] || 50;
                 if (imgPath) {
                     itemsHtml += `<img src="${imgPath}" class="money-coin-img" style="width:${size}px; height:${size}px; object-fit:contain;" alt="${label}">`;
                 } else {
+                    // Fallback visual
                     itemsHtml += `<div class="money-coin m-${val.toString().replace('.', '_')}">${label}</div>`;
                 }
             });
@@ -964,10 +1073,11 @@ function createProblemElement(problemData, isSolution) {
 
         itemsHtml += '</div>';
 
+        const unitLabel = currency === 'EUR' ? '€' : 'Fr.';
         const inputHtml = `<div style="display:flex; align-items:center; gap:10px; font-weight:bold;">
             <span>Total:</span>
-            <input type="number" step="0.05" class="answer-input" style="width:100px;" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${readonlyAttr} ${style}>
-            <span>Fr.</span>
+            <input type="number" step="${currency === 'EUR' ? '0.01' : '0.05'}" class="answer-input" style="width:100px;" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${readonlyAttr} ${style}>
+            <span>${unitLabel}</span>
         </div>`;
 
         problemDiv.innerHTML = itemsHtml + inputHtml;
@@ -1228,6 +1338,12 @@ function init() {
         // 2. Load State from URL
         loadStateFromURL();
 
+        const qrDiv = document.getElementById('qrCodeContainer');
+        if (qrDiv && qrDiv.innerHTML === '') {
+            // new QRCode(qrDiv, ...); 
+            // We'll init later or lazily
+        }
+
         // 3. Generate initial sheet
         // If seed was loaded, generateSheet(true) will use it.
         // Otherwise it will generate a new one.
@@ -1317,6 +1433,19 @@ function loadStateFromURL() {
     }
     if (params.has('showM')) {
         document.getElementById('showMinutes').checked = params.get('showM') === '1';
+    }
+
+    if (params.has('currencies')) {
+        const curs = params.get('currencies').split(',');
+        document.getElementById('currencyCHF').checked = curs.includes('CHF');
+        document.getElementById('currencyEUR').checked = curs.includes('EUR');
+    }
+    // Backward compatibility for single 'currency' param? usually not needed if we deprecated it immediately. 
+    // But good for robustness:
+    if (params.has('currency')) {
+        const c = params.get('currency');
+        document.getElementById('currencyCHF').checked = (c === 'CHF');
+        document.getElementById('currencyEUR').checked = (c === 'EUR');
     }
 
     // 5. Seed

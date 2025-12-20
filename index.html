@@ -66,6 +66,17 @@
         <label for="marriedMultiplesOf10">Nur Zehnerzahlen (z.B. 30 + 70)</label>
     </div>
 
+    <div class="controls" id="moneyOptions"
+        style="display:none; align-items:center; margin-top:-1rem; font-family:'Nunito',sans-serif; gap:10px;">
+        <span style="font-weight:bold;">Währung:</span>
+
+        <input type="checkbox" id="currencyCHF" value="CHF" checked onchange="generateSheet()">
+        <label for="currencyCHF">CHF</label>
+
+        <input type="checkbox" id="currencyEUR" value="EUR" onchange="generateSheet()">
+        <label for="currencyEUR">EUR</label>
+    </div>
+
     <div class="controls" id="timeOptions"
         style="display:none; align-items:center; margin-top:-1rem; font-family:'Nunito',sans-serif; gap:10px;">
         <input type="checkbox" id="showHours" style="width:20px; height:20px;" onchange="generateSheet(true)">
