@@ -1,20 +1,14 @@
-// Seeded Random Number Generator (Mulberry32)
-let globalSeed = Math.floor(Math.random() * 0xFFFFFFFF);
-let seededRandom = mulberry32(globalSeed);
+import { globalSeed, setSeed } from './js/mathUtils.js';
+import { generateProblemsData as genData } from './js/problemGenerators.js';
 
-function mulberry32(a) {
-    return function () {
-        var t = a += 0x6D2B79F5;
-        t = Math.imul(t ^ t >>> 15, t | 1);
-        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-        return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    }
-}
-
-function setSeed(seed) {
-    globalSeed = seed;
-    seededRandom = mulberry32(globalSeed);
-}
+// Expose to window for inline HTML handlers
+window.updateTopicSelector = updateTopicSelector;
+window.generateSheet = generateSheet;
+window.renderCurrentState = renderCurrentState;
+window.updateURLState = updateURLState;
+window.toggleLogoVisibility = toggleLogoVisibility;
+window.toggleQRVisibility = toggleQRVisibility;
+window.validateInput = validateInput;
 
 const mascots = ['🦊', '🦉', '🦁', '🐼', '🐨', '🐯', '🦄', '🦖'];
 
@@ -85,8 +79,6 @@ const GRADE_TOPICS = {
 
     ]
 };
-
-
 
 function updateTopicSelectorNodes(topics) {
     const topicSelector = document.getElementById('topicSelector');
@@ -169,110 +161,12 @@ function updateTopicSelector() {
 
 
 function generateProblemsData(type, count) {
-    const data = [];
     let availableTopics = [];
-
     if (type === 'custom') {
-        // Read checkboxes
         const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
         checkboxes.forEach(cb => availableTopics.push(cb.value));
-
-        if (availableTopics.length === 0) {
-            // Fallback if nothing selected
-            return [];
-        }
     }
-
-
-    if (type === 'custom') {
-        // Advanced "Full Space" Logic for Custom
-        // 1. Define Weights (Approximate height units. Page capacity ~= 20-22)
-        const WEIGHTS = {
-            'default': 1,
-            'rechenmauer_10': 2.2, // Increased safety
-            'rechenmauer_100': 2.5,
-            'rechenmauer': 2.5,
-            'rechenmauer_4': 3.5, // 4-layers are tall
-            'time_reading': 2.5,
-            'word_problems': 2.5,
-            'visual_add_100': 4.0, // Large grid
-            // Grade 3/4
-            'add_written': 1.8,
-            'sub_written': 1.8,
-            'mult_large': 2.5, // Vertical written multiplication
-            'div_long': 2.0,   // Long division
-            'rounding': 1.2,
-            // Grade 5/6
-            'dec_add': 1.8,
-            'dec_sub': 1.8,
-            'units': 1.5,
-            'frac_add': 2.0,     // Fractions are taller
-            'frac_simplify': 1.8,
-            'percent_basic': 1.5,
-            'rechendreiecke': 1.9, // 15 / 8 ~= 1.875, so 1.9 ensures max 7-8
-            'zahlenhaus_10': 3.75,
-            'zahlenhaus_20': 3.75,
-            'zahlenhaus_100': 3.75,
-            'married_100': 1.0,
-            'rechenstrich': 2.5,
-            'money_10': 3.0,
-            'money_100': 4.0
-        };
-
-        const PAGE_CAPACITY = 15; // Reduced to be safe for printing
-        let currentLoad = 0;
-
-        // 1. Ensure at least one of each selected type
-        // Shuffle available topics first to avoid order bias in the 'guaranteed' slots if quota is tight
-        availableTopics.sort(() => seededRandom() - 0.5);
-
-        availableTopics.forEach(topic => {
-            if (currentLoad < PAGE_CAPACITY) {
-                // Determine weight first to check safety? 
-                // We prioritize "at least one" so we allow a single item even if it overflows slightly 
-                // BUT only if we aren't already super full. 
-                // Actually, let's just push it if we are under capacity.
-
-                let w = 1;
-                if (WEIGHTS[topic]) w = WEIGHTS[topic];
-                else if (topic.includes('rechenmauer')) w = 2.2;
-                else if (topic.includes('written')) w = 1.8;
-                else if (topic.includes('rechendreiecke')) w = 1.9;
-                else if (topic.includes('zahlenhaus')) w = 3.75;
-                else if (topic.includes('money_10')) w = 3.0;
-                else if (topic.includes('money_100')) w = 4.0;
-
-                data.push(generateProblem(topic));
-                currentLoad += w;
-            }
-        });
-
-        // 2. Fill the rest of the space randomly
-        // Try to fit items until we are full. If a large item doesn't fit, try others.
-        let retries = 0;
-        while (currentLoad < PAGE_CAPACITY && retries < 15) {
-            const topic = availableTopics[getRandomInt(0, availableTopics.length - 1)];
-            let w = 1;
-            if (WEIGHTS[topic]) w = WEIGHTS[topic];
-            else if (topic.includes('rechenmauer')) w = 2.2;
-            else if (topic.includes('written')) w = 1.8;
-
-            if (currentLoad + w <= PAGE_CAPACITY) {
-                data.push(generateProblem(topic));
-                currentLoad += w;
-                retries = 0; // Reset retries on success
-            } else {
-                retries++; // Try picking another topic
-            }
-        }
-
-
-    } else {
-        for (let i = 0; i < count; i++) {
-            data.push(generateProblem(type));
-        }
-    }
-    return data;
+    return genData(type, count, availableTopics);
 }
 
 // ... (rest of logic)
@@ -369,554 +263,10 @@ function updateURLState() {
     renderQRCode(window.location.href);
 }
 
-function getRandomInt(min, max) {
-    return Math.floor(seededRandom() * (max - min + 1)) + min;
-}
 
-function generateProblem(type) {
-    let a, b, op;
 
-    switch (type) {
-        // --- GRADE 1 ---
-        case 'add_10':
-            a = getRandomInt(0, 9);
-            b = getRandomInt(1, 10 - a);
-            op = '+';
-            break;
-        case 'sub_10':
-            a = getRandomInt(1, 10);
-            b = getRandomInt(1, a);
-            op = '-';
-            break;
-        case 'add_20_simple': // No crossing 10, e.g. 12+3
-            a = getRandomInt(10, 18); // Start at 10 to ensure teen number
-            b = getRandomInt(1, 19 - a);
-            op = '+';
-            break;
-        case 'sub_20_simple': // No crossing 10, e.g. 15-3
-            a = getRandomInt(11, 19);
-            b = getRandomInt(1, a - 10); // Ensure result remains >= 10
-            op = '-';
-            break;
-        case 'bonds_10': // Verliebte Zahlen: 3 + _ = 10
-            // We'll handle visual rendering in the loop, here just data
-            a = getRandomInt(0, 10);
-            return { type: 'missing_addend', a: a, sum: 10, op: '+' };
 
-        case 'rechenmauer_10':
-            return generatePyramid(10);
 
-        // --- GRADE 2 (Legacy + Refined) ---
-        case 'add_20':
-            // Keep existing logic: random sum to 20
-            a = getRandomInt(1, 19);
-            b = getRandomInt(1, 20 - a);
-            op = '+';
-            break;
-        case 'sub_20':
-            a = getRandomInt(1, 20);
-            b = getRandomInt(1, a);
-            op = '-';
-            break;
-        case 'add_100_simple': // No carry
-            a = getRandomInt(1, 89);
-            {
-                let a_ones = a % 10;
-                b = getRandomInt(1, 99 - a);
-                while ((b % 10) + a_ones >= 10) {
-                    b = getRandomInt(1, 99 - a);
-                }
-            }
-            op = '+';
-            break;
-        case 'add_100_carry': // Forced carry
-            do {
-                a = getRandomInt(10, 89);
-                b = getRandomInt(1, 99 - a);
-            } while ((a % 10) + (b % 10) < 10);
-            op = '+';
-            break;
-        case 'sub_100_simple': // No borrowing
-            a = getRandomInt(10, 99);
-            {
-                let max_b_ones = a % 10;
-                let max_b_tens = Math.floor(a / 10);
-                let b_tens = getRandomInt(0, max_b_tens);
-                let b_ones = getRandomInt(0, max_b_ones);
-                b = b_tens * 10 + b_ones;
-                if (b === 0) b = 1;
-            }
-            op = '-';
-            break;
-        case 'sub_100_carry': // Forced borrowing
-            do {
-                a = getRandomInt(20, 99);
-                b = getRandomInt(1, a - 1);
-            } while ((a % 10) >= (b % 10));
-            op = '-';
-            break;
-        case 'mult_2_5_10':
-            b = [2, 5, 10][getRandomInt(0, 2)];
-            a = getRandomInt(1, 10);
-            op = '×';
-            break;
-        case 'mult_all':
-            a = getRandomInt(1, 10);
-            b = getRandomInt(1, 10);
-            op = '×';
-            break;
-        case 'div_2_5_10':
-            {
-                let divisor = [2, 5, 10][getRandomInt(0, 2)];
-                let result = getRandomInt(1, 10);
-                a = result * divisor;
-                b = divisor;
-            }
-            op = ':';
-            break;
-        case 'doubling_halving':
-            {
-                const isDouble = seededRandom() < 0.5;
-                if (isDouble) {
-                    // Double: 1..50 -> 2..100
-                    a = getRandomInt(1, 50);
-                    return { type: 'doubling_halving', subtype: 'double', val: a, answer: a * 2 };
-                } else {
-                    // Halve: Even numbers 2..100
-                    let val = getRandomInt(1, 50) * 2;
-                    return { type: 'doubling_halving', subtype: 'halve', val: val, answer: val / 2 };
-                }
-            }
-        case 'rechenmauer':
-            return generatePyramid(100, 3);
-        case 'rechenmauer_4':
-            return generatePyramid(100, 4);
-        case 'word_problems':
-            // Existing word problems (could be graded too, but keeping simple for now)
-            const problems = [
-                { q: "Lisa hat 5 Äpfel. Sie kauft 3 dazu. Wie viele hat sie?", a: 8 },
-                { q: "Tom hat 10 Ballons. 2 fliegen weg. Wie viele bleiben?", a: 8 },
-                { q: "Eine Katze hat 4 Beine. Wie viele Beine haben 2 Katzen?", a: 8 },
-                { q: "Oma backt 12 Kekse. Sie verteilt sie an 3 Enkel. Wie viele kriegt jeder?", a: 4 },
-                { q: "Im Bus sind 5 Leute. An der Haltestelle steigen 4 ein. Wie viele sind es?", a: 9 },
-                { q: "Max hat 20 Franken. Ein Buch kostet 15. Wie viel bleibt übrig?", a: 5 }
-            ];
-            return { type: 'text', ...problems[getRandomInt(0, problems.length - 1)] };
-
-        // --- GRADE 3 ---
-        case 'add_1000':
-            a = getRandomInt(100, 899);
-            b = getRandomInt(1, 999 - a);
-            op = '+';
-            break;
-        case 'sub_1000':
-            a = getRandomInt(100, 999);
-            b = getRandomInt(1, a - 1);
-            op = '-';
-            break;
-        case 'mult_advanced':
-            // e.g. 15 * 4
-            a = getRandomInt(11, 20);
-            b = getRandomInt(2, 6); // Keep multipliers manageable
-            op = '×';
-            break;
-        case 'div_100':
-            {
-                // Inverse of 1x1 mixed
-                let divisor = getRandomInt(2, 9);
-                let result = getRandomInt(2, 10);
-                a = result * divisor;
-                b = divisor;
-            }
-            op = ':';
-            break;
-        case 'div_remainder':
-            {
-                // a / b = result R remainder
-                let divisor = getRandomInt(2, 9);
-                let result = getRandomInt(2, 10);
-                let remainder = getRandomInt(1, divisor - 1);
-                a = (result * divisor) + remainder;
-                b = divisor;
-            }
-            op = ':';
-            return { type: 'div_remainder', a, b, op };
-
-        case 'rechenmauer_100': // Actually same as grade 2 limit but user might want harder masking? 
-            // Let's go up to 200 for grade 3? Or just stick to 100 but maybe harder start?
-            // Standard Grade 3 adds numbers up to 1000, so pyramid sum could go higher?
-            // Defaulting to 200 top.
-            return generatePyramid(200, 3);
-
-        // --- GRADE 4 ---
-        case 'add_written':
-            a = getRandomInt(1000, 99999);
-            b = getRandomInt(1000, 99999);
-            op = '+';
-            return { type: 'written', a, b, op, answer: a + b };
-        case 'sub_written':
-            a = getRandomInt(5000, 99999);
-            b = getRandomInt(1000, a - 1);
-            op = '-';
-            return { type: 'written', a, b, op, answer: a - b };
-        case 'mult_large':
-            a = getRandomInt(100, 999);
-            b = getRandomInt(11, 99);
-            op = '×';
-            return { type: 'long_calculation', a, b, op, answer: a * b };
-        case 'div_long':
-            {
-                let divisor = getRandomInt(2, 9);
-                let result = getRandomInt(100, 999);
-                a = result * divisor;
-                b = divisor;
-                op = ':';
-                return { type: 'long_calculation', a, b, op, answer: result };
-            }
-        // --- GRADE 5 ---
-        case 'dec_add':
-            // e.g. 12.5 + 3.45
-            // Keep precision manageable (1 or 2 decimal places)
-            a = (getRandomInt(100, 9999) / 100).toFixed(2);
-            b = (getRandomInt(100, 9999) / 100).toFixed(2);
-            // Standard type renders with regular input, but we need to ensure answer matching works for strings
-            // Or cast to number for calculation?
-            // Better to determine answer here.
-            // Note: float arithmetic issues. 
-            {
-                let numA = parseFloat(a);
-                let numB = parseFloat(b);
-                let ans = (numA + numB).toFixed(2);
-                // Remove trailing zeros for display? "12.50" -> "12.5"
-                a = parseFloat(a);
-                b = parseFloat(b);
-                // Actually standard rendering expects a/b to be numbers usually, but text works too.
-                return { type: 'standard', a, b, op: '+', answer: parseFloat(ans) };
-            }
-
-        case 'dec_sub':
-            {
-                let numA = getRandomInt(500, 9999) / 100;
-                let numB = getRandomInt(100, 499) / 100;
-                let ans = (numA - numB).toFixed(2);
-                return { type: 'standard', a: numA, b: numB, op: '-', answer: parseFloat(ans) };
-            }
-
-        case 'mult_10_100':
-            a = (getRandomInt(10, 9999) / 100);
-            b = [10, 100, 1000][getRandomInt(0, 2)];
-            // Fix float issues
-            {
-                let ans = a * b;
-                // Round to avoid 14.300000001
-                ans = Math.round(ans * 1000) / 1000;
-                return { type: 'standard', a, b, op: '×', answer: ans };
-            }
-
-        case 'units':
-            {
-                const unitTypes = [
-                    { from: 'm', to: 'cm', factor: 100 },
-                    { from: 'km', to: 'm', factor: 1000 },
-                    { from: 'kg', to: 'g', factor: 1000 },
-                    { from: 'min', to: 's', factor: 60 },
-                    { from: 'h', to: 'min', factor: 60 }
-                ];
-                const u = unitTypes[getRandomInt(0, unitTypes.length - 1)];
-                let val = getRandomInt(1, 20);
-                if (u.factor === 1000 && seededRandom() > 0.5) val = val / 2; // 0.5 kg etc
-
-                let answer = val * u.factor;
-
-                // Need special rendering for units? "1.5 m = ___ cm"
-                return { type: 'unit_conv', val, from: u.from, to: u.to, answer };
-            }
-
-        // --- GRADE 6 ---
-        case 'frac_simplify':
-            {
-                // Generate a fraction that can be simplified. e.g. 4/8 -> 1/2
-                // Start with irreducible fraction
-                let num = getRandomInt(1, 10);
-                let den = getRandomInt(num + 1, 20);
-                // This might not be irreducible, but let's multiply both by a factor
-                let factor = getRandomInt(2, 6);
-                a = num * factor;
-                b = den * factor;
-                // simplify again properly to find expected answer?
-                // Actually let's assume valid start format "a / b"
-                // user needs to enter "num/den" or just "num" and "den"?
-                // Let's expect "1/2" as string? Or "1 / 2"?
-                // Simplest: render equation "a/b =" and two inputs? 
-                // Or just one input string "1/2"
-
-                // Let's calculate the real simplified form for answer
-                const gcd = (x, y) => (!y ? x : gcd(y, x % y));
-                const common = gcd(a, b);
-                const simpleNum = a / common;
-                const simpleDen = b / common;
-
-                return { type: 'fraction_simplify', num: a, den: b, answer: `${simpleNum}/${simpleDen}` };
-            }
-
-        case 'frac_add':
-            {
-                // Simple: Same denominator or easy common?
-                // Let's do common denominator <= 20
-                let den = getRandomInt(2, 12);
-                let numA = getRandomInt(1, den - 1);
-                let numB = getRandomInt(1, den - numA); // sum <= 1
-
-                // e.g. 1/5 + 2/5 = 3/5
-                // Or 1/4 + 1/8 ?
-                // Let's stick to same denominator for easy starting
-                return { type: 'fraction_op', numA, denA: den, numB, denB: den, op: '+', answer: `${numA + numB}/${den}` };
-            }
-
-        case 'percent_basic':
-            {
-                // 10% von 200
-                // 50% von 40
-                const rates = [10, 20, 25, 50, 75];
-                let rate = rates[getRandomInt(0, rates.length - 1)];
-                let base = getRandomInt(1, 20) * 100; // 100, 200..
-                if (rate === 25 || rate === 75) base = getRandomInt(1, 20) * 4; // Ensure clean div by 4
-
-                let ans = (base * rate) / 100;
-                return { type: 'percent', rate, base, answer: ans };
-            }
-
-        case 'rounding':
-            {
-                let val = getRandomInt(1000, 99999);
-                let place = [10, 100, 1000][getRandomInt(0, 2)];
-                let answer = Math.round(val / place) * place;
-                return { type: 'rounding', val, place, answer };
-            }
-
-        case 'time_reading':
-            {
-                // Grade 2: Analog Clock -> Digital "hh:mm"
-                // Difficulties: 5 min intervals? Quarter hours?
-                // Let's mix: 50% 5-min steps, 30% quarters, 20% full/half.
-                // Actually all are 5-min steps (multiplier of 5).
-                // Minutes: 0, 5, 10... 55.
-                const minutes = getRandomInt(0, 11) * 5;
-                const hours = getRandomInt(1, 12);
-
-                // Answer string "hh:mm". Pad minutes.
-                // For solution, we might accept variations? 
-                // But let's stick to standard 12h format for reading or 24h?
-                // Grade 2 usually starts with 12h or "It is X o'clock".
-                // Let's expect Digital Format e.g. "03:15" or "3:15".
-                // Let's store standardized "h:mm" for checking.
-                // Maybe simplified: just numbers.
-                const minStr = minutes.toString().padStart(2, '0');
-                const answer = `${hours}:${minStr}`;
-
-                return { type: 'time_reading', hours, minutes, answer };
-            }
-
-        case 'visual_add_100':
-            {
-                // Total between 20 and 100
-                const totalVis = getRandomInt(20, 100);
-
-                // Number of parts: 2 or 3
-                const partsCount = getRandomInt(2, 3);
-                const parts = [];
-                let currentSum = 0;
-
-                for (let i = 0; i < partsCount - 1; i++) {
-                    // Ensure remaining parts have at least 1
-                    const maxVal = totalVis - currentSum - (partsCount - 1 - i);
-                    // Ensure this part has at least 1
-                    const valP = getRandomInt(1, maxVal);
-                    parts.push(valP);
-                    currentSum += valP;
-                }
-                parts.push(totalVis - currentSum);
-
-                // Create grid data (array of 100 ints: 0=empty, 1=group1, 2=group2, 3=group3)
-                const grid = new Array(100).fill(0);
-                let cursor = 0;
-                parts.forEach((p, idx) => {
-                    const groupId = idx + 1;
-                    for (let k = 0; k < p; k++) {
-                        if (cursor < 100) {
-                            grid[cursor] = groupId;
-                            cursor++;
-                        }
-                    }
-                });
-
-                return {
-                    type: 'visual_add_100',
-                    grid,
-                    parts,
-                    total: totalVis
-                };
-            }
-
-        case 'time_duration':
-            {
-                // Grade 3: Duration logic.
-                // "Es ist 14:10. Wie spät ist es in 40 Minuten?"
-                const startH = getRandomInt(6, 18);
-                const startM = getRandomInt(0, 11) * 5;
-                const duration = getRandomInt(1, 12) * 5; // 5 to 60 mins (actually max 12*5=60)
-
-                // Calculate end
-                let endM = startM + duration;
-                let endH = startH;
-                if (endM >= 60) {
-                    endH += Math.floor(endM / 60);
-                    endM %= 60;
-                }
-
-                const sH = startH.toString(); // .padStart(2,'0') not strictly needed but nice
-                const sM = startM.toString().padStart(2, '0');
-                const eH = endH.toString();
-                const eM = endM.toString().padStart(2, '0');
-
-                return {
-                    type: 'time_duration',
-                    q: `Es ist ${sH}:${sM} Uhr. Wie spät ist es in ${duration} Min?`,
-                    answer: `${eH}:${eM}`
-                };
-            }
-        case 'rechendreiecke':
-            return generateTriangle(20);
-        case 'rechendreiecke_100':
-            return generateTriangle(100);
-        case 'zahlenhaus_10':
-            return generateHouse(10);
-        case 'zahlenhaus_20':
-            return generateHouse(20);
-        case 'zahlenhaus_100':
-            return generateHouse(100);
-        case 'married_100':
-            const onlyMultiplesOf10 = document.getElementById('marriedMultiplesOf10').checked;
-            return generateMarriedNumbers(onlyMultiplesOf10);
-        case 'rechenstrich':
-            return generateRechenstrich();
-        case 'money_10':
-            return generateMoneyProblem(10);
-        case 'money_100':
-            return generateMoneyProblem(100);
-    }
-    return { a, b, op };
-}
-
-function generateMarriedNumbers(onlyMultiplesOf10) {
-    let a;
-    if (onlyMultiplesOf10) {
-        a = getRandomInt(0, 10) * 10;
-    } else {
-        // Ensure a mix of "easy" (multiples of 10) and "hard" numbers
-        if (seededRandom() < 0.3) {
-            a = getRandomInt(0, 10) * 10;
-        } else {
-            a = getRandomInt(1, 99);
-        }
-    }
-    return { type: 'married_numbers', a: a, sum: 100, op: '+' };
-}
-
-function renderClock(hours, minutes) {
-    // Helper to generate clock HTML
-    let html = '<div class="clock-face"><div class="clock-center"></div>';
-
-    // Markers for 12, 3, 6, 9
-    // 0 deg = 12. 90 deg = 3.
-    for (let i = 0; i < 12; i++) {
-        const deg = i * 30;
-        // We draw markers. We can reuse 'clock-marker' with rotation.
-        // Standard marker is at top (12). Rotate it.
-        html += `<div class="clock-marker" style="transform: rotate(${deg}deg) translate(0, 2px)"></div>`;
-        // Wait, transform origin is center? CSS says "50% 50px". (Radius 50px).
-        // "left: 50%" "margin-left: -1px".
-        // Rotation rotates around center of clock. 
-        // The marker is defined as top? 
-        // "height: 6px". 
-        // If I rotate 0deg, it's at top? 
-        // If origin is "50% 50px", that means origin is 50px DOWN from the marker's top? 
-        // If marker is at top (top:0?), then 50px down is center. 
-        // Let's refine CSS for marker pos.
-        // CSS: "left: 50%", "transform-origin: 50% 50px".
-        // We need to position marker visually at top initially.
-        // "top: 0" isn't set in CSS. Default static? No absolute.
-        // Let's add "top: 0" to CSS or inline.
-        // Actually simpler:
-    }
-
-    // Hands
-    const minDeg = minutes * 6;
-    const hourDeg = (hours % 12) * 30 + minutes * 0.5;
-
-    html += `<div class="clock-hand hand-hour" style="transform: rotate(${hourDeg}deg)"></div>`;
-    html += `<div class="clock-hand hand-minute" style="transform: rotate(${minDeg}deg)"></div>`;
-
-    html += '</div>';
-    return html;
-}
-
-function generatePyramid(maxTop, levels = 3) {
-    let values = [];
-    let mask = [];
-
-    // Re-implementing generation bottom-up with flat array
-    // Layers are stored sequentially bottom to top.
-    let top;
-    do {
-        values = [];
-        // 1. Generate Base
-        let baseCount = levels;
-        let maxBase = Math.floor(maxTop / (2 ** (levels - 1)));
-        if (maxBase < 1) maxBase = 1;
-
-        // Push base layer
-        for (let i = 0; i < baseCount; i++) {
-            values.push(getRandomInt(1, maxBase));
-        }
-
-        // 2. Calculate upper layers
-        let currentLayerStart = 0;
-        let currentLayerLength = baseCount;
-
-        for (let l = 1; l < levels; l++) {
-            // Next layer has currentLayerLength - 1 elements
-            for (let i = 0; i < currentLayerLength - 1; i++) {
-                let val = values[currentLayerStart + i] + values[currentLayerStart + i + 1];
-                values.push(val);
-            }
-            currentLayerStart += currentLayerLength;
-            currentLayerLength--;
-        }
-
-        top = values[values.length - 1];
-
-    } while (top > maxTop);
-
-    // Generate Mask
-    // Just simple random masking for now. 
-    const totalItems = values.length;
-    const itemsToHide = Math.floor(totalItems * 0.5); // 50% hidden
-
-    mask = new Array(totalItems).fill(false);
-
-    // Ensure we don't hide everything.
-    let hiddenCount = 0;
-    while (hiddenCount < itemsToHide) {
-        let idx = getRandomInt(0, totalItems - 1);
-        if (!mask[idx]) {
-            mask[idx] = true;
-            hiddenCount++;
-        }
-    }
-
-    return { type: 'pyramid', values, mask, levels };
-}
 
 function renderWrittenMultiplicationSolution(a, b) {
     const sA = a.toString();
@@ -1859,19 +1209,24 @@ function checkAllDone() {
 
 // Initialize on load
 function init() {
-    // 1. Initial UI Setup (Defaults)
-    // Grade 2 is default in HTML
+    try {
+        // 1. Initial UI Setup (Defaults)
+        // Grade 2 is default in HTML
 
-    // 2. Load State from URL
-    loadStateFromURL();
+        // 2. Load State from URL
+        loadStateFromURL();
 
-    // 3. Generate initial sheet
-    // If seed was loaded, generateSheet(true) will use it.
-    // Otherwise it will generate a new one.
-    generateSheet(true);
+        // 3. Generate initial sheet
+        // If seed was loaded, generateSheet(true) will use it.
+        // Otherwise it will generate a new one.
+        generateSheet(true);
 
-    // 4. Scale
-    autoScaleSheet();
+        // 4. Scale
+        autoScaleSheet();
+    } catch (e) {
+        console.error("Initialization Error:", e);
+        alert("Fehler beim Starten: " + e.message);
+    }
 }
 
 function loadStateFromURL() {
@@ -1950,7 +1305,7 @@ function loadStateFromURL() {
 
     // 5. Seed
     if (params.has('seed')) {
-        globalSeed = parseInt(params.get('seed'));
+        setSeed(parseInt(params.get('seed')));
         // We will call generateSheet(true) in init to use this seed
     }
 }
@@ -1994,6 +1349,21 @@ function renderQRCode(url) {
             correctLevel: QRCode.CorrectLevel.L
         });
     });
+}
+
+
+function renderClock(hours, minutes) {
+    let html = '<div class="clock-face"><div class="clock-center"></div>';
+    for (let i = 0; i < 12; i++) {
+        const deg = i * 30;
+        html += `<div class="clock-marker" style="transform: rotate(${deg}deg) translate(0, 2px)"></div>`;
+    }
+    const minDeg = minutes * 6;
+    const hourDeg = (hours % 12) * 30 + minutes * 0.5;
+    html += `<div class="clock-hand hand-hour" style="transform: rotate(${hourDeg}deg)"></div>`;
+    html += `<div class="clock-hand hand-minute" style="transform: rotate(${minDeg}deg)"></div>`;
+    html += '</div>';
+    return html;
 }
 
 window.onload = init;
@@ -2041,118 +1411,8 @@ function autoScaleSheet() {
     }
 }
 
-function generateTriangle(maxSum) {
-    let i1, i2, i3, o1, o2, o3;
-    let attempts = 0;
-    do {
-        // max(o) = max(i + i). So max(i) ~ maxSum / 2.
-        const maxInner = Math.floor(maxSum / 1.5); // Allow slightly larger inner for variety but check sums
-        i1 = getRandomInt(1, maxInner);
-        i2 = getRandomInt(1, maxInner);
-        i3 = getRandomInt(1, maxInner);
 
-        o1 = i1 + i2;
-        o2 = i2 + i3;
-        o3 = i3 + i1;
-        attempts++;
-    } while ((o1 > maxSum || o2 > maxSum || o3 > maxSum) && attempts < 100);
 
-    const maskMode = seededRandom() < 0.5 ? 'inner' : 'outer';
 
-    return {
-        type: 'triangle',
-        inner: [i1, i2, i3],
-        outer: [o1, o2, o3],
-        maskMode
-    };
-}
-
-function generateHouse(roofNum) {
-    const floorsCount = getRandomInt(3, 5);
-    const floors = [];
-
-    // Ensure variety in decompositions
-    const usedValues = new Set();
-
-    for (let i = 0; i < floorsCount; i++) {
-        let sideA;
-        let attempts = 0;
-        do {
-            sideA = getRandomInt(0, roofNum);
-            attempts++;
-        } while (usedValues.has(sideA) && attempts < 20);
-
-        usedValues.add(sideA);
-        const sideB = roofNum - sideA;
-        const hiddenSide = seededRandom() < 0.5 ? 0 : 1; // 0 for A, 1 for B
-        floors.push({ a: sideA, b: sideB, hiddenSide });
-    }
-
-    return {
-        type: 'house',
-        roof: roofNum,
-        floors
-    };
-}
-
-function generateRechenstrich() {
-    const a = getRandomInt(10, 60);
-    const b = getRandomInt(11, 39);
-    const sum = a + b;
-
-    // Split b into tens and ones
-    const tens = Math.floor(b / 10) * 10;
-    const ones = b % 10;
-
-    return {
-        type: 'rechenstrich',
-        start: a,
-        jump1: tens,
-        mid: a + tens,
-        jump2: ones,
-        sum: sum
-    };
-}
-
-function generateMoneyProblem(maxVal) {
-    const coins = [0.05, 0.10, 0.20, 0.50, 1, 2, 5];
-    const notes = [10, 20, 50, 100].filter(n => n <= maxVal);
-
-    // Choose a target sum
-    let target;
-    if (maxVal <= 10) {
-        target = (getRandomInt(10, 200) * 0.05); // 0.50 to 10.00
-    } else {
-        target = (getRandomInt(10, 100) * 1.0); // 10 to 100
-    }
-
-    target = Math.round(target * 20) / 20; // Ensure 0.05 step
-
-    let remaining = target;
-    const items = [];
-
-    // Greedy selection with some variety
-    const available = [...notes.reverse(), ...coins.reverse()];
-
-    for (const val of available) {
-        while (remaining >= val - 0.001 && items.length < 10) {
-            // limit items so they fit
-            items.push(val);
-            remaining -= val;
-        }
-    }
-
-    // If we have a lot of items, maybe simplify? 
-    // Actually greedy is fine for kids.
-
-    // Shuffle
-    items.sort(() => seededRandom() - 0.5);
-
-    return {
-        type: 'money',
-        items: items,
-        answer: target
-    };
-}
 
 

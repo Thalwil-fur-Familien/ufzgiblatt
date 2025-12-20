@@ -1,0 +1,24 @@
+{
+  "name": "ufzgiblatt",
+  "version": "1.0.0",
+  "description": "",
+  "main": "script.js",
+  "scripts": {
+    "test": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Thalwil-fur-Familien/ufzgiblatt.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Thalwil-fur-Familien/ufzgiblatt/issues"
+  },
+  "homepage": "https://github.com/Thalwil-fur-Familien/ufzgiblatt#readme",
+  "devDependencies": {
+    "vitest": "^4.0.16"
+  }
+}
