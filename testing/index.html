@@ -62,7 +62,8 @@
 
     <div class="controls" id="marriedOptions"
         style="display:none; align-items:center; margin-top:-1rem; font-family:'Nunito',sans-serif; gap:10px;">
-        <input type="checkbox" id="marriedMultiplesOf10" style="width:20px; height:20px;" onchange="generateSheet()">
+        <input type="checkbox" id="marriedMultiplesOf10" style="width:20px; height:20px;"
+            onchange="generateSheet(true)">
         <label for="marriedMultiplesOf10">Nur Zehnerzahlen (z.B. 30 + 70)</label>
     </div>
 
@@ -70,10 +71,10 @@
         style="display:none; align-items:center; margin-top:-1rem; font-family:'Nunito',sans-serif; gap:10px;">
         <span style="font-weight:bold;">Währung:</span>
 
-        <input type="checkbox" id="currencyCHF" value="CHF" checked onchange="generateSheet()">
+        <input type="checkbox" id="currencyCHF" value="CHF" checked onchange="generateSheet(true)">
         <label for="currencyCHF">CHF</label>
 
-        <input type="checkbox" id="currencyEUR" value="EUR" onchange="generateSheet()">
+        <input type="checkbox" id="currencyEUR" value="EUR" onchange="generateSheet(true)">
         <label for="currencyEUR">EUR</label>
     </div>
 
@@ -104,7 +105,7 @@
             </svg>
             Feedback & Fehler melden
         </a>
-        <div id="build-info" style="margin-top:10px; font-size:0.8rem; color:#888;">Build: d86ebc0 (2025-12-20 22:03 CET)</div>
+        <div id="build-info" style="margin-top:10px; font-size:0.8rem; color:#888;">Build: 36720f2 (2025-12-20 23:08 CET)</div>
     </footer>
 </body>
 
