@@ -1083,8 +1083,6 @@ function createProblemElement(problemData, isSolution) {
                 <span style="font-size:12pt; margin-right:5px;">R</span>
                 <input type="number" class="answer-input" style="width:40px; ${style}" 
                        data-expected="${remainder}" value="${valR}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
-                <input type="number" class="answer-input" style="width:40px; ${style}" 
-                       data-expected="${remainder}" value="${valR}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
             `;
 
     } else if (problemData.type === 'doubling_halving') {
