@@ -1,7 +1,12 @@
 import { getRandomInt, seededRandom, gcd } from './mathUtils.js';
 
-export function generateProblemsData(type, count, availableTopics = []) {
+export function generateProblemsData(type, count, availableTopics = [], allowedCurrencies = ['CHF']) {
     const data = [];
+
+    const getCurrencyForProblem = () => {
+        if (!allowedCurrencies || allowedCurrencies.length === 0) return 'CHF';
+        return allowedCurrencies[getRandomInt(0, allowedCurrencies.length - 1)];
+    };
 
     if (type === 'custom') {
         if (availableTopics.length === 0) return [];
@@ -44,7 +49,9 @@ export function generateProblemsData(type, count, availableTopics = []) {
         shuffledTopics.forEach(topic => {
             if (currentLoad < PAGE_CAPACITY) {
                 let w = WEIGHTS[topic] || 1;
-                data.push(generateProblem(topic));
+                // For money topics, pick a currency
+                const currency = getCurrencyForProblem();
+                data.push(generateProblem(topic, currency));
                 currentLoad += w;
             }
         });
@@ -55,7 +62,8 @@ export function generateProblemsData(type, count, availableTopics = []) {
             let w = WEIGHTS[topic] || 1;
 
             if (currentLoad + w <= PAGE_CAPACITY) {
-                data.push(generateProblem(topic));
+                const currency = getCurrencyForProblem();
+                data.push(generateProblem(topic, currency));
                 currentLoad += w;
                 retries = 0;
             } else {
@@ -64,13 +72,14 @@ export function generateProblemsData(type, count, availableTopics = []) {
         }
     } else {
         for (let i = 0; i < count; i++) {
-            data.push(generateProblem(type));
+            const currency = getCurrencyForProblem();
+            data.push(generateProblem(type, currency));
         }
     }
     return data;
 }
 
-export function generateProblem(type) {
+export function generateProblem(type, currency = 'CHF') {
     let a, b, op;
 
     switch (type) {
@@ -305,9 +314,9 @@ export function generateProblem(type) {
         case 'rechenstrich':
             return generateRechenstrich();
         case 'money_10':
-            return generateMoneyProblem(10);
+            return generateMoneyProblem(10, currency);
         case 'money_100':
-            return generateMoneyProblem(100);
+            return generateMoneyProblem(100, currency);
         case 'time_reading':
             {
                 const minutes = getRandomInt(0, 11) * 5;
@@ -495,22 +504,54 @@ export function generateRechenstrich() {
     return { type: 'rechenstrich', start: a, jump1: tens, mid: a + tens, jump2: ones, sum: sum };
 }
 
-export function generateMoneyProblem(maxVal) {
-    const coins = [0.05, 0.10, 0.20, 0.50, 1, 2, 5];
-    const notes = [10, 20, 50, 100].filter(n => n <= maxVal);
+export function generateMoneyProblem(maxVal, currency = 'CHF') {
+    let coins, notes;
+    let step;
+
+    if (currency === 'EUR') {
+        // Euro: 1, 2, 5, 10, 20, 50 cents, 1, 2 Euro
+        coins = [0.01, 0.02, 0.05, 0.10, 0.20, 0.50, 1, 2];
+        notes = [5, 10, 20, 50, 100, 200, 500].filter(n => n <= maxVal);
+        step = 0.01;
+    } else {
+        // CHF: 5, 10, 20, 50 cents, 1, 2, 5 Fr
+        coins = [0.05, 0.10, 0.20, 0.50, 1, 2, 5];
+        notes = [10, 20, 50, 100, 200, 1000].filter(n => n <= maxVal);
+        step = 0.05;
+    }
+
     let target;
-    if (maxVal <= 10) target = (getRandomInt(10, 200) * 0.05);
-    else target = (getRandomInt(10, 100) * 1.0);
-    target = Math.round(target * 20) / 20;
+    if (maxVal <= 10) {
+        // Small amounts: mostly coins
+        target = (getRandomInt(10, 200) * step);
+    } else {
+        target = (getRandomInt(10, maxVal) * 1.0);
+    }
+
+    // Round to step
+    const inv = 1 / step;
+    target = Math.round(target * inv) / inv;
+
     let remaining = target;
     const items = [];
-    const available = [...notes.reverse(), ...coins.reverse()];
+    // Sort descending for greedy approach
+    const available = [...notes, ...coins].sort((a, b) => b - a);
+
+    // Greedy-ish filling
     for (const val of available) {
-        while (remaining >= val - 0.001 && items.length < 10) {
+        // Randomly skip some larger denominations to force variety
+        if (seededRandom() < 0.2) continue;
+
+        while (remaining >= val - (step / 10) && items.length < 12) {
             items.push(val);
             remaining -= val;
+            // Round remaining to avoid float precision issues
+            remaining = Math.round(remaining * inv) / inv;
         }
     }
+
+    // Shuffle items
     items.sort(() => seededRandom() - 0.5);
-    return { type: 'money', items: items, answer: target };
+
+    return { type: 'money', items: items, answer: target, currency: currency };
 }

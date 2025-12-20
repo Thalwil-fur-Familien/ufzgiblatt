@@ -1043,8 +1043,9 @@ input.triangle-field {
 .m-0_2,
 .m-0_1,
 .m-0_05 {
-    width: 28px;
-    height: 28px;
+    width: 34px;
+    height: 34px;
+    font-size: 0.65rem;
     background: #cd7f32;
     color: #5c4033;
     border-color: #a0522d;
