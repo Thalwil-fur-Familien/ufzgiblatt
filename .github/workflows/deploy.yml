@@ -16,9 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Inject Build Info
+        env:
+          TZ: 'Europe/Zurich'
         run: |
             HASH=$(git rev-parse --short HEAD)
-            DATE=$(date +'%Y-%m-%d %H:%M')
+            DATE=$(date +'%Y-%m-%d %H:%M %Z')
             sed -i "s|Local Development Build|Build: $HASH ($DATE)|g" index.html
       - name: Deploy to Testing Subfolder
         uses: peaceiris/actions-gh-pages@v3
@@ -35,9 +37,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Inject Build Info
+        env:
+          TZ: 'Europe/Zurich'
         run: |
             HASH=$(git rev-parse --short HEAD)
-            DATE=$(date +'%Y-%m-%d %H:%M')
+            DATE=$(date +'%Y-%m-%d %H:%M %Z')
             sed -i "s|Local Development Build|Build: $HASH ($DATE)|g" index.html
       - name: Deploy to Root (Production)
         uses: peaceiris/actions-gh-pages@v3
