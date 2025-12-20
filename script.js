@@ -1160,6 +1160,68 @@ function createProblemElement(problemData, isSolution) {
 
             problemDiv.innerHTML = stepsHtml;
 
+        } else if (isSolution && op === ':') {
+            const sA = a.toString();
+            const divisor = b;
+            const quotient = answer;
+            const sAns = quotient.toString();
+
+            let stepsHtml = `<div class="written-vertical" style="align-items: flex-start; font-size:1.1rem; font-family:'Courier New', monospace; line-height: 1.2;">
+                <div class="written-row" style="justify-content: flex-start; letter-spacing: 2px;">${sA} : ${divisor} = ${sAns}</div>`;
+
+            let dividendIndex = 0;
+            let currentVal = 0;
+
+            for (let i = 0; i < sAns.length; i++) {
+                const qDigit = parseInt(sAns[i]);
+
+                // Pull down digits until we can divide
+                if (i === 0) {
+                    let firstValStr = "";
+                    while (dividendIndex < sA.length) {
+                        firstValStr += sA[dividendIndex];
+                        dividendIndex++;
+                        if (parseInt(firstValStr) >= divisor) break;
+                    }
+                    currentVal = parseInt(firstValStr);
+                } else {
+                    // Bring down NEXT digit from dividend
+                    if (dividendIndex < sA.length) {
+                        const nextDigitStr = sA[dividendIndex];
+                        currentVal = parseInt(currentVal.toString() + nextDigitStr);
+                        dividendIndex++;
+                    }
+                }
+
+                const subtrahend = qDigit * divisor;
+                const remainder = currentVal - subtrahend;
+
+                // Render Subtrahend
+                const subStr = subtrahend.toString();
+                const subPadding = (dividendIndex - 1) - (subStr.length - 1);
+                stepsHtml += `<div class="written-row" style="justify-content: flex-start; padding-left: ${subPadding}ch; border-bottom: 1px solid #000; width: fit-content;">-${subStr}</div>`;
+
+                if (dividendIndex < sA.length) {
+                    // Render Remainder + Next digit
+                    const nextDigitChar = sA[dividendIndex];
+                    const nextValToDisplay = remainder.toString() + nextDigitChar;
+                    const remPadding = dividendIndex - (nextValToDisplay.length - 1);
+                    stepsHtml += `<div class="written-row" style="justify-content: flex-start; padding-left: ${remPadding}ch;">${nextValToDisplay}</div>`;
+
+                    // Preparation for next loop: currentVal becomes just the remainder
+                    // BUT: The loop code will append sA[dividendIndex] to it.
+                    // So we set currentVal to just the remainder here.
+                    currentVal = remainder;
+                } else {
+                    // Final Remainder
+                    const remStr = remainder.toString();
+                    const remPadding = (dividendIndex - 1) - (remStr.length - 1);
+                    stepsHtml += `<div class="written-row" style="justify-content: flex-start; padding-left: ${remPadding}ch;">${remStr}</div>`;
+                }
+            }
+
+            stepsHtml += `</div>`;
+            problemDiv.innerHTML = stepsHtml;
         } else {
             // Standard problem + Grid (or Division solution without steps)
             problemDiv.style.flexDirection = 'column';
