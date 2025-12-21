@@ -1,5 +1,5 @@
 import { globalSeed, setSeed } from './js/mathUtils.js';
-import { generateProblemsData as genData } from './js/problemGenerators.js?v=2';
+import { generateProblemsData as genData } from './js/problemGenerators.js?v=4';
 
 // Expose to window for inline HTML handlers
 window.updateTopicSelector = updateTopicSelector;
@@ -37,22 +37,21 @@ const GRADE_TOPICS = {
         { value: 'doubling_halving', text: 'Halbieren und Verdoppeln' },
         { value: 'zahlenhaus_20', text: 'Zahlenhaus (bis 20)' },
         { value: 'word_problems', text: 'Sachrechnen (Textaufgaben)' },
-
         { value: 'time_reading', text: 'Uhrzeit lesen' },
         { value: 'visual_add_100', text: 'Hunderterfeld: Addition' },
         { value: 'rechendreiecke', text: 'Rechendreiecke (bis 20)' },
         { value: 'rechenstrich', text: 'Rechenstrich (Addition)' },
         { value: 'married_100', text: '💍 Verheiratete Zahlen (bis 100)' },
-        { value: 'money_100', text: '💰 Geld (Münzen & Noten bis 100 Fr)' }
+        { value: 'money_100', text: '💰 Geld (Münzen & Noten bis 100 Fr)' },
+        { value: 'word_types', text: 'Deutsch: Wortarten erkennen' }
     ],
     '3': [
         { value: 'add_1000', text: 'Addition bis 1000' },
         { value: 'sub_1000', text: 'Subtraktion bis 1000' },
-        { value: 'mult_advanced', text: 'Erweitertes 1x1 (bis 20)' }, // Or large mult placeholders
+        { value: 'mult_advanced', text: 'Erweitertes 1x1 (bis 20)' },
         { value: 'div_100', text: 'Division (bis 100 ohne Rest)' },
         { value: 'div_remainder', text: 'Division (mit Rest - Basis)' },
         { value: 'rechenmauer_100', text: 'Grosse Rechenmauern (bis 100)' },
-
         { value: 'time_duration', text: 'Zeitspannen' },
         { value: 'rechendreiecke_100', text: 'Rechendreiecke (bis 100)' },
         { value: 'zahlenhaus_100', text: 'Zahlenhaus (bis 100)' }
@@ -63,20 +62,17 @@ const GRADE_TOPICS = {
         { value: 'mult_large', text: 'Schriftliche Multiplikation' },
         { value: 'div_long', text: 'Schriftliche Division' },
         { value: 'rounding', text: 'Runden (10er, 100er, 1000er)' },
-
     ],
     '5': [
         { value: 'dec_add', text: 'Dezimalzahlen: Addition' },
         { value: 'dec_sub', text: 'Dezimalzahlen: Subtraktion' },
         { value: 'mult_10_100', text: 'Malnehmen mit 10/100/1000' },
         { value: 'units', text: 'Einheiten umrechnen (m, kg, s)' },
-
     ],
     '6': [
         { value: 'frac_simplify', text: 'Brüche: Kürzen/Erweitern' },
         { value: 'frac_add', text: 'Brüche: Addition' },
         { value: 'percent_basic', text: 'Prozentrechnung (Basis)' },
-
     ]
 };
 
@@ -131,7 +127,7 @@ function updateCustomCheckboxes(topics) {
 function updateTopicSelector() {
     const grade = document.getElementById('gradeSelector').value;
     const topicSelector = document.getElementById('topicSelector');
-    const topics = GRADE_TOPICS[grade];
+    const topics = GRADE_TOPICS[grade] || [];
 
     updateTopicSelectorNodes(topics);
     updateCustomCheckboxes(topics);
@@ -224,8 +220,9 @@ function generateSheet(keepSeed = false) {
     else if (type.includes('rechendreiecke')) numProblems = 8;
     else if (['add_written', 'sub_written'].includes(type)) numProblems = 12;
     else if (type === 'rechenstrich') numProblems = 6;
-    else if (['money_10', 'money_100'].includes(type)) numProblems = (type === 'money_10' ? 6 : 4);
+    else if (type.includes('money')) numProblems = (type === 'money_10' ? 6 : 4);
     else if (type.includes('zahlenhaus')) numProblems = 4;
+    else if (type === 'word_types') numProblems = 16;
 
     // 2. Determine Page Count
     const pageCountInput = document.getElementById('pageCount');
@@ -346,7 +343,7 @@ function createProblemElement(problemData, isSolution) {
         problemDiv.style.flexDirection = 'column';
         problemDiv.style.alignItems = 'flex-start';
         problemDiv.style.borderBottom = '1px solid #eee';
-        problemDiv.style.paddingBottom = '10px';
+        problemDiv.style.paddingBottom = '9px';
 
         const answerVal = isSolution ? problemData.a : '';
         const correctClass = isSolution ? 'correct-answer-show' : ''; // custom class if needed
@@ -1086,6 +1083,39 @@ function createProblemElement(problemData, isSolution) {
 
         problemDiv.innerHTML = itemsHtml + inputHtml;
 
+    } else if (problemData.type === 'word_types') {
+        problemDiv.dataset.type = 'word_types';
+        problemDiv.style.flexDirection = 'row';
+        problemDiv.style.flexWrap = 'wrap';
+        problemDiv.style.justifyContent = 'flex-start';
+        problemDiv.style.gap = '8px';
+        problemDiv.style.lineHeight = '0.5';
+        problemDiv.style.fontSize = '1.3rem';
+
+        let sentenceHtml = "";
+
+        problemData.sentence.forEach((word, idx) => {
+            let style = "";
+            const isPunctuation = ['.', '!', '?', ',', ';', ':'].includes(word.text);
+            const punctuationStyle = isPunctuation ? 'margin-left: -8px;' : '';
+
+            if (isSolution) {
+                if (word.type === 'noun') style = "border-bottom: 3px solid red;";
+                else if (word.type === 'verb') style = "border-bottom: 3px solid blue;";
+                else if (word.type === 'adj') style = "border-bottom: 3px solid green;";
+                else if (word.type === 'artikel') style = "border-bottom: 3px solid orange;";
+
+                sentenceHtml += `<span style="${style} padding:0 2px; ${punctuationStyle}">${word.text}</span>`;
+            } else {
+                sentenceHtml += `<span class="interactive-word" 
+                    data-type="${word.type}" 
+                    data-state="none"
+                    style="${punctuationStyle}"
+                    onclick="toggleWordType(this)">${word.text}</span>`;
+            }
+        });
+        problemDiv.innerHTML = sentenceHtml;
+
     } else if (problemData.type === 'standard') {
         // Reuse standard logic but explicitly handle here if needed, or fall through?
         // actually 'standard' maps to default block below if we don't catch it.
@@ -1198,6 +1228,20 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     });
 
     sheetDiv.appendChild(grid);
+
+    if (problemDataList.length > 0 && problemDataList[0].type === 'word_types' && !isSolution) {
+        const legend = document.createElement('div');
+        legend.className = 'word-types-legend';
+        legend.innerHTML = `
+            <div class="legend-item" data-type="noun" onclick="setActiveWordType('noun')"><div class="legend-color" style="background:red"></div> Nomen</div>
+            <div class="legend-item" data-type="verb" onclick="setActiveWordType('verb')"><div class="legend-color" style="background:blue"></div> Verben</div>
+            <div class="legend-item" data-type="adj" onclick="setActiveWordType('adj')"><div class="legend-color" style="background:green"></div> Adjektive</div>
+            <div class="legend-item" data-type="artikel" onclick="setActiveWordType('artikel')"><div class="legend-color" style="background:orange"></div> Artikel</div>
+            <div class="legend-item" data-type="none" onclick="setActiveWordType('none')"><div class="legend-color" style="background:#888; height: 10px; width: 10px; border-radius: 2px;"></div> Radiergummi</div>
+            <div style="font-style:italic; margin-left:10px;">(Klicke auf die Wörter zum Markieren)</div>
+        `;
+        sheetDiv.insertBefore(legend, grid);
+    }
 
     // Layout adjustments: Removed Mascot and Footer per user request NO WAIT - User wants Page Numbers now.
     const footer = document.createElement('div');
@@ -1586,6 +1630,83 @@ function autoScaleSheet() {
         wrapper.style.height = 'auto';
     }
 }
+
+// --- Interactive Word Types Logic ---
+let activeWordType = 'none';
+
+window.setActiveWordType = function (type) {
+    activeWordType = type;
+    // Update legend item visual states (they exist in the DOM inside sheets)
+    const legendItems = document.querySelectorAll('.legend-item');
+    legendItems.forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.type === type) {
+            item.classList.add('active');
+        }
+    });
+
+    // Update cursor style based on word type
+    const problems = document.querySelectorAll('.problem[data-type="word_types"]');
+    problems.forEach(problem => {
+        // Remove all cursor classes
+        problem.classList.remove('cursor-noun', 'cursor-verb', 'cursor-adj', 'cursor-artikel', 'cursor-eraser');
+
+        // Add appropriate cursor class
+        if (type === 'noun') {
+            problem.classList.add('cursor-noun');
+        } else if (type === 'verb') {
+            problem.classList.add('cursor-verb');
+        } else if (type === 'adj') {
+            problem.classList.add('cursor-adj');
+        } else if (type === 'artikel') {
+            problem.classList.add('cursor-artikel');
+        } else if (type === 'none') {
+            problem.classList.add('cursor-eraser');
+        }
+    });
+};
+
+window.toggleWordType = function (el) {
+    const currentState = el.dataset.state;
+    const nextState = activeWordType || 'none';
+
+    // If clicking with the same type, clear it.
+    // If clicking with a different type, update it.
+    const newState = (currentState === nextState) ? 'none' : nextState;
+
+    el.dataset.state = newState;
+
+    // Remove all marked classes
+    el.classList.remove('marked-noun', 'marked-verb', 'marked-adj', 'marked-artikel');
+
+    // Add new class if not 'none'
+    if (newState === 'noun') el.classList.add('marked-noun');
+    else if (newState === 'verb') el.classList.add('marked-verb');
+    else if (newState === 'adj') el.classList.add('marked-adj');
+    else if (newState === 'artikel') el.classList.add('marked-artikel');
+
+    validateWord(el);
+};
+
+window.validateWord = function (el) {
+    const expected = el.dataset.type; // noun, verb, adj, other
+    const actual = el.dataset.state;  // noun, verb, adj, none
+
+    el.classList.remove('correct', 'incorrect');
+
+    if (actual === 'none') {
+        // Neutral state, remove feedback classes
+        return;
+    }
+
+    if (expected === actual) {
+        el.classList.add('correct');
+        checkAllDone();
+    } else {
+        el.classList.add('incorrect');
+    }
+}
+
 
 
 

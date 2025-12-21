@@ -317,6 +317,8 @@ export function generateProblem(type, currency = 'CHF', options = {}) {
             return generateMoneyProblem(10, currency);
         case 'money_100':
             return generateMoneyProblem(100, currency);
+        case 'word_types':
+            return generateWordTypeProblem();
         case 'time_reading':
             {
                 const minutes = getRandomInt(0, 11) * 5;
@@ -408,11 +410,8 @@ export function generateMarriedNumbers(onlyMultiplesOf10) {
     if (onlyMultiplesOf10) {
         a = getRandomInt(0, 10) * 10;
     } else {
-        if (seededRandom() < 0.3) {
-            a = getRandomInt(0, 10) * 10;
-        } else {
-            a = getRandomInt(1, 99);
-        }
+        // Pure random 1-99 (approx 10% chance of multiple of 10)
+        a = getRandomInt(1, 99);
     }
     return { type: 'married_numbers', a: a, sum: 100, op: '+', answer: 100 - a };
 }
@@ -553,4 +552,132 @@ export function generateMoneyProblem(maxVal, currency = 'CHF') {
     items.sort(() => seededRandom() - 0.5);
 
     return { type: 'money', items: items, answer: target, currency: currency };
+}
+
+export function generateWordTypeProblem() {
+    const sentences = [
+        [
+            { text: "Der", type: "artikel" },
+            { text: "Hund", type: "noun" },
+            { text: "bellt", type: "verb" },
+            { text: "laut", type: "adj" },
+            { text: ".", type: "other" }
+        ],
+        [
+            { text: "Die", type: "artikel" },
+            { text: "kleine", type: "adj" },
+            { text: "Katze", type: "noun" },
+            { text: "schläft", type: "verb" },
+            { text: ".", type: "other" }
+        ],
+        [
+            { text: "Das", type: "artikel" },
+            { text: "schnelle", type: "adj" },
+            { text: "Auto", type: "noun" },
+            { text: "fährt", type: "verb" },
+            { text: ".", type: "other" }
+        ],
+        [
+            { text: "Peter", type: "noun" },
+            { text: "isst", type: "verb" },
+            { text: "einen", type: "artikel" },
+            { text: "roten", type: "adj" },
+            { text: "Apfel", type: "noun" },
+            { text: ".", type: "other" }
+        ],
+        [
+            { text: "Die", type: "artikel" },
+            { text: "Sonne", type: "noun" },
+            { text: "scheint", type: "verb" },
+            { text: "hell", type: "adj" },
+            { text: ".", type: "other" }
+        ],
+        [
+            { text: "Wir", type: "other" },
+            { text: "spielen", type: "verb" },
+            { text: "im", type: "other" },
+            { text: "grünen", type: "adj" },
+            { text: "Garten", type: "noun" },
+            { text: ".", type: "other" }
+        ],
+        [
+            { text: "Der", type: "artikel" },
+            { text: "Vogel", type: "noun" },
+            { text: "singt", type: "verb" },
+            { text: "ein", type: "artikel" },
+            { text: "schönes", type: "adj" },
+            { text: "Lied", type: "noun" },
+            { text: ".", type: "other" }
+        ],
+        [
+            { text: "Meine", type: "artikel" },
+            { text: "Mutter", type: "noun" },
+            { text: "kocht", type: "verb" },
+            { text: "leckere", type: "adj" },
+            { text: "Suppe", type: "noun" },
+            { text: ".", type: "other" }
+        ],
+        [
+            { text: "Der", type: "artikel" },
+            { text: "fleissige", type: "adj" },
+            { text: "Schüler", type: "noun" },
+            { text: "macht", type: "verb" },
+            { text: "seine", type: "artikel" },
+            { text: "schwierigen", type: "adj" },
+            { text: "Hausaufgaben", type: "noun" },
+            { text: "sehr", type: "other" },
+            { text: "sorgfältig", type: "adj" },
+            { text: ".", type: "other" }
+        ],
+        [
+            { text: "Die", type: "artikel" },
+            { text: "bunten", type: "adj" },
+            { text: "Blumen", type: "noun" },
+            { text: "blühen", type: "verb" },
+            { text: "im", type: "other" },
+            { text: "schönen", type: "adj" },
+            { text: "Frühling", type: "noun" },
+            { text: ".", type: "other" }
+        ],
+        [
+            { text: "Ein", type: "artikel" },
+            { text: "grosser", type: "adj" },
+            { text: "Elefant", type: "noun" },
+            { text: "trinkt", type: "verb" },
+            { text: "viel", type: "other" },
+            { text: "frisches", type: "adj" },
+            { text: "Wasser", type: "noun" },
+            { text: "am", type: "other" },
+            { text: "kühlen", type: "adj" },
+            { text: "Fluss", type: "noun" },
+            { text: ".", type: "other" }
+        ],
+        [
+            { text: "Mein", type: "artikel" },
+            { text: "kleiner", type: "adj" },
+            { text: "Bruder", type: "noun" },
+            { text: "spielt", type: "verb" },
+            { text: "gerne", type: "other" },
+            { text: "mit", type: "other" },
+            { text: "seinen", type: "artikel" },
+            { text: "neuen", type: "adj" },
+            { text: "Spielsachen", type: "noun" },
+            { text: ".", type: "other" }
+        ],
+        [
+            { text: "Die", type: "artikel" },
+            { text: "freundliche", type: "adj" },
+            { text: "Lehrerin", type: "noun" },
+            { text: "erklärt", type: "verb" },
+            { text: "den", type: "artikel" },
+            { text: "interessanten", type: "adj" },
+            { text: "Stoff", type: "noun" },
+            { text: "sehr", type: "other" },
+            { text: "gut", type: "adj" },
+            { text: ".", type: "other" }
+        ]
+    ];
+
+    const sentence = sentences[getRandomInt(0, sentences.length - 1)];
+    return { type: 'word_types', sentence: sentence };
 }
