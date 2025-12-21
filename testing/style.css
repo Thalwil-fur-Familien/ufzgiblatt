@@ -44,6 +44,50 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
+.word-type-btn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    border: 2px solid #ddd;
+    background: white;
+    color: var(--text-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Nunito', sans-serif;
+}
+
+.word-type-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.word-type-btn.active {
+    color: white !important;
+    transform: translateY(1px);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-noun.active {
+    background-color: red;
+    border-color: red;
+}
+
+.btn-verb.active {
+    background-color: blue;
+    border-color: blue;
+}
+
+.btn-adj.active {
+    background-color: green;
+    border-color: green;
+}
+
+.btn-none.active {
+    background-color: #777;
+    border-color: #777;
+}
+
 select {
     padding: 12px 20px;
     font-size: 1rem;
@@ -185,14 +229,14 @@ h1 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     column-gap: 40px;
-    row-gap: 10px;
+    row-gap: 9px;
 }
 
 .problem {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 10px;
+    padding: 7px 10px;
     /* Reduced padding */
     /* border-bottom: 1px dashed #eee; */
     /* Optional guide lines */
@@ -433,6 +477,10 @@ input.brick-input {
         display: none !important;
     }
 
+    footer {
+        display: none !important;
+    }
+
     /* Print friendly inputs */
     /* Print friendly inputs */
     input.answer-input {
@@ -498,7 +546,7 @@ input.brick-input {
         display: grid !important;
         break-inside: auto;
         /* Allow breaking inside the grid */
-        row-gap: 15px !important;
+        row-gap: 13.5px !important;
         /* Tighter gap */
     }
 
@@ -695,65 +743,85 @@ input.triangle-field {
     font-weight: bold;
 }
 
-/* Positioning (relative to 200x180 svg) */
-.corner-top {
-    top: 20px;
-    left: 100px;
+/* Interactive Word Types */
+.interactive-word {
+    cursor: pointer;
+    padding: 0 4px;
+    padding-bottom: 1px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    border-bottom: 3px solid transparent;
 }
 
-.corner-right {
-    top: 150px;
-    left: 180px;
+.interactive-word:hover {
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
-.corner-left {
-    top: 150px;
-    left: 20px;
+.marked-noun {
+    border-bottom-color: red !important;
 }
 
-.side-right {
-    top: 85px;
-    left: 140px;
+.marked-verb {
+    border-bottom-color: blue !important;
 }
 
-.side-bottom {
-    top: 150px;
-    left: 100px;
+.marked-adj {
+    border-bottom-color: green !important;
 }
 
-.side-left {
-    top: 85px;
-    left: 60px;
+.marked-artikel {
+    border-bottom-color: orange !important;
 }
 
-/* Zahlenhäuser (Number Houses) */
-.house-problem {
+.word-types-legend {
     display: flex;
-    justify-content: center;
-    padding: 20px 0;
-}
-
-.house-container {
-    width: 160px;
-    display: flex;
-    flex-direction: column;
+    gap: 20px;
+    font-size: 1rem;
+    margin-bottom: 10px;
     align-items: center;
+    justify-content: center;
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 10px;
 }
 
-.house-roof {
-    width: 100%;
-    height: 60px;
-    background: #f8f9fa;
-    border: 2px solid #ddd;
-    border-bottom: none;
-    clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+.legend-item {
     display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    padding-bottom: 5px;
-    font-size: 18pt;
-    font-weight: bold;
-    color: #444;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.legend-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
+}
+
+.legend-item:active,
+.legend-item.active {
+    transform: translateY(0);
+    background-color: rgba(0, 0, 0, 0.1);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Base button styles might already exist, but ensure word-type-btn feels interactive */
+.word-type-btn {
+    transition: all 0.2s ease;
+}
+
+.word-type-btn.active {
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
+    transform: translateY(1px);
+    filter: brightness(0.9);
+}
+
+.legend-color {
+    width: 20px;
+    height: 4px;
+    border-radius: 2px;
 }
 
 .house-body {
@@ -811,6 +879,10 @@ input.triangle-field {
     .controls,
     #customOptions,
     .site-footer {
+        display: none !important;
+    }
+
+    footer {
         display: none !important;
     }
 }
@@ -1110,4 +1182,96 @@ input.triangle-field {
     font-size: 12px;
     font-weight: bold;
     color: blueviolet;
+}
+
+/* Word Types Interactive */
+.interactive-word {
+    cursor: pointer;
+    padding: 0 2px;
+    border-radius: 2px;
+    transition: background-color 0.2s, border-color 0.2s;
+    user-select: none;
+    -webkit-user-select: none;
+    border-bottom: 3px solid transparent;
+    /* Reserve space */
+}
+
+.interactive-word:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    /* Subtle hover */
+}
+
+/* Marked States */
+.marked-noun {
+    border-bottom: 3px solid red !important;
+}
+
+.marked-verb {
+    border-bottom: 3px solid blue !important;
+}
+
+.marked-adj {
+    border-bottom: 3px solid green !important;
+}
+
+/* Feedback States */
+.interactive-word.correct {
+    background-color: rgba(46, 204, 113, 0.2);
+}
+
+.interactive-word.incorrect {
+    background-color: rgba(231, 76, 60, 0.2);
+}
+
+/* Legend */
+.word-types-legend {
+    display: flex;
+    gap: 15px;
+    background: #fff;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    font-family: 'Nunito', sans-serif;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legend-color {
+    width: 20px;
+    height: 4px;
+    border-radius: 2px;
+}
+
+@media print {
+    .word-types-legend {
+        display: none;
+        /* Hide interactive legend on print */
+    }
+
+    .interactive-word {
+        border-bottom: none;
+        /* Reset for clean print */
+    }
+
+    .marked-noun {
+        border-bottom: 3px solid red !important;
+    }
+
+    .marked-verb {
+        border-bottom: 3px solid blue !important;
+    }
+
+    .marked-adj {
+        border-bottom: 3px solid green !important;
+    }
 }
