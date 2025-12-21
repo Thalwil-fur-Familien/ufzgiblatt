@@ -1,6 +1,6 @@
 import { getRandomInt, seededRandom, gcd } from './mathUtils.js';
 
-export function generateProblemsData(type, count, availableTopics = [], allowedCurrencies = ['CHF']) {
+export function generateProblemsData(type, count, availableTopics = [], allowedCurrencies = ['CHF'], options = {}) {
     const data = [];
 
     const getCurrencyForProblem = () => {
@@ -51,7 +51,7 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
                 let w = WEIGHTS[topic] || 1;
                 // For money topics, pick a currency
                 const currency = getCurrencyForProblem();
-                data.push(generateProblem(topic, currency));
+                data.push(generateProblem(topic, currency, options));
                 currentLoad += w;
             }
         });
@@ -63,7 +63,7 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
 
             if (currentLoad + w <= PAGE_CAPACITY) {
                 const currency = getCurrencyForProblem();
-                data.push(generateProblem(topic, currency));
+                data.push(generateProblem(topic, currency, options));
                 currentLoad += w;
                 retries = 0;
             } else {
@@ -73,13 +73,13 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
     } else {
         for (let i = 0; i < count; i++) {
             const currency = getCurrencyForProblem();
-            data.push(generateProblem(type, currency));
+            data.push(generateProblem(type, currency, options));
         }
     }
     return data;
 }
 
-export function generateProblem(type, currency = 'CHF') {
+export function generateProblem(type, currency = 'CHF', options = {}) {
     let a, b, op;
 
     switch (type) {
@@ -392,8 +392,7 @@ export function generateProblem(type, currency = 'CHF') {
                 return { type: 'fraction_op', numA, denA: den, numB, denB: den, op: '+', answer: `${numA + numB}/${den}` };
             }
         case 'married_100':
-            // Note: Caller should pass the state if they want multiples of 10.
-            return generateMarriedNumbers(false);
+            return generateMarriedNumbers(options.marriedMultiplesOf10 || false);
     }
 
     const res = { a, b, op, type: 'standard' };

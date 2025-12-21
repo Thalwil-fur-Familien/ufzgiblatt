@@ -238,10 +238,14 @@ function generateSheet(keepSeed = false) {
     if (document.getElementById('currencyEUR').checked) allowedCurrencies.push('EUR');
     if (allowedCurrencies.length === 0) allowedCurrencies.push('CHF'); // Default fallback
 
+    const options = {
+        marriedMultiplesOf10: document.getElementById('marriedMultiplesOf10').checked
+    };
+
     // 3. Generate Data for ALL pages
     currentSheetsData = [];
     for (let i = 0; i < pageCount; i++) {
-        currentSheetsData.push(genData(type, numProblems, [], allowedCurrencies));
+        currentSheetsData.push(genData(type, numProblems, [], allowedCurrencies, options));
     }
 
     // 4. Render
