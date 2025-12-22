@@ -271,19 +271,29 @@ function updateURLState() {
     const showSolutions = document.getElementById('solutionToggle').checked;
     if (showSolutions) params.set('solutions', '1');
 
-    const marriedMultiples = document.getElementById('marriedMultiplesOf10').checked;
-    if (marriedMultiples) params.set('marriedM', '1');
+    const isCustom = (topic === 'custom');
 
-    const showHours = document.getElementById('showHours').checked;
-    if (showHours) params.set('showH', '1');
+    // Only set these parameters if they are relevant to the selected topic or custom mode
+    if (topic === 'married_100' || isCustom) {
+        const marriedMultiples = document.getElementById('marriedMultiplesOf10').checked;
+        if (marriedMultiples) params.set('marriedM', '1');
+    }
 
-    const showMinutes = document.getElementById('showMinutes').checked;
-    if (showMinutes) params.set('showM', '1');
+    if (topic === 'time_reading' || isCustom) {
+        const showHours = document.getElementById('showHours').checked;
+        if (showHours) params.set('showH', '1');
 
-    const currencies = [];
-    if (document.getElementById('currencyCHF').checked) currencies.push('CHF');
-    if (document.getElementById('currencyEUR').checked) currencies.push('EUR');
-    if (currencies.length > 0) params.set('currencies', currencies.join(','));
+        const showMinutes = document.getElementById('showMinutes').checked;
+        if (showMinutes) params.set('showM', '1');
+    }
+
+    const isMoney = topic === 'money_10' || topic === 'money_100';
+    if (isMoney || isCustom) {
+        const currencies = [];
+        if (document.getElementById('currencyCHF').checked) currencies.push('CHF');
+        if (document.getElementById('currencyEUR').checked) currencies.push('EUR');
+        if (currencies.length > 0) params.set('currencies', currencies.join(','));
+    }
 
     if (document.getElementById('hideQR').checked) params.set('hideQR', '1');
     if (document.getElementById('hideLogo').checked) params.set('hideLogo', '1');
