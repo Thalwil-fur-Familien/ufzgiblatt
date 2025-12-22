@@ -38,6 +38,7 @@ const GRADE_TOPICS = {
         { value: 'zahlenhaus_20', text: 'Zahlenhaus (bis 20)' },
         { value: 'word_problems', text: 'Sachrechnen (Textaufgaben)' },
         { value: 'time_reading', text: 'Uhrzeit lesen' },
+        { value: 'time_analog_set', text: 'Uhrzeit einzeichnen (Analog)' },
         { value: 'visual_add_100', text: 'Hunderterfeld: Addition' },
         { value: 'rechendreiecke', text: 'Rechendreiecke (bis 20)' },
         { value: 'rechenstrich', text: 'Rechenstrich (Addition)' },
@@ -53,6 +54,7 @@ const GRADE_TOPICS = {
         { value: 'div_remainder', text: 'Division (mit Rest - Basis)' },
         { value: 'rechenmauer_100', text: 'Grosse Rechenmauern (bis 100)' },
         { value: 'time_duration', text: 'Zeitspannen' },
+        { value: 'time_analog_set_complex', text: 'Uhrzeit einzeichnen (Digital -> Analog)' },
         { value: 'rechendreiecke_100', text: 'Rechendreiecke (bis 100)' },
         { value: 'zahlenhaus_100', text: 'Zahlenhaus (bis 100)' }
     ],
@@ -214,7 +216,7 @@ function generateSheet(keepSeed = false) {
     else if (type === 'rechenmauer_4') numProblems = 8;
     else if (type.includes('rechenmauer')) numProblems = 10;
     else if (['mult_large', 'div_long'].includes(type)) numProblems = 8;
-    else if (type === 'time_reading') numProblems = 8; // Clocks need space
+    else if (type === 'time_reading' || type === 'time_analog_set' || type === 'time_analog_set_complex') numProblems = 8; // Clocks need space
     else if (type === 'visual_add_100') numProblems = 6; // 10x10 grids are large
     else if (type === 'rounding') numProblems = 16;
     else if (type.includes('rechendreiecke')) numProblems = 8;
@@ -1093,6 +1095,37 @@ function createProblemElement(problemData, isSolution) {
 
         problemDiv.innerHTML = itemsHtml + inputHtml;
 
+    } else if (problemData.type === 'time_analog_set') {
+        const { hours, minutes, digital } = problemData;
+
+        problemDiv.style.flexDirection = 'column';
+        problemDiv.style.alignItems = 'center';
+        problemDiv.style.gap = '10px';
+
+        // For solutions, show correct hands. For problems, show empty clock in print.
+        // In interactive mode (screen), we'll show hands at 12:00.
+        const clockHtml = renderClock(hours, minutes, false, false, isSolution);
+        const displayHtml = `<div style="font-size: 1.4rem; font-weight: bold; margin-bottom: 5px;">${digital} Uhr</div>`;
+
+        if (!isSolution) {
+            const interactiveClock = renderClock(12, 0, false, false, true);
+            const controlsHtml = `
+                <div class="time-controls no-print" style="display:flex; gap:8px; margin-top:5px;">
+                    <button class="btn-time" onclick="adjustTime(this, 'h')">Std +</button>
+                    <button class="btn-time" onclick="adjustTime(this, 'm', 5)">Min +5</button>
+                    ${problemData.isComplex ? `<button class="btn-time" onclick="adjustTime(this, 'm', 1)">Min +1</button>` : ''}
+                </div>
+            `;
+            problemDiv.innerHTML = displayHtml + interactiveClock + controlsHtml;
+            problemDiv.dataset.type = 'time_analog_set';
+            problemDiv.dataset.targetH = hours % 12;
+            problemDiv.dataset.targetM = minutes;
+            problemDiv.dataset.currH = 12;
+            problemDiv.dataset.currM = 0;
+        } else {
+            problemDiv.innerHTML = displayHtml + clockHtml;
+        }
+
     } else if (problemData.type === 'word_types') {
         problemDiv.dataset.type = 'word_types';
         problemDiv.style.flexDirection = 'row';
@@ -1556,7 +1589,7 @@ function renderQRCode(url) {
 }
 
 
-function renderClock(hours, minutes, showHours = false, showMinutes = false) {
+function renderClock(hours, minutes, showHours = false, showMinutes = false, showHands = true) {
     let html = '<div class="clock-face"><div class="clock-center"></div>';
 
     // Hours (Inner, Green)
@@ -1590,11 +1623,47 @@ function renderClock(hours, minutes, showHours = false, showMinutes = false) {
     const hColor = showHours ? 'green' : '#333';
     const mColor = showMinutes ? 'blueviolet' : '#000';
 
-    html += `<div class="clock-hand hand-hour" style="background:${hColor}; transform: rotate(${hourDeg}deg)"></div>`;
-    html += `<div class="clock-hand hand-minute" style="background:${mColor}; transform: rotate(${minDeg}deg)"></div>`;
+    if (showHands) {
+        html += `<div class="clock-hand hand-hour" style="background:${hColor}; transform: rotate(${hourDeg}deg)"></div>`;
+        html += `<div class="clock-hand hand-minute" style="background:${mColor}; transform: rotate(${minDeg}deg)"></div>`;
+    }
     html += '</div>';
     return html;
 }
+
+window.adjustTime = function (btn, type, amount = 1) {
+    const problem = btn.closest('.problem');
+    let h = parseInt(problem.dataset.currH);
+    let m = parseInt(problem.dataset.currM);
+
+    if (type === 'h') {
+        h = (h + amount) % 12;
+        if (h === 0) h = 12;
+    } else {
+        m = (m + amount) % 60;
+    }
+
+    problem.dataset.currH = h;
+    problem.dataset.currM = m;
+
+    const hourHand = problem.querySelector('.hand-hour');
+    const minHand = problem.querySelector('.hand-minute');
+
+    const minDeg = m * 6;
+    const hourDeg = (h % 12) * 30 + m * 0.5;
+
+    hourHand.style.transform = `rotate(${hourDeg}deg)`;
+    minHand.style.transform = `rotate(${minDeg}deg)`;
+
+    // Check if correct
+    const targetH = parseInt(problem.dataset.targetH);
+    const targetM = parseInt(problem.dataset.targetM);
+
+    problem.classList.remove('correct', 'incorrect');
+    if (h % 12 === targetH % 12 && m === targetM) {
+        problem.classList.add('correct');
+    }
+};
 
 window.onload = init;
 
