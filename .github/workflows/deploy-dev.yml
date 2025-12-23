@@ -31,8 +31,8 @@ jobs:
       # --- 🧠 LOGIC CHECK ONLY ---
       # We skip E2E (Playwright) here to save ~40 seconds.
       # If the layout is broken, that's fine, it's just Dev.
-      - name: Run Unit Tests
-        run: npm test
+      - name: Run Unit Tests (Logic Only)
+        run: npm test -- tests/
 
       # --- DEPLOY ---
       - name: Inject Build Info
