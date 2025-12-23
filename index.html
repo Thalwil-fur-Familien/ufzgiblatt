@@ -36,6 +36,8 @@
             <label for="solutionToggle">Lösungsblatt</label>
         </div>
         <button class="btn-generate" onclick="generateSheet()">✨ Neu erstellen</button>
+        <button class="btn-save" onclick="saveCurrentState()">💾 Speichern</button>
+        <button class="btn-saved" onclick="toggleSavedModal()">📂 Gespeichert</button>
         <!-- Check button removed in favor of real-time validation -->
         <button class="btn-print" onclick="window.print()">🖨️ Drucken</button>
         <div style="display:flex; align-items:center; gap: 15px;">
@@ -93,6 +95,20 @@
     </div>
 
 
+    <div id="savedModal" class="modal no-print">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Gespeicherte Arbeitsblätter</h2>
+                <span class="close-modal" onclick="toggleSavedModal()">&times;</span>
+            </div>
+            <div id="savedList" class="saved-list">
+                <!-- Saved items will be listed here -->
+            </div>
+            <div style="text-align: right; margin-top: 15px;">
+                <button class="btn-secondary" onclick="toggleSavedModal()">Schliessen</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="script.js"></script>
 
