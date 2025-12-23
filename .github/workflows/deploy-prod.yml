@@ -1,0 +1,30 @@
+name: 🏆 Deploy LIVE (Production)
+
+# TRIGGER: Manual Button Click ONLY
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-prod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Inject Build Info
+        env:
+          TZ: 'Europe/Zurich'
+        run: |
+            HASH=$(git rev-parse --short HEAD)
+            DATE=$(date +'%Y-%m-%d %H:%M %Z')
+            sed -i "s|Local Development Build|Build: $HASH ($DATE)|g" index.html
+            
+      - name: Deploy to Root
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          # destination_dir is empty, so it goes to root
+          keep_files: true  # CRITICAL: Don't delete the testing folder!
