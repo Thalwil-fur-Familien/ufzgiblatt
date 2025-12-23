@@ -19,6 +19,6 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
       - name: Run Unit Tests
-        run: npm test
+        run: npm test -- --run
       - name: Run GUI Tests
         run: npm run test:gui
