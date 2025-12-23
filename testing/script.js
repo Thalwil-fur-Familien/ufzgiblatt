@@ -183,16 +183,7 @@ function updateTopicSelector() {
 }
 
 
-function generateProblemsData(type, count) {
-    let availableTopics = [];
-    if (type === 'custom') {
-        const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
-        checkboxes.forEach(cb => availableTopics.push(cb.value));
-    }
-    return genData(type, count, availableTopics);
-}
-
-// ... (rest of logic)
+// --- GENERATION & RENDERING ---
 
 function generateSheet(keepSeed = false) {
     if (!keepSeed) {
@@ -243,8 +234,14 @@ function generateSheet(keepSeed = false) {
 
     // 3. Generate Data for ALL pages
     currentSheetsData = [];
+    const availableTopics = [];
+    if (type === 'custom') {
+        const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+        checkboxes.forEach(cb => availableTopics.push(cb.value));
+    }
+
     for (let i = 0; i < pageCount; i++) {
-        currentSheetsData.push(genData(type, numProblems, [], allowedCurrencies, options));
+        currentSheetsData.push(genData(type, numProblems, availableTopics, allowedCurrencies, options));
     }
 
     // 4. Render
@@ -1666,6 +1663,88 @@ window.adjustTime = function (btn, type, amount = 1) {
 };
 
 window.onload = init;
+
+window.saveCurrentState = function () {
+    updateURLState(); // Sync current state to URL
+    const params = window.location.search;
+    if (!params) {
+        alert("Nichts zum Speichern gefunden.");
+        return;
+    }
+
+    const topicName = document.getElementById('topicSelector').options[document.getElementById('topicSelector').selectedIndex].text;
+    const defaultName = `${topicName} (${new Date().toLocaleDateString()})`;
+    const name = prompt("Bezeichnung für dieses Arbeitsblatt:", defaultName);
+    if (name === null) return; // Cancelled
+
+    const saved = JSON.parse(localStorage.getItem('ufzgiblatt_saved') || '[]');
+    saved.push({
+        id: Date.now(),
+        name: name || defaultName,
+        params: params,
+        timestamp: new Date().toLocaleString('de-CH')
+    });
+
+    localStorage.setItem('ufzgiblatt_saved', JSON.stringify(saved));
+    alert("Erfolgreich gespeichert!");
+};
+
+window.toggleSavedModal = function () {
+    const modal = document.getElementById('savedModal');
+    if (modal.style.display === 'block') {
+        modal.style.display = 'none';
+    } else {
+        renderSavedList();
+        modal.style.display = 'block';
+    }
+};
+
+window.renderSavedList = function () {
+    const list = document.getElementById('savedList');
+    const saved = JSON.parse(localStorage.getItem('ufzgiblatt_saved') || '[]');
+
+    if (saved.length === 0) {
+        list.innerHTML = '<p style="text-align:center; padding: 20px;">Noch keine Arbeitsblätter gespeichert.</p>';
+        return;
+    }
+
+    // Sort by most recent
+    saved.sort((a, b) => b.id - a.id);
+
+    list.innerHTML = saved.map(item => `
+        <div class="saved-item">
+            <div class="saved-item-info">
+                <span class="saved-item-name">${item.name}</span>
+                <span class="saved-item-date">${item.timestamp}</span>
+            </div>
+            <div class="saved-item-actions">
+                <button class="btn-load" onclick="loadSavedState(${item.id})">Laden</button>
+                <button class="btn-delete" onclick="deleteSavedState(${item.id})">Löschen</button>
+            </div>
+        </div>
+    `).join('');
+};
+
+window.loadSavedState = function (id) {
+    const saved = JSON.parse(localStorage.getItem('ufzgiblatt_saved') || '[]');
+    const item = saved.find(s => s.id === id);
+    if (!item) return;
+
+    // Apply the saved parameters to the URL and reload
+    window.history.replaceState({}, '', window.location.pathname + item.params);
+    loadStateFromURL();
+    generateSheet(true);
+    toggleSavedModal();
+};
+
+window.deleteSavedState = function (id) {
+    if (!confirm("Möchtest du dieses Arbeitsblatt wirklich löschen?")) return;
+
+    let saved = JSON.parse(localStorage.getItem('ufzgiblatt_saved') || '[]');
+    saved = saved.filter(s => s.id !== id);
+    localStorage.setItem('ufzgiblatt_saved', JSON.stringify(saved));
+    renderSavedList();
+};
 
 window.onresize = autoScaleSheet;
 
