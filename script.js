@@ -349,7 +349,7 @@ function createProblemElement(problemData, isSolution) {
         problemDiv.innerHTML = `
                     <div style="font-size: 14pt; margin-bottom:10px;"> ${problemData.q}</div>
                         <div style="display:flex; gap:10px; align-items:center; width:100%; justify-content: flex-end;">
-                            <span>Antwort:</span>
+                            <span>${T.ui.answerLabel}</span>
                             <input type="number" class="answer-input ${correctClass}" style="width:100px;"
                                 data-expected="${problemData.a}"
                                 value="${answerVal}"
