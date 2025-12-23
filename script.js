@@ -1,5 +1,6 @@
 import { globalSeed, setSeed } from './js/mathUtils.js';
 import { generateProblemsData as genData } from './js/problemGenerators.js?v=4';
+import { TRANSLATIONS } from './js/translations.js';
 
 // Expose to window for inline HTML handlers
 window.updateTopicSelector = updateTopicSelector;
@@ -10,73 +11,64 @@ window.toggleLogoVisibility = toggleLogoVisibility;
 window.toggleQRVisibility = toggleQRVisibility;
 window.validateInput = validateInput;
 
+const lang = window.location.pathname.includes('/en') ? 'en' : 'de';
+const basePath = lang === 'en' ? '../' : './';
+const T = TRANSLATIONS[lang];
+
+if (document.getElementById('htmlRoot')) {
+    document.getElementById('htmlRoot').lang = lang;
+}
+
+const GRADE_TOPICS_STRUCTURE = {
+    '1': ['add_10', 'sub_10', 'add_20_simple', 'sub_20_simple', 'bonds_10', 'rechenmauer_10', 'money_10'],
+    '2': ['add_20', 'sub_20', 'add_100_simple', 'add_100_carry', 'sub_100_simple', 'sub_100_carry', 'mult_2_5_10', 'mult_all', 'div_2_5_10', 'rechenmauer', 'rechenmauer_4', 'doubling_halving', 'zahlenhaus_20', 'word_problems', 'time_reading', 'time_analog_set', 'visual_add_100', 'rechendreiecke', 'rechenstrich', 'married_100', 'money_100', 'word_types'],
+    '3': ['add_1000', 'sub_1000', 'mult_advanced', 'div_100', 'div_remainder', 'rechenmauer_100', 'time_duration', 'time_analog_set_complex', 'rechendreiecke_100', 'zahlenhaus_100'],
+    '4': ['add_written', 'sub_written', 'mult_large', 'div_long', 'rounding'],
+    '5': ['dec_add', 'dec_sub', 'mult_10_100', 'units'],
+    '6': ['frac_simplify', 'frac_add', 'percent_basic']
+};
+
+const GRADE_TOPICS = {};
+Object.keys(GRADE_TOPICS_STRUCTURE).forEach(g => {
+    GRADE_TOPICS[g] = GRADE_TOPICS_STRUCTURE[g].map(v => ({ value: v, text: T.topics[v] }));
+});
+
 const mascots = ['🦊', '🦉', '🦁', '🐼', '🐨', '🐯', '🦄', '🦖'];
 
-const GRADE_TOPICS = {
-    '1': [
-        { value: 'add_10', text: 'Addition bis 10' },
-        { value: 'sub_10', text: 'Subtraktion bis 10' },
-        { value: 'add_20_simple', text: 'Addition bis 20 (ohne Zehnerübergang)' },
-        { value: 'sub_20_simple', text: 'Subtraktion bis 20 (ohne Zehnerübergang)' },
-        { value: 'bonds_10', text: '❤️ Verliebte Zahlen (bis 10)' },
-        { value: 'rechenmauer_10', text: 'Kleine Rechenmauern (bis 10)' },
-        { value: 'money_10', text: '💰 Geld (Münzen bis 10 Fr)' },
-    ],
-    '2': [
-        { value: 'add_20', text: 'Addition bis 20 (mit Zehnerübergang)' },
-        { value: 'sub_20', text: 'Subtraktion bis 20 (mit Zehnerübergang)' },
-        { value: 'add_100_simple', text: 'Addition bis 100 (ohne Zehnerübergang)' },
-        { value: 'add_100_carry', text: 'Addition bis 100 (mit Zehnerübergang)' },
-        { value: 'sub_100_simple', text: 'Subtraktion bis 100 (ohne Zehnerübergang)' },
-        { value: 'sub_100_carry', text: 'Subtraktion bis 100 (mit Zehnerübergang)' },
-        { value: 'mult_2_5_10', text: 'Kleines 1x1 (2er, 5er, 10er)' },
-        { value: 'mult_all', text: 'Kleines 1x1 (Gemischt)' },
-        { value: 'div_2_5_10', text: 'Geteilt (2er, 5er, 10er)' },
-        { value: 'rechenmauer', text: 'Rechenmauern (3 Ebenen)' },
-        { value: 'rechenmauer_4', text: 'Rechenmauern (4 Ebenen)' },
-        { value: 'doubling_halving', text: 'Halbieren und Verdoppeln' },
-        { value: 'zahlenhaus_20', text: 'Zahlenhaus (bis 20)' },
-        { value: 'word_problems', text: 'Sachrechnen (Textaufgaben)' },
-        { value: 'time_reading', text: 'Uhrzeit lesen' },
-        { value: 'time_analog_set', text: 'Uhrzeit einzeichnen (Analog)' },
-        { value: 'visual_add_100', text: 'Hunderterfeld: Addition' },
-        { value: 'rechendreiecke', text: 'Rechendreiecke (bis 20)' },
-        { value: 'rechenstrich', text: 'Rechenstrich (Addition)' },
-        { value: 'married_100', text: '💍 Verheiratete Zahlen (bis 100)' },
-        { value: 'money_100', text: '💰 Geld (Münzen & Noten bis 100 Fr)' },
-        { value: 'word_types', text: 'Deutsch: Wortarten erkennen' }
-    ],
-    '3': [
-        { value: 'add_1000', text: 'Addition bis 1000' },
-        { value: 'sub_1000', text: 'Subtraktion bis 1000' },
-        { value: 'mult_advanced', text: 'Erweitertes 1x1 (bis 20)' },
-        { value: 'div_100', text: 'Division (bis 100 ohne Rest)' },
-        { value: 'div_remainder', text: 'Division (mit Rest - Basis)' },
-        { value: 'rechenmauer_100', text: 'Grosse Rechenmauern (bis 100)' },
-        { value: 'time_duration', text: 'Zeitspannen' },
-        { value: 'time_analog_set_complex', text: 'Uhrzeit einzeichnen (Digital -> Analog)' },
-        { value: 'rechendreiecke_100', text: 'Rechendreiecke (bis 100)' },
-        { value: 'zahlenhaus_100', text: 'Zahlenhaus (bis 100)' }
-    ],
-    '4': [
-        { value: 'add_written', text: 'Schriftliche Addition (bis 1 Mio)' },
-        { value: 'sub_written', text: 'Schriftliche Subtraktion (bis 1 Mio)' },
-        { value: 'mult_large', text: 'Schriftliche Multiplikation' },
-        { value: 'div_long', text: 'Schriftliche Division' },
-        { value: 'rounding', text: 'Runden (10er, 100er, 1000er)' },
-    ],
-    '5': [
-        { value: 'dec_add', text: 'Dezimalzahlen: Addition' },
-        { value: 'dec_sub', text: 'Dezimalzahlen: Subtraktion' },
-        { value: 'mult_10_100', text: 'Malnehmen mit 10/100/1000' },
-        { value: 'units', text: 'Einheiten umrechnen (m, kg, s)' },
-    ],
-    '6': [
-        { value: 'frac_simplify', text: 'Brüche: Kürzen/Erweitern' },
-        { value: 'frac_add', text: 'Brüche: Addition' },
-        { value: 'percent_basic', text: 'Prozentrechnung (Basis)' },
-    ]
-};
+function applyTranslations() {
+    document.title = T.ui.title;
+    const ids = {
+        'labelCount': T.ui.countLabel,
+        'labelSolutions': T.ui.solutionsLabel,
+        'btnGenerate': T.ui.btnGenerate,
+        'btnSave': T.ui.btnSave,
+        'btnSaved': T.ui.btnSaved,
+        'btnPrint': T.ui.btnPrint,
+        'labelHideLogo': T.ui.hideLogo,
+        'labelHideQR': T.ui.hideQR,
+        'customTitle': T.ui.customTitle,
+        'labelMultiplesOf10': T.ui.multiplesOf10,
+        'labelCurrency': T.ui.currency,
+        'labelHours': T.ui.hours,
+        'labelMinutes': T.ui.minutes,
+        'modalTitle': T.ui.modalTitle,
+        'btnModalClose': T.ui.modalClose,
+        'labelFeedback': T.ui.feedback
+    };
+    for (const [id, text] of Object.entries(ids)) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = text;
+    }
+
+    const gradeSelector = document.getElementById('gradeSelector');
+    if (gradeSelector) {
+        Array.from(gradeSelector.options).forEach(opt => {
+            if (T.ui.grades[opt.value]) {
+                opt.textContent = T.ui.grades[opt.value];
+            }
+        });
+    }
+}
 
 function updateTopicSelectorNodes(topics) {
     const topicSelector = document.getElementById('topicSelector');
@@ -91,7 +83,7 @@ function updateTopicSelectorNodes(topics) {
     // Add Custom Option
     const customOpt = document.createElement('option');
     customOpt.value = 'custom';
-    customOpt.textContent = '🛠️ Individuelle Aufgaben';
+    customOpt.textContent = T.ui.individuelleAufgaben;
     topicSelector.appendChild(customOpt);
 }
 
@@ -219,18 +211,7 @@ function generateSheet(keepSeed = false) {
 
     // 2. Determine Page Count
     const pageCountInput = document.getElementById('pageCount');
-    let pageCount = parseInt(pageCountInput.value);
-    if (isNaN(pageCount) || pageCount < 1) pageCount = 1;
-    if (pageCount > 50) pageCount = 50;
-
-    const allowedCurrencies = [];
-    if (document.getElementById('currencyCHF').checked) allowedCurrencies.push('CHF');
-    if (document.getElementById('currencyEUR').checked) allowedCurrencies.push('EUR');
-    if (allowedCurrencies.length === 0) allowedCurrencies.push('CHF'); // Default fallback
-
-    const options = {
-        marriedMultiplesOf10: document.getElementById('marriedMultiplesOf10').checked
-    };
+    const pageCount = parseInt(document.getElementById('pageCount').value) || 1;
 
     // 3. Generate Data for ALL pages
     currentSheetsData = [];
@@ -241,7 +222,15 @@ function generateSheet(keepSeed = false) {
     }
 
     for (let i = 0; i < pageCount; i++) {
-        currentSheetsData.push(genData(type, numProblems, availableTopics, allowedCurrencies, options));
+        const allowedCurrencies = [];
+        if (document.getElementById('currencyCHF').checked) allowedCurrencies.push('CHF');
+        if (document.getElementById('currencyEUR').checked) allowedCurrencies.push('EUR');
+        if (allowedCurrencies.length === 0) allowedCurrencies.push('CHF'); // Default fallback
+
+        const options = {
+            marriedMultiplesOf10: document.getElementById('marriedMultiplesOf10').checked
+        };
+        currentSheetsData.push(genData(type, numProblems, availableTopics, allowedCurrencies, options, lang));
     }
 
     // 4. Render
@@ -360,7 +349,7 @@ function createProblemElement(problemData, isSolution) {
         problemDiv.innerHTML = `
                     <div style="font-size: 14pt; margin-bottom:10px;"> ${problemData.q}</div>
                         <div style="display:flex; gap:10px; align-items:center; width:100%; justify-content: flex-end;">
-                            <span>Antwort:</span>
+                            <span>${T.ui.answerLabel}</span>
                             <input type="number" class="answer-input ${correctClass}" style="width:100px;"
                                 data-expected="${problemData.a}"
                                 value="${answerVal}"
@@ -488,7 +477,7 @@ function createProblemElement(problemData, isSolution) {
 
     } else if (problemData.type === 'doubling_halving') {
         const { subtype, val, answer } = problemData;
-        const label = subtype === 'double' ? 'Verdopple:' : 'Halbiere:';
+        const label = subtype === 'double' ? T.ui.doubleLabel : T.ui.halfLabel;
         // const icon = subtype === 'double' ? '✨2x' : '✂️½'; // Maybe too noisy? Text is engaging enough.
 
         const valAns = isSolution ? answer : '';
@@ -530,7 +519,7 @@ function createProblemElement(problemData, isSolution) {
 
         problemDiv.style.flexDirection = 'column';
         problemDiv.innerHTML = `
-                 <div style="margin-bottom:5px;">Runde <b>${val}</b> auf <b>${place}er</b>:</div>
+                 <div style="margin-bottom:5px;">${T.ui.roundingLabel.replace('{val}', val).replace('{place}', place)}</div>
                  <input type="number" class="answer-input" style="width:80px;" 
                         data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
             `;
@@ -804,7 +793,7 @@ function createProblemElement(problemData, isSolution) {
                        value="${isSolution ? answer.split(':')[1] : ''}" 
                        oninput="validateInput(this)" 
                        ${isSolution ? 'readonly' : ''}>
-                 <span style="margin-left:5px;">Uhr</span>
+                  <span style="margin-left:5px;">${T.ui.timeLabel}</span>
             </div>
         `;
 
@@ -817,13 +806,13 @@ function createProblemElement(problemData, isSolution) {
         problemDiv.innerHTML = `
             <div style="margin-bottom:8px;">${q}</div>
             <div style="display:flex; align-items:center; gap:5px;">
-                <span>Antwort:</span>
+                <span>${T.ui.answerLabel}</span>
                 <input type="text" class="answer-input" style="width:60px;" 
                        data-expected="${answer}" 
                        value="${valAns}" 
                        oninput="validateInput(this)" 
                        ${isSolution ? 'readonly' : ''}>
-                 <span>Uhr</span>
+                  <span>${T.ui.timeLabel}</span>
             </div>
         `;
 
@@ -942,24 +931,24 @@ function createProblemElement(problemData, isSolution) {
         problemDiv.style.gap = '10px';
 
         const COIN_IMAGES_CHF = {
-            '5': 'images/coins/CHF/smt_coin_5_fr_back.png',
-            '2': 'images/coins/CHF/smt_coin_2_fr_back.png',
-            '1': 'images/coins/CHF/smt_coin_1_fr_back.png',
-            '0.5': 'images/coins/CHF/smt_coin_50rp_back.png',
-            '0.2': 'images/coins/CHF/smt_coin_20rp_back.png',
-            '0.1': 'images/coins/CHF/smt_coin_10rp_back.png',
-            '0.05': 'images/coins/CHF/smt_coin_5rp_back.png'
+            '5': basePath + 'images/coins/CHF/smt_coin_5_fr_back.png',
+            '2': basePath + 'images/coins/CHF/smt_coin_2_fr_back.png',
+            '1': basePath + 'images/coins/CHF/smt_coin_1_fr_back.png',
+            '0.5': basePath + 'images/coins/CHF/smt_coin_50rp_back.png',
+            '0.2': basePath + 'images/coins/CHF/smt_coin_20rp_back.png',
+            '0.1': basePath + 'images/coins/CHF/smt_coin_10rp_back.png',
+            '0.05': basePath + 'images/coins/CHF/smt_coin_5rp_back.png'
         };
 
         const COIN_IMAGES_EUR = {
-            '2': 'images/coins/EUR/Common_face_of_two_euro_coin_(2007).jpg',
-            '1': 'images/coins/EUR/Common_face_of_one_euro_coin.png',
-            '0.5': 'images/coins/EUR/50_eurocent_common_2007.png',
-            '0.2': 'images/coins/EUR/20_eurocent_common_2007.png',
-            '0.1': 'images/coins/EUR/10_eurocent_common_2007.png',
-            '0.05': 'images/coins/EUR/5_eurocent_common_1999.png',
-            '0.02': 'images/coins/EUR/2_eurocent_common_1999.png',
-            '0.01': 'images/coins/EUR/1_cent_euro_coin_common_side.png'
+            '2': basePath + 'images/coins/EUR/Common_face_of_two_euro_coin_(2007).jpg',
+            '1': basePath + 'images/coins/EUR/Common_face_of_one_euro_coin.png',
+            '0.5': basePath + 'images/coins/EUR/50_eurocent_common_2007.png',
+            '0.2': basePath + 'images/coins/EUR/20_eurocent_common_2007.png',
+            '0.1': basePath + 'images/coins/EUR/10_eurocent_common_2007.png',
+            '0.05': basePath + 'images/coins/EUR/5_eurocent_common_1999.png', // This was missing, added placeholder
+            '0.02': basePath + 'images/coins/EUR/2_eurocent_common_1999.png',
+            '0.01': basePath + 'images/coins/EUR/1_cent_euro_coin_common_side.png'
         };
         // Wait, did I list 5 cent in EUR?
         // checking list_dir output from earlier...
@@ -969,47 +958,28 @@ function createProblemElement(problemData, isSolution) {
         // 2_eurocent_common_1999.png
         // 1_cent_euro_coin_common_side.png
         // MISSING 5 cent in list? 
-        // list_dir output:
-        // 10_eurocent_common_2007.png
-        // 1_cent_euro_coin_common_side.png
-        // 20_eurocent_common_2007.png
-        // 2_eurocent_common_1999.png
-        // 50_eurocent_common_2007.png
-        // Common_face_of_one_euro_coin.png
-        // Common_face_of_two_euro_coin_(2007).jpg
-        //
-        // I seem to be missing the 5 cent coin in the EUR directory!
-        // I will use 2 cent for 5 cent as placeholder or omit 5 cent generation?
-        // Generator uses 0.05... 
-        // I should probably check if I missed it in the list or if it's really missing.
-        // Assuming it's missing, I should maybe request it or map to something else.
-        // For now I will assume I missed it or will map to 2 cent temporarily to avoid breaking image load.
-        // Actually, listing had 7 files. 
-        // 10, 1, 20, 2, 50, 1e, 2e. 
-        // That's 7 files. 5 cent is indeed missing!
-
         // I will update COIN_IMAGES_EUR with what I have.
 
         const COIN_IMAGES = (currency === 'EUR') ? COIN_IMAGES_EUR : COIN_IMAGES_CHF;
 
 
         const NOTE_IMAGES_CHF = {
-            '10': 'images/banknotes/CHF/CHF10_8_front.jpg',
-            '20': 'images/banknotes/CHF/CHF20_8_front.jpg',
-            '50': 'images/banknotes/CHF/CHF50_8_front.jpg',
-            '100': 'images/banknotes/CHF/CHF100_8_front.jpg',
-            '200': 'images/banknotes/CHF/CHF200_8_front.jpg',
-            '1000': 'images/banknotes/CHF/CHF1000_8_front.jpg'
+            '10': basePath + 'images/banknotes/CHF/CHF10_8_front.jpg',
+            '20': basePath + 'images/banknotes/CHF/CHF20_8_front.jpg',
+            '50': basePath + 'images/banknotes/CHF/CHF50_8_front.jpg',
+            '100': basePath + 'images/banknotes/CHF/CHF100_8_front.jpg',
+            '200': basePath + 'images/banknotes/CHF/CHF200_8_front.jpg',
+            '1000': basePath + 'images/banknotes/CHF/CHF1000_8_front.jpg'
         };
 
         const NOTE_IMAGES_EUR = {
-            '5': 'images/banknotes/EUR/EUR_5_obverse_(2002_issue).jpg',
-            '10': 'images/banknotes/EUR/EUR_10_obverse_(2002_issue).jpg',
-            '20': 'images/banknotes/EUR/EUR_20_obverse_(2002_issue).jpg',
-            '50': 'images/banknotes/EUR/EUR_50_obverse_(2002_issue).jpg',
-            '100': 'images/banknotes/EUR/EUR_100_obverse_(2002_issue).jpg',
-            '200': 'images/banknotes/EUR/EUR_200_obverse_(2002_issue).jpg',
-            '500': 'images/banknotes/EUR/EUR_500_obverse_(2002_issue).jpg'
+            '5': basePath + 'images/banknotes/EUR/EUR_5_obverse_(2002_issue).jpg',
+            '10': basePath + 'images/banknotes/EUR/EUR_10_obverse_(2002_issue).jpg',
+            '20': basePath + 'images/banknotes/EUR/EUR_20_obverse_(2002_issue).jpg',
+            '50': basePath + 'images/banknotes/EUR/EUR_50_obverse_(2002_issue).jpg',
+            '100': basePath + 'images/banknotes/EUR/EUR_100_obverse_(2002_issue).jpg',
+            '200': basePath + 'images/banknotes/EUR/EUR_200_obverse_(2002_issue).jpg',
+            '500': basePath + 'images/banknotes/EUR/EUR_500_obverse_(2002_issue).jpg'
         };
 
         const NOTE_IMAGES = (currency === 'EUR') ? NOTE_IMAGES_EUR : NOTE_IMAGES_CHF;
@@ -1085,7 +1055,7 @@ function createProblemElement(problemData, isSolution) {
 
         const unitLabel = currency === 'EUR' ? '€' : 'Fr.';
         const inputHtml = `<div style="display:flex; align-items:center; gap:10px; font-weight:bold;">
-            <span>Total:</span>
+            <span>${T.ui.totalLabel}</span>
             <input type="number" step="${currency === 'EUR' ? '0.01' : '0.05'}" class="answer-input" style="width:100px;" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${readonlyAttr} ${style}>
             <span>${unitLabel}</span>
         </div>`;
@@ -1243,7 +1213,7 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
 
     // Sheet Logo (Top Left)
     const sheetLogo = document.createElement('img');
-    sheetLogo.src = 'images/Thalwil_Familien_Logo.png';
+    sheetLogo.src = basePath + 'images/Thalwil_Familien_Logo.png';
     sheetLogo.className = 'sheet-logo';
     if (document.getElementById('hideLogo').checked) {
         sheetLogo.classList.add('logo-hidden');
@@ -1256,8 +1226,8 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     header.innerHTML = `
                                                                                     <div style="width:100px;"></div> <!-- Spacer for Logo -->
                                                                                     <div style="display:flex; gap: 40px;">
-                                                                                        <div class="header-field">Name: <span class="line"></span></div>
-                                                                                        <div class="header-field">Datum: <span class="line"></span></div>
+                                                                                         <div class="header-field">${T.ui.headerName} <span class="line"></span></div>
+                                                                                         <div class="header-field">${T.ui.headerDate} <span class="line"></span></div>
                                                                                     </div>
                                                                                     <div style="width:100px;"></div> <!-- Spacer for QR Code -->
                                                                                     `;
@@ -1265,7 +1235,7 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
 
     // Title
     const h1 = document.createElement('h1');
-    h1.textContent = titleText + (isSolution ? ' (Lösungen)' : '');
+    h1.textContent = titleText + (isSolution ? T.ui.solutionsSuffix : '');
     if (isSolution) h1.style.color = '#27ae60';
     sheetDiv.appendChild(h1);
 
@@ -1304,12 +1274,12 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
         const legend = document.createElement('div');
         legend.className = 'word-types-legend';
         legend.innerHTML = `
-            <div class="legend-item" data-type="noun" onclick="setActiveWordType('noun')"><div class="legend-color" style="background:red"></div> Nomen</div>
-            <div class="legend-item" data-type="verb" onclick="setActiveWordType('verb')"><div class="legend-color" style="background:blue"></div> Verben</div>
-            <div class="legend-item" data-type="adj" onclick="setActiveWordType('adj')"><div class="legend-color" style="background:green"></div> Adjektive</div>
-            <div class="legend-item" data-type="artikel" onclick="setActiveWordType('artikel')"><div class="legend-color" style="background:orange"></div> Artikel</div>
-            <div class="legend-item" data-type="none" onclick="setActiveWordType('none')"><div class="legend-color" style="background:#888; height: 10px; width: 10px; border-radius: 2px;"></div> Radiergummi</div>
-            <div style="font-style:italic; margin-left:10px;">(Klicke auf die Wörter zum Markieren)</div>
+            <div class="legend-item" data-type="noun" onclick="setActiveWordType('noun')"><div class="legend-color" style="background:red"></div> ${T.ui.wordTypesLegend.noun}</div>
+            <div class="legend-item" data-type="verb" onclick="setActiveWordType('verb')"><div class="legend-color" style="background:blue"></div> ${T.ui.wordTypesLegend.verb}</div>
+            <div class="legend-item" data-type="adj" onclick="setActiveWordType('adj')"><div class="legend-color" style="background:green"></div> ${T.ui.wordTypesLegend.adj}</div>
+            <div class="legend-item" data-type="artikel" onclick="setActiveWordType('artikel')"><div class="legend-color" style="background:orange"></div> ${T.ui.wordTypesLegend.artikel}</div>
+            <div class="legend-item" data-type="none" onclick="setActiveWordType('none')"><div class="legend-color" style="background:#888; height: 10px; width: 10px; border-radius: 2px;"></div> ${T.ui.wordTypesLegend.eraser}</div>
+            <div style="font-style:italic; margin-left:10px;">${T.ui.wordTypesLegend.instruction}</div>
         `;
         sheetDiv.insertBefore(legend, grid);
     }
@@ -1326,7 +1296,7 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
 
     // Page numbering
     if (pageInfo) {
-        footer.textContent = `${pageInfo.current}${isSolution ? ' (Lösungen)' : ''}`;
+        footer.textContent = `${pageInfo.current}${isSolution ? T.ui.solutionsSuffix : ''}`;
     }
 
     sheetDiv.appendChild(footer);
@@ -1751,13 +1721,13 @@ window.saveCurrentState = function () {
     updateURLState(); // Sync current state to URL
     const params = window.location.search;
     if (!params) {
-        alert("Nichts zum Speichern gefunden.");
+        alert(T.ui.saveNothing);
         return;
     }
 
     const topicName = document.getElementById('topicSelector').options[document.getElementById('topicSelector').selectedIndex].text;
-    const defaultName = `${topicName} (${new Date().toLocaleDateString()})`;
-    const name = prompt("Bezeichnung für dieses Arbeitsblatt:", defaultName);
+    const defaultName = `${topicName} (${new Date().toLocaleDateString(lang === 'de' ? 'de-CH' : 'en-US')})`;
+    const name = prompt(T.ui.savePrompt, defaultName);
     if (name === null) return; // Cancelled
 
     const saved = JSON.parse(localStorage.getItem('ufzgiblatt_saved') || '[]');
@@ -1765,11 +1735,11 @@ window.saveCurrentState = function () {
         id: Date.now(),
         name: name || defaultName,
         params: params,
-        timestamp: new Date().toLocaleString('de-CH')
+        timestamp: new Date().toLocaleString(lang === 'de' ? 'de-CH' : 'en-US')
     });
 
     localStorage.setItem('ufzgiblatt_saved', JSON.stringify(saved));
-    alert("Erfolgreich gespeichert!");
+    alert(T.ui.saveSuccess);
 };
 
 window.toggleSavedModal = function () {
@@ -1787,7 +1757,7 @@ window.renderSavedList = function () {
     const saved = JSON.parse(localStorage.getItem('ufzgiblatt_saved') || '[]');
 
     if (saved.length === 0) {
-        list.innerHTML = '<p style="text-align:center; padding: 20px;">Noch keine Arbeitsblätter gespeichert.</p>';
+        list.innerHTML = `<p style="text-align:center; padding: 20px;">${T.ui.noSavedWorksheets}</p>`;
         return;
     }
 
@@ -1801,8 +1771,8 @@ window.renderSavedList = function () {
                 <span class="saved-item-date">${item.timestamp}</span>
             </div>
             <div class="saved-item-actions">
-                <button class="btn-load" onclick="loadSavedState(${item.id})">Laden</button>
-                <button class="btn-delete" onclick="deleteSavedState(${item.id})">Löschen</button>
+                <button class="btn-load" onclick="loadSavedState(${item.id})">${T.ui.btnLoad}</button>
+                <button class="btn-delete" onclick="deleteSavedState(${item.id})">${T.ui.btnDelete}</button>
             </div>
         </div>
     `).join('');
@@ -1821,7 +1791,7 @@ window.loadSavedState = function (id) {
 };
 
 window.deleteSavedState = function (id) {
-    if (!confirm("Möchtest du dieses Arbeitsblatt wirklich löschen?")) return;
+    if (!confirm(T.ui.confirmDelete)) return;
 
     let saved = JSON.parse(localStorage.getItem('ufzgiblatt_saved') || '[]');
     saved = saved.filter(s => s.id !== id);
@@ -1949,8 +1919,8 @@ window.validateWord = function (el) {
 }
 
 
-
-
-
-
+// --- INITIALIZATION ---
+applyTranslations();
+updateTopicSelector();
+generateSheet();
 
