@@ -1,0 +1,755 @@
+import { getRandomInt, seededRandom, gcd } from './mathUtils.js';
+
+export function generateProblemsData(type, count, availableTopics = [], allowedCurrencies = ['CHF'], options = {}) {
+    const data = [];
+
+    const getCurrencyForProblem = () => {
+        if (!allowedCurrencies || allowedCurrencies.length === 0) return 'CHF';
+        return allowedCurrencies[getRandomInt(0, allowedCurrencies.length - 1)];
+    };
+
+    if (type === 'custom') {
+        if (availableTopics.length === 0) return [];
+
+        const WEIGHTS = {
+            'default': 1,
+            'rechenmauer_10': 2.2,
+            'rechenmauer_100': 2.5,
+            'rechenmauer': 2.5,
+            'rechenmauer_4': 3.5,
+            'time_reading': 2.5,
+            'word_problems': 2.5,
+            'visual_add_100': 4.0,
+            'add_written': 1.8,
+            'sub_written': 1.8,
+            'mult_large': 2.5,
+            'div_long': 2.0,
+            'rounding': 1.2,
+            'dec_add': 1.8,
+            'dec_sub': 1.8,
+            'units': 1.5,
+            'frac_add': 2.0,
+            'frac_simplify': 1.8,
+            'percent_basic': 1.5,
+            'rechendreiecke': 1.9,
+            'zahlenhaus_10': 3.75,
+            'zahlenhaus_20': 3.75,
+            'zahlenhaus_100': 3.75,
+            'married_100': 1.0,
+            'rechenstrich': 2.5,
+            'money_10': 3.0,
+            'money_100': 4.0
+        };
+
+        const PAGE_CAPACITY = 15;
+        let currentLoad = 0;
+
+        const shuffledTopics = [...availableTopics].sort(() => seededRandom() - 0.5);
+
+        // Pre-shuffle sentences for word_types if present
+        const wordTypeIndices = Array.from({ length: WORD_TYPES_SENTENCES.length }, (_, i) => i);
+        wordTypeIndices.sort(() => seededRandom() - 0.5);
+        let wordTypeCount = 0;
+
+        shuffledTopics.forEach(topic => {
+            if (currentLoad < PAGE_CAPACITY) {
+                let w = WEIGHTS[topic] || 1;
+                // For money topics, pick a currency
+                const currency = getCurrencyForProblem();
+                data.push(generateProblem(topic, currency, options, topic === 'word_types' ? wordTypeIndices[wordTypeCount++ % WORD_TYPES_SENTENCES.length] : -1));
+                currentLoad += w;
+            }
+        });
+
+        let retries = 0;
+        while (currentLoad < PAGE_CAPACITY && retries < 15) {
+            const topic = availableTopics[getRandomInt(0, availableTopics.length - 1)];
+            let w = WEIGHTS[topic] || 1;
+
+            if (currentLoad + w <= PAGE_CAPACITY) {
+                const currency = getCurrencyForProblem();
+                data.push(generateProblem(topic, currency, options, topic === 'word_types' ? wordTypeIndices[wordTypeCount++ % WORD_TYPES_SENTENCES.length] : -1));
+                currentLoad += w;
+                retries = 0;
+            } else {
+                retries++;
+            }
+        }
+    } else {
+        // Normal topic (could be word_types)
+        const isWordTypes = type === 'word_types';
+        let shuffledIndices = [];
+        if (isWordTypes) {
+            shuffledIndices = Array.from({ length: WORD_TYPES_SENTENCES.length }, (_, i) => i);
+            shuffledIndices.sort(() => seededRandom() - 0.5);
+        }
+
+        for (let i = 0; i < count; i++) {
+            const currency = getCurrencyForProblem();
+            data.push(generateProblem(type, currency, options, isWordTypes ? shuffledIndices[i % WORD_TYPES_SENTENCES.length] : -1));
+        }
+    }
+    return data;
+}
+
+export function generateProblem(type, currency = 'CHF', options = {}, index = -1) {
+    let a, b, op;
+
+    switch (type) {
+        case 'add_10':
+            a = getRandomInt(0, 9);
+            b = getRandomInt(1, 10 - a);
+            op = '+';
+            break;
+        case 'sub_10':
+            a = getRandomInt(1, 10);
+            b = getRandomInt(1, a);
+            op = '-';
+            break;
+        case 'add_20_simple':
+            a = getRandomInt(10, 18);
+            b = getRandomInt(1, 19 - a);
+            op = '+';
+            break;
+        case 'sub_20_simple':
+            a = getRandomInt(11, 19);
+            b = getRandomInt(1, a - 10);
+            op = '-';
+            break;
+        case 'bonds_10':
+            a = getRandomInt(0, 10);
+            return { type: 'missing_addend', a: a, sum: 10, op: '+', answer: 10 - a };
+        case 'rechenmauer_10':
+            return generatePyramid(10);
+        case 'add_20':
+            a = getRandomInt(1, 19);
+            b = getRandomInt(1, 20 - a);
+            op = '+';
+            break;
+        case 'sub_20':
+            a = getRandomInt(1, 20);
+            b = getRandomInt(1, a);
+            op = '-';
+            break;
+        case 'add_100_simple':
+            a = getRandomInt(1, 89);
+            {
+                let a_ones = a % 10;
+                b = getRandomInt(1, 99 - a);
+                while ((b % 10) + a_ones >= 10) {
+                    b = getRandomInt(1, 99 - a);
+                }
+            }
+            op = '+';
+            break;
+        case 'add_100_carry':
+            do {
+                a = getRandomInt(10, 89);
+                b = getRandomInt(1, 99 - a);
+            } while ((a % 10) + (b % 10) < 10);
+            op = '+';
+            break;
+        case 'sub_100_simple':
+            a = getRandomInt(10, 99);
+            {
+                let max_b_ones = a % 10;
+                let max_b_tens = Math.floor(a / 10);
+                let b_tens = getRandomInt(0, max_b_tens);
+                let b_ones = getRandomInt(0, max_b_ones);
+                b = b_tens * 10 + b_ones;
+                if (b === 0) b = 1;
+            }
+            op = '-';
+            break;
+        case 'sub_100_carry':
+            do {
+                a = getRandomInt(20, 99);
+                b = getRandomInt(1, a - 1);
+            } while ((a % 10) >= (b % 10));
+            op = '-';
+            break;
+        case 'mult_2_5_10':
+            b = [2, 5, 10][getRandomInt(0, 2)];
+            a = getRandomInt(1, 10);
+            op = '×';
+            break;
+        case 'mult_all':
+            a = getRandomInt(1, 10);
+            b = getRandomInt(1, 10);
+            op = '×';
+            break;
+        case 'div_2_5_10':
+            {
+                let divisor = [2, 5, 10][getRandomInt(0, 2)];
+                let result = getRandomInt(1, 10);
+                a = result * divisor;
+                b = divisor;
+            }
+            op = ':';
+            break;
+        case 'doubling_halving':
+            {
+                const isDouble = seededRandom() < 0.5;
+                if (isDouble) {
+                    a = getRandomInt(1, 50);
+                    return { type: 'doubling_halving', subtype: 'double', val: a, answer: a * 2 };
+                } else {
+                    let val = getRandomInt(1, 50) * 2;
+                    return { type: 'doubling_halving', subtype: 'halve', val: val, answer: val / 2 };
+                }
+            }
+        case 'rechenmauer':
+            return generatePyramid(100, 3);
+        case 'rechenmauer_4':
+            return generatePyramid(100, 4);
+        case 'word_problems':
+            const problems = [
+                { q: "Lisa hat 5 Äpfel. Sie kauft 3 dazu. Wie viele hat sie?", a: 8 },
+                { q: "Tom hat 10 Ballons. 2 fliegen weg. Wie viele bleiben?", a: 8 },
+                { q: "Eine Katze hat 4 Beine. Wie viele Beine haben 2 Katzen?", a: 8 },
+                { q: "Oma backt 12 Kekse. Sie verteilt sie an 3 Enkel. Wie viele kriegt jeder?", a: 4 },
+                { q: "Im Bus sind 5 Leute. An der Haltestelle steigen 4 ein. Wie viele sind es?", a: 9 },
+                { q: "Max hat 20 Franken. Ein Buch kostet 15. Wie viel bleibt übrig?", a: 5 }
+            ];
+            return { type: 'text', ...problems[getRandomInt(0, problems.length - 1)] };
+        case 'add_1000':
+            a = getRandomInt(100, 899);
+            b = getRandomInt(1, 999 - a);
+            op = '+';
+            break;
+        case 'sub_1000':
+            a = getRandomInt(100, 999);
+            b = getRandomInt(1, a - 1);
+            op = '-';
+            break;
+        case 'mult_advanced':
+            a = getRandomInt(11, 20);
+            b = getRandomInt(2, 6);
+            op = '×';
+            break;
+        case 'div_100':
+            {
+                let divisor = getRandomInt(2, 9);
+                let result = getRandomInt(2, 10);
+                a = result * divisor;
+                b = divisor;
+            }
+            op = ':';
+            break;
+        case 'div_remainder':
+            {
+                let divisor = getRandomInt(2, 9);
+                let result = getRandomInt(2, 10);
+                let remainder = getRandomInt(1, divisor - 1);
+                a = (result * divisor) + remainder;
+                b = divisor;
+                return { type: 'div_remainder', a, b, op: ':', answer: result, remainder };
+            }
+        case 'rechenmauer_100':
+            return generatePyramid(200, 3);
+        case 'add_written':
+            a = getRandomInt(1000, 99999);
+            b = getRandomInt(1000, 99999);
+            return { type: 'written', a, b, op: '+', answer: a + b };
+        case 'sub_written':
+            a = getRandomInt(5000, 99999);
+            b = getRandomInt(1000, a - 1);
+            return { type: 'written', a, b, op: '-', answer: a - b };
+        case 'mult_large':
+            a = getRandomInt(100, 999);
+            b = getRandomInt(11, 99);
+            return { type: 'long_calculation', a, b, op: '×', answer: a * b };
+        case 'div_long':
+            {
+                let divisor = getRandomInt(2, 9);
+                let result = getRandomInt(100, 999);
+                a = result * divisor;
+                b = divisor;
+                return { type: 'long_calculation', a, b, op: ':', answer: result };
+            }
+        case 'dec_add':
+            {
+                let numA = getRandomInt(100, 9999) / 100;
+                let numB = getRandomInt(100, 9999) / 100;
+                return { type: 'standard', a: numA, b: numB, op: '+', answer: parseFloat((numA + numB).toFixed(2)) };
+            }
+        case 'dec_sub':
+            {
+                let numA = getRandomInt(500, 9999) / 100;
+                let numB = getRandomInt(100, 499) / 100;
+                return { type: 'standard', a: numA, b: numB, op: '-', answer: parseFloat((numA - numB).toFixed(2)) };
+            }
+        case 'mult_10_100':
+            {
+                a = (getRandomInt(10, 9999) / 100);
+                b = [10, 100, 1000][getRandomInt(0, 2)];
+                let ans = Math.round((a * b) * 1000) / 1000;
+                return { type: 'standard', a, b, op: '×', answer: ans };
+            }
+        case 'units':
+            {
+                const unitTypes = [
+                    { from: 'm', to: 'cm', factor: 100 },
+                    { from: 'km', to: 'm', factor: 1000 },
+                    { from: 'kg', to: 'g', factor: 1000 },
+                    { from: 'min', to: 's', factor: 60 },
+                    { from: 'h', to: 'min', factor: 60 }
+                ];
+                const u = unitTypes[getRandomInt(0, unitTypes.length - 1)];
+                let val = getRandomInt(1, 20);
+                if (u.factor === 1000 && seededRandom() > 0.5) val = val / 2;
+                return { type: 'unit_conv', val, from: u.from, to: u.to, answer: val * u.factor };
+            }
+        case 'percent_basic':
+            {
+                const rates = [10, 20, 25, 50, 75];
+                let rate = rates[getRandomInt(0, rates.length - 1)];
+                let base = getRandomInt(1, 20) * 100;
+                if (rate === 25 || rate === 75) base = getRandomInt(1, 20) * 4;
+                return { type: 'percent', rate, base, answer: (base * rate) / 100 };
+            }
+        case 'rounding':
+            {
+                let val = getRandomInt(1000, 99999);
+                let place = [10, 100, 1000][getRandomInt(0, 2)];
+                return { type: 'rounding', val, place, answer: Math.round(val / place) * place };
+            }
+        case 'rechendreiecke':
+            return generateTriangle(20);
+        case 'rechendreiecke_100':
+            return generateTriangle(100);
+        case 'zahlenhaus_10':
+            return generateHouse(10);
+        case 'zahlenhaus_20':
+            return generateHouse(20);
+        case 'zahlenhaus_100':
+            return generateHouse(100);
+        case 'rechenstrich':
+            return generateRechenstrich();
+        case 'money_10':
+            return generateMoneyProblem(10, currency);
+        case 'money_100':
+            return generateMoneyProblem(100, currency);
+        case 'word_types':
+            return generateWordTypeProblem(index);
+        case 'time_reading':
+            {
+                const minutes = getRandomInt(0, 11) * 5;
+                const hours = getRandomInt(1, 12);
+                const minStr = minutes.toString().padStart(2, '0');
+                const answer = `${hours}:${minStr}`;
+                return { type: 'time_reading', hours, minutes, answer };
+            }
+        case 'time_analog_set':
+            {
+                const minutes = getRandomInt(0, 3) * 15;
+                const hours = getRandomInt(1, 12);
+                const minStr = minutes.toString().padStart(2, '0');
+                return { type: 'time_analog_set', hours, minutes, digital: `${hours}:${minStr}` };
+            }
+        case 'time_analog_set_complex':
+            {
+                const minutes = getRandomInt(0, 59);
+                const hours = getRandomInt(0, 23);
+                const hStr = hours.toString().padStart(2, '0');
+                const minStr = minutes.toString().padStart(2, '0');
+                return { type: 'time_analog_set', hours, minutes, digital: `${hStr}:${minStr}`, isComplex: true };
+            }
+        case 'time_duration':
+            {
+                const startH = getRandomInt(6, 18);
+                const startM = getRandomInt(0, 11) * 5;
+                const duration = getRandomInt(1, 12) * 5;
+                let endM = startM + duration;
+                let endH = startH;
+                if (endM >= 60) {
+                    endH += Math.floor(endM / 60);
+                    endM %= 60;
+                }
+                const sH = startH.toString();
+                const sM = startM.toString().padStart(2, '0');
+                const eH = endH.toString();
+                const eM = endM.toString().padStart(2, '0');
+                return {
+                    type: 'time_duration',
+                    q: `Es ist ${sH}:${sM} Uhr. Wie spät ist es in ${duration} Min?`,
+                    answer: `${eH}:${eM}`
+                };
+            }
+        case 'visual_add_100':
+            {
+                const totalVis = getRandomInt(20, 100);
+                const partsCount = getRandomInt(2, 3);
+                const parts = [];
+                let currentSum = 0;
+                for (let i = 0; i < partsCount - 1; i++) {
+                    const maxVal = totalVis - currentSum - (partsCount - 1 - i);
+                    const valP = getRandomInt(1, maxVal);
+                    parts.push(valP);
+                    currentSum += valP;
+                }
+                parts.push(totalVis - currentSum);
+                const grid = new Array(100).fill(0);
+                let cursor = 0;
+                parts.forEach((p, idx) => {
+                    const groupId = idx + 1;
+                    for (let k = 0; k < p; k++) {
+                        if (cursor < 100) {
+                            grid[cursor] = groupId;
+                            cursor++;
+                        }
+                    }
+                });
+                return { type: 'visual_add_100', grid, parts, total: totalVis };
+            }
+        case 'frac_simplify':
+            {
+                let num = getRandomInt(1, 10);
+                let den = getRandomInt(num + 1, 20);
+                let factor = getRandomInt(2, 6);
+                let a = num * factor;
+                let b = den * factor;
+                const common = gcd(a, b);
+                const simpleNum = a / common;
+                const simpleDen = b / common;
+                return { type: 'fraction_simplify', num: a, den: b, answer: `${simpleNum}/${simpleDen}` };
+            }
+        case 'frac_add':
+            {
+                let den = getRandomInt(2, 12);
+                let numA = getRandomInt(1, den - 1);
+                let numB = getRandomInt(1, den - numA);
+                return { type: 'fraction_op', numA, denA: den, numB, denB: den, op: '+', answer: `${numA + numB}/${den}` };
+            }
+        case 'married_100':
+            return generateMarriedNumbers(options.marriedMultiplesOf10 || false);
+    }
+
+    const res = { a, b, op, type: 'standard' };
+    if (op === '+') res.answer = a + b;
+    else if (op === '-') res.answer = a - b;
+    else if (op === '×') res.answer = a * b;
+    else if (op === ':') res.answer = a / b;
+    return res;
+}
+
+export function generateMarriedNumbers(onlyMultiplesOf10) {
+    let a;
+    if (onlyMultiplesOf10) {
+        a = getRandomInt(0, 10) * 10;
+    } else {
+        // Pure random 1-99 (approx 10% chance of multiple of 10)
+        a = getRandomInt(1, 99);
+    }
+    return { type: 'married_numbers', a: a, sum: 100, op: '+', answer: 100 - a };
+}
+
+export function generatePyramid(maxTop, levels = 3) {
+    let values = [];
+    let top;
+    do {
+        values = [];
+        let baseCount = levels;
+        let maxBase = Math.max(1, Math.floor(maxTop / (2 ** (levels - 1))));
+
+        for (let i = 0; i < baseCount; i++) {
+            values.push(getRandomInt(1, maxBase));
+        }
+
+        let currentLayerStart = 0;
+        let currentLayerLength = baseCount;
+
+        for (let l = 1; l < levels; l++) {
+            for (let i = 0; i < currentLayerLength - 1; i++) {
+                let val = values[currentLayerStart + i] + values[currentLayerStart + i + 1];
+                values.push(val);
+            }
+            currentLayerStart += currentLayerLength;
+            currentLayerLength--;
+        }
+        top = values[values.length - 1];
+    } while (top > maxTop);
+
+    const totalItems = values.length;
+    const itemsToHide = Math.floor(totalItems * 0.5);
+    const mask = new Array(totalItems).fill(false);
+    let hiddenCount = 0;
+    while (hiddenCount < itemsToHide) {
+        let idx = getRandomInt(0, totalItems - 1);
+        if (!mask[idx]) {
+            mask[idx] = true;
+            hiddenCount++;
+        }
+    }
+
+    return { type: 'pyramid', values, mask, levels };
+}
+
+export function generateTriangle(maxSum) {
+    let i1, i2, i3, o1, o2, o3;
+    let attempts = 0;
+    do {
+        const maxInner = Math.floor(maxSum / 1.5);
+        i1 = getRandomInt(1, maxInner);
+        i2 = getRandomInt(1, maxInner);
+        i3 = getRandomInt(1, maxInner);
+        o1 = i1 + i2;
+        o2 = i2 + i3;
+        o3 = i3 + i1;
+        attempts++;
+    } while ((o1 > maxSum || o2 > maxSum || o3 > maxSum) && attempts < 100);
+    const maskMode = seededRandom() < 0.5 ? 'inner' : 'outer';
+    return { type: 'triangle', inner: [i1, i2, i3], outer: [o1, o2, o3], maskMode };
+}
+
+export function generateHouse(roofNum) {
+    const floorsCount = getRandomInt(3, 5);
+    const floors = [];
+    const usedValues = new Set();
+    for (let i = 0; i < floorsCount; i++) {
+        let sideA;
+        let attempts = 0;
+        do {
+            sideA = getRandomInt(0, roofNum);
+            attempts++;
+        } while (usedValues.has(sideA) && attempts < 20);
+        usedValues.add(sideA);
+        const sideB = roofNum - sideA;
+        const hiddenSide = seededRandom() < 0.5 ? 0 : 1;
+        floors.push({ a: sideA, b: sideB, hiddenSide });
+    }
+    return { type: 'house', roof: roofNum, floors };
+}
+
+export function generateRechenstrich() {
+    const a = getRandomInt(10, 60);
+    const b = getRandomInt(11, 39);
+    const sum = a + b;
+    const tens = Math.floor(b / 10) * 10;
+    const ones = b % 10;
+    return { type: 'rechenstrich', start: a, jump1: tens, mid: a + tens, jump2: ones, sum: sum };
+}
+
+export function generateMoneyProblem(maxVal, currency = 'CHF') {
+    let coins, notes;
+    let step;
+
+    if (currency === 'EUR') {
+        // Euro: 1, 2, 5, 10, 20, 50 cents, 1, 2 Euro
+        coins = [0.01, 0.02, 0.05, 0.10, 0.20, 0.50, 1, 2];
+        notes = [5, 10, 20, 50, 100, 200, 500].filter(n => n <= maxVal);
+        step = 0.01;
+    } else {
+        // CHF: 5, 10, 20, 50 cents, 1, 2, 5 Fr
+        coins = [0.05, 0.10, 0.20, 0.50, 1, 2, 5];
+        notes = [10, 20, 50, 100, 200, 1000].filter(n => n <= maxVal);
+        step = 0.05;
+    }
+
+    let target;
+    if (maxVal <= 10) {
+        // Small amounts: mostly coins
+        target = (getRandomInt(10, 200) * step);
+    } else {
+        target = (getRandomInt(10, maxVal) * 1.0);
+    }
+
+    // Round to step
+    const inv = 1 / step;
+    target = Math.round(target * inv) / inv;
+
+    let remaining = target;
+    const items = [];
+    // Sort descending for greedy approach
+    const available = [...notes, ...coins].sort((a, b) => b - a);
+
+    // Greedy-ish filling
+    for (const val of available) {
+        // Randomly skip some larger denominations to force variety
+        if (seededRandom() < 0.2) continue;
+
+        while (remaining >= val - (step / 10) && items.length < 12) {
+            items.push(val);
+            remaining -= val;
+            // Round remaining to avoid float precision issues
+            remaining = Math.round(remaining * inv) / inv;
+        }
+    }
+
+    // Shuffle items
+    items.sort(() => seededRandom() - 0.5);
+
+    return { type: 'money', items: items, answer: target, currency: currency };
+}
+
+const WORD_TYPES_SENTENCES = [
+    [
+        { text: "Der", type: "artikel" },
+        { text: "Hund", type: "noun" },
+        { text: "bellt", type: "verb" },
+        { text: "laut", type: "adj" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Die", type: "artikel" },
+        { text: "kleine", type: "adj" },
+        { text: "Katze", type: "noun" },
+        { text: "schläft", type: "verb" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Das", type: "artikel" },
+        { text: "schnelle", type: "adj" },
+        { text: "Auto", type: "noun" },
+        { text: "fährt", type: "verb" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Peter", type: "noun" },
+        { text: "isst", type: "verb" },
+        { text: "einen", type: "artikel" },
+        { text: "roten", type: "adj" },
+        { text: "Apfel", type: "noun" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Die", type: "artikel" },
+        { text: "Sonne", type: "noun" },
+        { text: "scheint", type: "verb" },
+        { text: "hell", type: "adj" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Wir", type: "other" },
+        { text: "spielen", type: "verb" },
+        { text: "im", type: "other" },
+        { text: "grünen", type: "adj" },
+        { text: "Garten", type: "noun" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Der", type: "artikel" },
+        { text: "Vogel", type: "noun" },
+        { text: "singt", type: "verb" },
+        { text: "ein", type: "artikel" },
+        { text: "schönes", type: "adj" },
+        { text: "Lied", type: "noun" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Meine", type: "artikel" },
+        { text: "Mutter", type: "noun" },
+        { text: "kocht", type: "verb" },
+        { text: "leckere", type: "adj" },
+        { text: "Suppe", type: "noun" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Der", type: "artikel" },
+        { text: "fleissige", type: "adj" },
+        { text: "Schüler", type: "noun" },
+        { text: "macht", type: "verb" },
+        { text: "seine", type: "artikel" },
+        { text: "schwierigen", type: "adj" },
+        { text: "Hausaufgaben", type: "noun" },
+        { text: "sehr", type: "other" },
+        { text: "sorgfältig", type: "adj" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Die", type: "artikel" },
+        { text: "bunten", type: "adj" },
+        { text: "Blumen", type: "noun" },
+        { text: "blühen", type: "verb" },
+        { text: "im", type: "other" },
+        { text: "schönen", type: "adj" },
+        { text: "Frühling", type: "noun" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Ein", type: "artikel" },
+        { text: "grosser", type: "adj" },
+        { text: "Elefant", type: "noun" },
+        { text: "trinkt", type: "verb" },
+        { text: "viel", type: "other" },
+        { text: "frisches", type: "adj" },
+        { text: "Wasser", type: "noun" },
+        { text: "am", type: "other" },
+        { text: "kühlen", type: "adj" },
+        { text: "Fluss", type: "noun" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Mein", type: "artikel" },
+        { text: "kleiner", type: "adj" },
+        { text: "Bruder", type: "noun" },
+        { text: "spielt", type: "verb" },
+        { text: "gerne", type: "other" },
+        { text: "mit", type: "other" },
+        { text: "seinen", type: "artikel" },
+        { text: "neuen", type: "adj" },
+        { text: "Spielsachen", type: "noun" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Die", type: "artikel" },
+        { text: "freundliche", type: "adj" },
+        { text: "Lehrerin", type: "noun" },
+        { text: "erklärt", type: "verb" },
+        { text: "den", type: "artikel" },
+        { text: "interessanten", type: "adj" },
+        { text: "Stoff", type: "noun" },
+        { text: "sehr", type: "other" },
+        { text: "gut", type: "adj" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Der", type: "artikel" },
+        { text: "starke", type: "adj" },
+        { text: "Löwe", type: "noun" },
+        { text: "brüllt", type: "verb" },
+        { text: "laut", type: "adj" },
+        { text: "in", type: "other" },
+        { text: "der", type: "artikel" },
+        { text: "weiten", type: "adj" },
+        { text: "Steppe", type: "noun" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Ein", type: "artikel" },
+        { text: "kleines", type: "adj" },
+        { text: "Mädchen", type: "noun" },
+        { text: "liest", type: "verb" },
+        { text: "ein", type: "artikel" },
+        { text: "spannendes", type: "adj" },
+        { text: "Buch", type: "noun" },
+        { text: "unter", type: "other" },
+        { text: "dem", type: "artikel" },
+        { text: "alten", type: "adj" },
+        { text: "Baum", type: "noun" },
+        { text: ".", type: "other" }
+    ],
+    [
+        { text: "Wir", type: "other" },
+        { text: "essen", type: "verb" },
+        { text: "heute", type: "other" },
+        { text: "einen", type: "artikel" },
+        { text: "saftigen", type: "adj" },
+        { text: "Kuchen", type: "noun" },
+        { text: "und", type: "other" },
+        { text: "trinken", type: "verb" },
+        { text: "dazu", type: "other" },
+        { text: "kalte", type: "adj" },
+        { text: "Milch", type: "noun" },
+        { text: ".", type: "other" }
+    ]
+];
+
+export function generateWordTypeProblem(index = -1) {
+    if (index >= 0) {
+        // Deterministic pick based on index (already shuffled if provided by generateProblemsData)
+        return { type: 'word_types', sentence: WORD_TYPES_SENTENCES[index % WORD_TYPES_SENTENCES.length] };
+    }
+    const idx = getRandomInt(0, WORD_TYPES_SENTENCES.length - 1);
+    return { type: 'word_types', sentence: WORD_TYPES_SENTENCES[idx] };
+}
