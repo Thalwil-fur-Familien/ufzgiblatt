@@ -1,0 +1,53 @@
+name: 🚧 Deploy Dev (Experimental)
+
+# TRIGGER: Only pushes to the 'dev' branch
+on:
+  push:
+    branches: [dev]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- ⚡ FAST SETUP (Cache NPM) ---
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # --- 🧠 LOGIC CHECK ONLY ---
+      # We skip E2E (Playwright) here to save ~40 seconds.
+      # If the layout is broken, that's fine, it's just Dev.
+      - name: Run Unit Tests
+        run: npm test
+
+      # --- DEPLOY ---
+      - name: Inject Build Info
+        env:
+          TZ: 'Europe/Zurich'
+        run: |
+            HASH=$(git rev-parse --short HEAD)
+            DATE=$(date +'%Y-%m-%d %H:%M %Z')
+            # Label clearly as DEV
+            sed -i "s|Local Development Build|Build: $HASH ($DATE) - DEV|g" index.html
+
+      - name: Deploy to Dev Subfolder
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          destination_dir: dev
+          keep_files: true  # Keeps /testing and Root alive
