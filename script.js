@@ -1107,10 +1107,41 @@ function createProblemElement(problemData, isSolution) {
         if (!isSolution) {
             const interactiveClock = renderClock(12, 0, false, false, true);
             const controlsHtml = `
-                <div class="time-controls no-print" style="display:flex; gap:8px; margin-top:5px;">
-                    <button class="btn-time" onclick="adjustTime(this, 'h')">Std +</button>
-                    <button class="btn-time" onclick="adjustTime(this, 'm', 5)">Min +5</button>
-                    ${problemData.isComplex ? `<button class="btn-time" onclick="adjustTime(this, 'm', 1)">Min +1</button>` : ''}
+                <div class="time-controls no-print">
+                    <div class="time-control-group">
+                        <span class="time-label">Std</span>
+                        <div class="arrow-stack">
+                            <button class="btn-arrow" 
+                                onmousedown="startTimeAdjustment(this, 'h', 1)" 
+                                onmouseup="stopTimeAdjustment()" 
+                                onmouseleave="stopTimeAdjustment()"
+                                ontouchstart="startTimeAdjustment(this, 'h', 1)"
+                                ontouchend="stopTimeAdjustment()">▲</button>
+                            <button class="btn-arrow" 
+                                onmousedown="startTimeAdjustment(this, 'h', -1)" 
+                                onmouseup="stopTimeAdjustment()" 
+                                onmouseleave="stopTimeAdjustment()"
+                                ontouchstart="startTimeAdjustment(this, 'h', -1)"
+                                ontouchend="stopTimeAdjustment()">▼</button>
+                        </div>
+                    </div>
+                    <div class="time-control-group">
+                        <span class="time-label">Min</span>
+                        <div class="arrow-stack">
+                            <button class="btn-arrow" 
+                                onmousedown="startTimeAdjustment(this, 'm', ${problemData.isComplex ? 1 : 5})" 
+                                onmouseup="stopTimeAdjustment()" 
+                                onmouseleave="stopTimeAdjustment()"
+                                ontouchstart="startTimeAdjustment(this, 'm', ${problemData.isComplex ? 1 : 5})"
+                                ontouchend="stopTimeAdjustment()">▲</button>
+                            <button class="btn-arrow" 
+                                onmousedown="startTimeAdjustment(this, 'm', ${problemData.isComplex ? -1 : -5})" 
+                                onmouseup="stopTimeAdjustment()" 
+                                onmouseleave="stopTimeAdjustment()"
+                                ontouchstart="startTimeAdjustment(this, 'm', ${problemData.isComplex ? -1 : -5})"
+                                ontouchend="stopTimeAdjustment()">▼</button>
+                        </div>
+                    </div>
                 </div>
             `;
             problemDiv.innerHTML = displayHtml + interactiveClock + controlsHtml;
@@ -1417,6 +1448,39 @@ function checkAllDone() {
     }
 }
 
+window.setupFocusNavigation = function () {
+    const wrapper = document.getElementById('sheetsWrapper');
+    if (!wrapper) return;
+
+    // Use event delegation on the wrapper to catch Enter key on any input
+    wrapper.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const target = e.target;
+            // Check if it's one of our answer inputs
+            if (target.matches('.answer-input, .rechenstrich-input, .house-input, .brick-input, .triangle-field')) {
+                e.preventDefault(); // Prevent accidental form submission or other default behaviors
+
+                // Find all visible, non-readonly numeric inputs in the worksheet
+                const allInputs = Array.from(wrapper.querySelectorAll('input:not([readonly])'));
+                const currentIndex = allInputs.indexOf(target);
+
+                if (currentIndex !== -1 && currentIndex < allInputs.length - 1) {
+                    const nextInput = allInputs[currentIndex + 1];
+                    nextInput.focus();
+
+                    // Optional: highlight text for easier overwriting
+                    if (nextInput.type === 'number' || nextInput.type === 'text') {
+                        nextInput.select();
+                    }
+
+                    // Smooth scroll into view if hidden (especially useful for mobile)
+                    nextInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+    });
+};
+
 // Initialize on load
 function init() {
     try {
@@ -1439,6 +1503,9 @@ function init() {
 
         // 4. Scale
         autoScaleSheet();
+
+        // 5. Setup Focus Navigation
+        setupFocusNavigation();
     } catch (e) {
         console.error("Initialization Error:", e);
         alert("Fehler beim Starten: " + e.message);
@@ -1635,9 +1702,9 @@ window.adjustTime = function (btn, type, amount = 1) {
 
     if (type === 'h') {
         h = (h + amount) % 12;
-        if (h === 0) h = 12;
+        if (h <= 0) h += 12;
     } else {
-        m = (m + amount) % 60;
+        m = (m + amount + 60) % 60;
     }
 
     problem.dataset.currH = h;
@@ -1659,6 +1726,22 @@ window.adjustTime = function (btn, type, amount = 1) {
     problem.classList.remove('correct', 'incorrect');
     if (h % 12 === targetH % 12 && m === targetM) {
         problem.classList.add('correct');
+    }
+};
+
+let adjustmentInterval = null;
+
+window.startTimeAdjustment = function (btn, type, amount) {
+    adjustTime(btn, type, amount);
+    adjustmentInterval = setInterval(() => {
+        adjustTime(btn, type, amount);
+    }, 150);
+};
+
+window.stopTimeAdjustment = function () {
+    if (adjustmentInterval) {
+        clearInterval(adjustmentInterval);
+        adjustmentInterval = null;
     }
 };
 
