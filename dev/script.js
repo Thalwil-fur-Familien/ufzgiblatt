@@ -740,36 +740,6 @@ function createProblemElement(problemData, isSolution) {
            <input type="text" class="answer-input" style="width:60px;" placeholder="a/b" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
          `;
 
-    } else if (problemData.type === 'written') {
-        // Vertical Alignment
-        const { a, b, op, answer } = problemData;
-        // Format numbers with space as thousands separator? standard JS toLocaleString('de-CH') uses ' 
-        const strA = a.toLocaleString('de-CH');
-        const strB = b.toLocaleString('de-CH');
-        const valAns = isSolution ? answer.toLocaleString('de-CH') : '';
-
-        problemDiv.innerHTML = `
-                <div class="written-vertical">
-                    <div class="written-row">${strA}</div>
-                    <div class="written-row"><span class="written-operator">${op}</span>${strB}</div>
-                    <div class="written-line"></div>
-                    <div class="written-row">
-                        <input type="text" class="answer-input" style="width:100%; text-align:right; border:none; background:transparent; font-family:inherit; font-size:inherit; padding:0;" 
-                        data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
-                    </div>
-                </div>
-            `;
-
-    } else if (problemData.type === 'rounding') {
-        const { val, place, answer } = problemData;
-        const valAns = isSolution ? answer : '';
-
-        problemDiv.style.flexDirection = 'column';
-        problemDiv.innerHTML = `
-                 <div style="margin-bottom:5px;">Runde <b>${val}</b> auf <b>${place}er</b>:</div>
-                 <input type="number" class="answer-input" style="width:80px;" 
-                        data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
-            `;
     } else if (problemData.type === 'time_reading') {
         const { hours, minutes, answer } = problemData;
         const valAns = isSolution ? answer : '';
@@ -1249,8 +1219,8 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     // Simplest is to pass the 'type' string to this function or check content.
     // problemDataList[0].type ...
 
-    // Let's rely on standard Layout unless it's a pyramid.
     const isPyramid = problemDataList.length > 0 && problemDataList[0].type === 'pyramid';
+    const isGeo = false;
 
     if (isPyramid) {
         const levels = problemDataList[0].levels || 3;
@@ -1923,4 +1893,37 @@ window.validateWord = function (el) {
 applyTranslations();
 updateTopicSelector();
 generateSheet();
+
+// --- GEO MODULE HANDLERS ---
+window.handleCantonDrop = function (event, targetId) {
+    event.preventDefault();
+    const draggedId = event.dataTransfer.getData('text/plain');
+    const path = document.getElementById(`path-${targetId}`);
+
+    if (!path) return;
+
+    // Reset classes
+    path.classList.remove('correct-pulse', 'error-shake');
+
+    if (draggedId === targetId) {
+        path.classList.add('correct-pulse');
+        path.style.fill = '#e3f2fd'; // Solution-like blue
+
+        // Find corresponding input in legend and fill it
+        const input = document.querySelector(`.canton-answer[data-id="${targetId}"]`);
+        if (input) {
+            input.value = T.cantons[targetId];
+            validateInput(input);
+        }
+    } else {
+        path.classList.add('error-shake');
+        setTimeout(() => {
+            path.classList.remove('error-shake');
+        }, 400);
+    }
+};
+
+window.handleCantonClick = function (targetId) {
+    // Optional: click-to-select logic could go here
+};
 

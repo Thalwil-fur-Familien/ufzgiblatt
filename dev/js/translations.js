@@ -53,7 +53,7 @@ export const TRANSLATIONS = {
             confirmDelete: "Möchtest du dieses Arbeitsblatt wirklich löschen?",
             saveNothing: "Nichts zum Speichern gefunden.",
             savePrompt: "Bezeichnung für dieses Arbeitsblatt:",
-            saveSuccess: "Erfolgreich gespeichert!"
+            saveSuccess: "Erfolgreich gespeichert!",
         },
         topics: {
             add_10: "🟢 Addition bis 10",
@@ -106,7 +106,6 @@ export const TRANSLATIONS = {
             units: "⚖️ Einheiten umrechnen (m, kg, s)",
             frac_simplify: "🍰 Brüche: Kürzen/Erweitern",
             frac_add: "🍰 Brüche: Addition",
-            percent_basic: "📊 Prozentrechnung (Basis)"
         },
         word_problems: [
             { q: "Lisa hat 5 Äpfel. Sie kauft 3 dazu. Wie viele hat sie?", a: 8 },
@@ -189,7 +188,7 @@ export const TRANSLATIONS = {
             confirmDelete: "Are you sure you want to delete this worksheet?",
             saveNothing: "Nothing found to save.",
             savePrompt: "Label for this worksheet:",
-            saveSuccess: "Saved successfully!"
+            saveSuccess: "Saved successfully!",
         },
         topics: {
             add_10: "🟢 Addition up to 10",
