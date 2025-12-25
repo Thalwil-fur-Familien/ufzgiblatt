@@ -78,8 +78,18 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
             }
         }
     } else {
-        // Normal topic (could be word_types)
+        // Normal topic (could be word_types or geo)
         const isWordTypes = type === 'word_types';
+        const isGeo = false;
+
+        if (isGeo) {
+            // Only 1 map per page
+            for (let i = 0; i < count; i++) {
+                data.push(generateProblem(type, 'CHF', options, -1, lang));
+            }
+            return data;
+        }
+
         const currentWordTypes = TRANSLATIONS[lang].word_types;
         let shuffledIndices = [];
         if (isWordTypes) {
