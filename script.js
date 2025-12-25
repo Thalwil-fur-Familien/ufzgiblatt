@@ -53,7 +53,15 @@ function applyTranslations() {
         'labelMinutes': T.ui.minutes,
         'modalTitle': T.ui.modalTitle,
         'btnModalClose': T.ui.modalClose,
-        'labelFeedback': T.ui.feedback
+        'labelFeedback': T.ui.feedback,
+        'navGenerator': T.ui.navGenerator,
+        'navGames': T.ui.navGames,
+        'navAbout': T.ui.navAbout,
+        'titleGames': T.ui.titleGames,
+        'titleAbout': T.ui.titleAbout,
+        'gameCantonTitle': T.ui.gameCantonTitle,
+        'gameCantonDesc': T.ui.gameCantonDesc,
+        'aboutIntro': T.ui.aboutIntro
     };
     for (const [id, text] of Object.entries(ids)) {
         const el = document.getElementById(id);
@@ -1446,6 +1454,9 @@ function init() {
 
         // 5. Setup Focus Navigation
         setupFocusNavigation();
+
+        // 6. Setup Section Navigation
+        setupSectionNavigation();
     } catch (e) {
         console.error("Initialization Error:", e);
         alert("Fehler beim Starten: " + e.message);
@@ -1889,41 +1900,48 @@ window.validateWord = function (el) {
 }
 
 
+// --- SECTION NAVIGATION ---
+function setupSectionNavigation() {
+    const links = document.querySelectorAll('.nav-link');
+    const sections = document.querySelectorAll('section');
+
+    function showSection(hash) {
+        const targetId = hash.replace('#', '') || 'generator';
+        sections.forEach(s => {
+            s.classList.remove('active-section');
+            if (s.id === targetId) s.classList.add('active-section');
+        });
+        links.forEach(l => {
+            l.classList.remove('active');
+            if (l.getAttribute('href') === hash || (hash === '' && l.getAttribute('href') === '#generator')) {
+                l.classList.add('active');
+            }
+        });
+    }
+
+    links.forEach(link => {
+        link.addEventListener('click', (e) => {
+            // No preventDefault to allow hash change
+            const hash = link.getAttribute('href');
+            showSection(hash);
+        });
+    });
+
+    // Handle initial load
+    showSection(window.location.hash);
+}
+
+
 // --- INITIALIZATION ---
 applyTranslations();
 updateTopicSelector();
 generateSheet();
 
-// --- GEO MODULE HANDLERS ---
-window.handleCantonDrop = function (event, targetId) {
-    event.preventDefault();
-    const draggedId = event.dataTransfer.getData('text/plain');
-    const path = document.getElementById(`path-${targetId}`);
+// Setup Section Navigation (Moved inside initialization flow or called directly)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupSectionNavigation);
+} else {
+    setupSectionNavigation();
+}
 
-    if (!path) return;
-
-    // Reset classes
-    path.classList.remove('correct-pulse', 'error-shake');
-
-    if (draggedId === targetId) {
-        path.classList.add('correct-pulse');
-        path.style.fill = '#e3f2fd'; // Solution-like blue
-
-        // Find corresponding input in legend and fill it
-        const input = document.querySelector(`.canton-answer[data-id="${targetId}"]`);
-        if (input) {
-            input.value = T.cantons[targetId];
-            validateInput(input);
-        }
-    } else {
-        path.classList.add('error-shake');
-        setTimeout(() => {
-            path.classList.remove('error-shake');
-        }, 400);
-    }
-};
-
-window.handleCantonClick = function (targetId) {
-    // Optional: click-to-select logic could go here
-};
 
