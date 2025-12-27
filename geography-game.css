@@ -477,4 +477,87 @@ button:active {
     stroke: var(--primary-color);
     stroke-width: 2px;
     filter: drop-shadow(0 0 5px var(--primary-color));
+    fill: rgba(74, 144, 226, 0.4) !important;
+    /* Semi-transparent blue */
+}
+
+/* Flag Mode Styles */
+.flag-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    padding: 20px;
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.flag-item {
+    width: 120px;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.flag-item img {
+    max-width: 100%;
+    max-height: 80px;
+    object-fit: contain;
+    margin-bottom: 5px;
+    pointer-events: none;
+}
+
+.flag-item.drag-over {
+    transform: scale(1.05);
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 0 8px rgba(74, 144, 226, 0.5);
+    background-color: rgba(74, 144, 226, 0.1);
+}
+
+.flag-item.correct {
+    border-color: #2ecc71;
+    background-color: rgba(46, 204, 113, 0.1);
+}
+
+.flag-item.correct div {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.flag-item.incorrect {
+    animation: shake 0.5s;
+    border-color: #e74c3c;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-5px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(5px);
+    }
 }

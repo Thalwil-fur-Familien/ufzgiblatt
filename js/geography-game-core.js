@@ -168,22 +168,24 @@ function setupPathListeners(pathElement, id) {
         }
     });
 
-    // Drag listeners for Allocate mode
+    // Drag listeners for Allocate/Flag (and legacy Drag) modes
+    const dragModes = ['drag', 'allocate', 'flag'];
+
     pathElement.addEventListener('dragover', (e) => {
-        if (geoState.gameMode === 'drag') {
+        if (dragModes.includes(geoState.gameMode)) {
             e.preventDefault(); // Allow drop
             pathElement.classList.add('drag-over');
         }
     });
 
     pathElement.addEventListener('dragleave', () => {
-        if (geoState.gameMode === 'drag') {
+        if (dragModes.includes(geoState.gameMode)) {
             pathElement.classList.remove('drag-over');
         }
     });
 
     pathElement.addEventListener('drop', (e) => {
-        if (geoState.gameMode === 'drag') {
+        if (dragModes.includes(geoState.gameMode)) {
             e.preventDefault();
             pathElement.classList.remove('drag-over');
             const droppedId = e.dataTransfer.getData('text/plain');
@@ -219,6 +221,16 @@ function resetGeoGameState() {
         dragContainer.style.display = 'none';
     }
 
+    const flagContainer = document.getElementById('flag-container');
+    if (flagContainer) {
+        flagContainer.innerHTML = '';
+        flagContainer.style.display = 'none';
+    }
+
+    // Ensure map is visible by default (unless mode hides it later)
+    const mapContainer = document.getElementById('map-container');
+    if (mapContainer) mapContainer.style.display = 'block';
+
     updateGeoScore();
 }
 
@@ -226,8 +238,12 @@ function setupGeoGame() {
     if (geoState.gameMode === 'find') {
         updateGeoInstruction(T.instruction); // "Where is..." default? Will be overwritten by startNewGeoRound
         startNewGeoRound();
-    } else if (geoState.gameMode === 'drag') {
+    } else if (geoState.gameMode === 'drag') { // Legacy 'drag' value kept for compatibility or if used
         setupDragMode();
+    } else if (geoState.gameMode === 'allocate') {
+        setupDragMode();
+    } else if (geoState.gameMode === 'flag') {
+        setupFlagMode();
     }
 }
 
@@ -307,6 +323,118 @@ function handleGeoRegionClick(regionId) {
     updateGeoScore();
 }
 
+// --- FLAG MODE LOGIC ---
+
+function setupFlagMode() {
+    updateGeoInstruction(T.instructionAllocate || "Ziehe die Namen auf das richtige Gebiet!");
+
+    // Clear previous
+    const flagContainer = document.getElementById('flag-container');
+    if (!flagContainer) return;
+    flagContainer.innerHTML = '';
+    flagContainer.style.display = 'flex';
+
+    // Hide map
+    const mapContainer = document.getElementById('map-container');
+    if (mapContainer) mapContainer.style.display = 'none';
+
+    // Prepare batch (6 flags + 6 names)
+    const batchSize = 6;
+    let available = geoState.regionData.filter(r => !geoState.solvedRegions.includes(r.id));
+
+    if (available.length === 0) {
+        endGeoGame();
+        return;
+    }
+
+    // Shuffle and pick batch
+    available.sort(() => Math.random() - 0.5);
+    let batch = available.slice(0, batchSize);
+
+    // Create Flag Items
+    batch.forEach(item => {
+        const flagDiv = document.createElement('div');
+        flagDiv.className = 'flag-item';
+        flagDiv.id = item.id; // Target ID for drop
+
+        const flagFile = getFlagFilename(item.id, item.name);
+
+        const img = document.createElement('img');
+        img.src = basePath + 'images/flags/' + flagFile;
+        img.alt = item.name;
+        img.draggable = false;
+
+        flagDiv.appendChild(img);
+        flagContainer.appendChild(flagDiv);
+
+        // Add drop listeners
+        setupPathListeners(flagDiv, item.id);
+    });
+
+    // Create Draggable Names logic - populate drag container
+    const dragContainer = document.getElementById('drag-container');
+    if (dragContainer) {
+        dragContainer.innerHTML = '';
+        dragContainer.style.display = 'flex';
+
+        // Shuffle names for display
+        const nameBatch = [...batch].sort(() => Math.random() - 0.5);
+
+        nameBatch.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'draggable-item';
+            el.textContent = item.name;
+            el.draggable = true;
+            el.setAttribute('data-id', item.id);
+
+            el.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', item.id);
+                el.classList.add('dragging');
+            });
+
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+            });
+
+            dragContainer.appendChild(el);
+        });
+    }
+
+    updateGeoScore();
+}
+
+function getFlagFilename(id, name) {
+    const map = {
+        'CH-ZH': 'Zuerich.svg',
+        'CH-BE': 'Bern.svg',
+        'CH-LU': 'Luzern.svg',
+        'CH-UR': 'Uri.svg',
+        'CH-SZ': 'Schwyz.svg',
+        'CH-OW': 'Obwalden.svg',
+        'CH-NW': 'Nidwalden.svg',
+        'CH-GL': 'Glarus.svg',
+        'CH-ZG': 'Zug.svg',
+        'CH-FR': 'Freiburg.svg',
+        'CH-SO': 'Solothurn.svg',
+        'CH-BS': 'Basel-Stadt.svg',
+        'CH-BL': 'Basel-Landschaft.svg',
+        'CH-SH': 'Schaffhausen.svg',
+        'CH-AR': 'Appenzell_Ausserrhoden.svg',
+        'CH-AI': 'Appenzell_Innerrhoden.svg',
+        'CH-SG': 'St_Gallen.svg',
+        'CH-GR': 'Graubuenden.svg',
+        'CH-AG': 'Aargau.svg',
+        'CH-TG': 'Thurgau.svg',
+        'CH-TI': 'Tessin.svg',
+        'CH-VD': 'Waadt.svg',
+        'CH-VS': 'Wallis.svg',
+        'CH-NE': 'Neuenburg.svg',
+        'CH-GE': 'Genf.svg',
+        'CH-JU': 'Jura.svg'
+    };
+    return map[id] || 'Bern.svg';
+}
+
 // --- DRAG MODE LOGIC ---
 
 function setupDragMode() {
@@ -365,11 +493,25 @@ function handleDragDrop(draggedId, targetId) {
         geoState.solvedRegions.push(targetId);
 
         // Visuals
+        // Visuals
         if (targetPath) {
             targetPath.classList.add('correct');
-            // Remove hint styles if they were active
             targetPath.classList.remove('hint');
-            showRegionName(targetPath, true);
+
+            // If it's a map path, show name. If it's a flag item, maybe just mark green?
+            if (targetPath.tagName === 'path' || targetPath.classList.contains('region-path')) {
+                showRegionName(targetPath, true);
+            } else if (targetPath.classList.contains('flag-item')) {
+                // For flags, maybe we append the name label permanently?
+                // Or just keep the green border.
+                // Let's append a small text label or just leave it green.
+                const nameLabel = document.createElement('div');
+                nameLabel.textContent = geoState.regionData.find(r => r.id === targetId)?.name || '';
+                nameLabel.style.fontSize = '12px';
+                nameLabel.style.textAlign = 'center';
+                nameLabel.style.marginTop = '5px';
+                targetPath.appendChild(nameLabel);
+            }
         }
 
         // Remove hints for this region if active
@@ -397,7 +539,11 @@ function handleDragDrop(draggedId, targetId) {
         // Check if batch is empty, if so, reload new batch
         const dragContainer = document.getElementById('drag-container');
         if (dragContainer && dragContainer.children.length === 0) {
-            setupDragMode(); // Loads next batch
+            if (geoState.gameMode === 'flag') {
+                setupFlagMode();
+            } else {
+                setupDragMode(); // Loads next batch
+            }
         }
 
     } else {
