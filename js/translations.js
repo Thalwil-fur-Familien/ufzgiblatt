@@ -64,7 +64,7 @@ export const TRANSLATIONS = {
             saveSuccess: "Erfolgreich gespeichert!",
             geoGame: {
                 instruction: "Wo ist {region}?",
-                instructionStart: "Klicke auf den Kanton: {region}",
+                instructionStart: "Klicke auf: {region}",
                 score: "Punkte: {score} / {total}",
                 loading: "Lade Karte...",
                 error: "Fehler beim Laden der Karte.",
@@ -138,7 +138,17 @@ export const TRANSLATIONS = {
                 "Georgia": "Georgien",
                 "Azerbaijan": "Aserbaidschan",
                 "Armenia": "Armenien",
-                "Aland Islands": "Åland"
+                "Aland Islands": "Åland",
+                "Appenzell Inner-Rhoden": "Appenzell Innerrhoden",
+                "Appenzell Ausser-Rhoden": "Appenzell Ausserrhoden",
+                "Fribourg": "Freiburg",
+                "Genève": "Genf",
+                "Lucerne": "Luzern",
+                "Neuchâtel": "Neuenburg",
+                "Sankt Gallen": "St. Gallen",
+                "Ticino": "Tessin",
+                "Vaud": "Waadt",
+                "Valais": "Wallis"
             }
         },
         topics: {
@@ -285,7 +295,7 @@ export const TRANSLATIONS = {
             saveSuccess: "Saved successfully!",
             geoGame: {
                 instruction: "Where is {region}?",
-                instructionStart: "Click on the canton: {region}",
+                instructionStart: "Click on: {region}",
                 score: "Score: {score} / {total}",
                 loading: "Loading map...",
                 error: "Error loading map.",
@@ -293,6 +303,15 @@ export const TRANSLATIONS = {
                 nextRound: "Next round...",
                 toggleLabels: "Show/Hide Names",
                 feedbackWrong: "❌ That is {region}"
+            },
+            geoNames: {
+                "Appenzell Inner-Rhoden": "Appenzell Innerrhoden",
+                "Appenzell Ausser-Rhoden": "Appenzell Ausserrhoden",
+                "Graubünden": "Grisons",
+                "Genève": "Geneva",
+                "Lucerne": "Lucerne",
+                "Sankt Gallen": "St. Gallen",
+                "Zürich": "Zurich"
             }
         },
         topics: {
