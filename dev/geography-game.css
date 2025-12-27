@@ -237,7 +237,7 @@ button:active {
 }
 
 .region-path.hint {
-    fill: #f39c12 !important;
+    fill: #f1c40f !important;
     animation: highlight-pulse 0.5s infinite alternate;
 }
 
@@ -247,7 +247,7 @@ button:active {
 }
 
 .hint-arrow {
-    fill: #c0392b;
+    fill: #f1c40f;
     stroke: white;
     stroke-width: 2px;
     filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
