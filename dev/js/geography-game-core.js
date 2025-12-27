@@ -20,7 +20,10 @@ let geoState = {
     labelsVisible: false,
     wrongGuesses: 0,
     currentMap: 'switzerland',
-    currentRoundFirstTry: true
+    currentRoundFirstTry: true,
+    gameMode: 'find', // 'find' or 'drag'
+    dragItems: [], // Items currently in the drag pool
+    dragFailures: {} // Track wrong drops per region ID
 };
 
 export async function initGeoGame(config) {
@@ -32,8 +35,14 @@ export async function initGeoGame(config) {
         mapSelector.onchange = (e) => loadMap(e.target.value);
     }
 
+    const modeSelector = document.getElementById('mode-selector');
+    if (modeSelector) {
+        modeSelector.onchange = (e) => setGameMode(e.target.value);
+    }
+
     try {
         T = TRANSLATIONS[lang].ui.geoGame;
+        // Translations might be missing the mode keys if not reloaded, but we assume file is updated.
     } catch (e) {
         console.error('Translation error:', e);
         return;
@@ -47,6 +56,11 @@ export async function initGeoGame(config) {
 
     const restartBtn = document.getElementById('restart-game');
     if (restartBtn) restartBtn.onclick = restartGame;
+}
+
+function setGameMode(mode) {
+    geoState.gameMode = mode;
+    restartGame();
 }
 
 async function loadMap(mapKey) {
@@ -115,12 +129,26 @@ function extractRegionsFromSVG(svg) {
         }
 
         if (id && title) {
+            // Add abbreviation to title
+            let abbr = id;
+            if (id.startsWith('CH-')) {
+                abbr = id.substring(3);
+            }
+            // Only add if it looks like a short code (2-3 chars)
+            if (abbr.length <= 3) {
+                title = `${title} (${abbr})`;
+                path.setAttribute('title', title);
+            }
+
             geoState.regionData.push({ id, name: title });
             path.classList.add('region-path');
-            // Remove existing listeners to avoid duplicates if re-running
+
+            // Clone to clear listeners
             const newPath = path.cloneNode(true);
             path.parentNode.replaceChild(newPath, path);
-            newPath.addEventListener('click', () => handleGeoRegionClick(id));
+
+            // Add listeners based on game mode
+            setupPathListeners(newPath, id);
         }
     });
 
@@ -132,6 +160,38 @@ function extractRegionsFromSVG(svg) {
     });
 }
 
+function setupPathListeners(pathElement, id) {
+    // Click listener for Find mode
+    pathElement.addEventListener('click', () => {
+        if (geoState.gameMode === 'find') {
+            handleGeoRegionClick(id);
+        }
+    });
+
+    // Drag listeners for Allocate mode
+    pathElement.addEventListener('dragover', (e) => {
+        if (geoState.gameMode === 'drag') {
+            e.preventDefault(); // Allow drop
+            pathElement.classList.add('drag-over');
+        }
+    });
+
+    pathElement.addEventListener('dragleave', () => {
+        if (geoState.gameMode === 'drag') {
+            pathElement.classList.remove('drag-over');
+        }
+    });
+
+    pathElement.addEventListener('drop', (e) => {
+        if (geoState.gameMode === 'drag') {
+            e.preventDefault();
+            pathElement.classList.remove('drag-over');
+            const droppedId = e.dataTransfer.getData('text/plain');
+            handleDragDrop(droppedId, id);
+        }
+    });
+}
+
 function resetGeoGameState() {
     geoState.solvedRegions = [];
     geoState.score = 0;
@@ -139,22 +199,39 @@ function resetGeoGameState() {
     geoState.wrongGuesses = 0;
     geoState.currentRoundFirstTry = true;
     geoState.totalRounds = geoState.regionData.length;
+    geoState.dragFailures = {};
 
     const paths = document.querySelectorAll('.region-path');
     paths.forEach(path => {
-        path.classList.remove('correct', 'incorrect', 'hint', 'not-found');
+        path.classList.remove('correct', 'incorrect', 'hint', 'not-found', 'drag-over');
+        // Re-setup listeners just in case state changed
+        // Actually listeners check 'gameMode' dynamically, so no need to re-bind
     });
 
     // Remove all added labels and arrows
     const labels = document.querySelectorAll('.region-label, .temp-label, .hint-arrow-group, .hint-arrow');
     labels.forEach(l => l.remove());
 
+    // Clear drag container
+    const dragContainer = document.getElementById('drag-container');
+    if (dragContainer) {
+        dragContainer.innerHTML = '';
+        dragContainer.style.display = 'none';
+    }
+
     updateGeoScore();
 }
 
 function setupGeoGame() {
-    startNewGeoRound();
+    if (geoState.gameMode === 'find') {
+        updateGeoInstruction(T.instruction); // "Where is..." default? Will be overwritten by startNewGeoRound
+        startNewGeoRound();
+    } else if (geoState.gameMode === 'drag') {
+        setupDragMode();
+    }
 }
+
+// --- FIND MODE LOGIC ---
 
 function startNewGeoRound() {
     if (geoState.solvedRegions.length >= geoState.totalRounds && geoState.totalRounds > 0) {
@@ -230,13 +307,136 @@ function handleGeoRegionClick(regionId) {
     updateGeoScore();
 }
 
+// --- DRAG MODE LOGIC ---
+
+function setupDragMode() {
+    updateGeoInstruction(T.instructionDrag || "Ziehe die Namen auf das richtige Gebiet!");
+
+    // Prepare drag items
+    // We can do batches or all. Let's do batches of 6 to fit nicely.
+    const batchSize = 6;
+    let available = geoState.regionData.filter(r => !geoState.solvedRegions.includes(r.id));
+
+    if (available.length === 0) {
+        endGeoGame();
+        return;
+    }
+
+    // Pick top N or random N
+    // Random N is better for variety
+    // Shuffle array
+    available.sort(() => Math.random() - 0.5);
+    const batch = available.slice(0, batchSize);
+
+    const dragContainer = document.getElementById('drag-container');
+    if (dragContainer) {
+        dragContainer.innerHTML = '';
+        dragContainer.style.display = 'flex';
+
+        batch.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'draggable-item';
+            el.textContent = item.name;
+            el.draggable = true;
+            el.setAttribute('data-id', item.id);
+
+            el.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', item.id);
+                el.classList.add('dragging');
+            });
+
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+            });
+
+            dragContainer.appendChild(el);
+        });
+    }
+
+    updateGeoScore();
+}
+
+function handleDragDrop(draggedId, targetId) {
+    const targetPath = document.getElementById(targetId);
+
+    if (draggedId === targetId) {
+        // Correct
+        geoState.score++;
+        geoState.solvedRegions.push(targetId);
+
+        // Visuals
+        if (targetPath) {
+            targetPath.classList.add('correct');
+            // Remove hint styles if they were active
+            targetPath.classList.remove('hint');
+            showRegionName(targetPath, true);
+        }
+
+        // Remove hints for this region if active
+        // Logic: if we solved it, we don't need hints anymore.
+        const arrowGroups = document.querySelectorAll('.hint-arrow-group, .hint-arrow');
+        // Only remove IF the hint was for THIS region?
+        // Actually, in Drag mode, multiple hints *could* theoretically exist if we tracked multiple failures simultaneously,
+        // but let's assume one active hint or just clear all like in Find mode.
+        // For now, let's clear all hints on a success to keep board clean.
+        arrowGroups.forEach(g => g.remove());
+        const hintedPaths = document.querySelectorAll('.region-path.hint');
+        hintedPaths.forEach(p => p.classList.remove('hint'));
+
+        // Reset failure count for this item (cleanup)
+        if (geoState.dragFailures) {
+            delete geoState.dragFailures[draggedId];
+        }
+
+        // Remove from drag container
+        const dragItem = document.querySelector(`.draggable-item[data-id="${draggedId}"]`);
+        if (dragItem) {
+            dragItem.remove();
+        }
+
+        // Check if batch is empty, if so, reload new batch
+        const dragContainer = document.getElementById('drag-container');
+        if (dragContainer && dragContainer.children.length === 0) {
+            setupDragMode(); // Loads next batch
+        }
+
+    } else {
+        // Incorrect
+        // Increment failure count for the DRAGGED item (the one the user is trying to place)
+        if (!geoState.dragFailures) geoState.dragFailures = {};
+        geoState.dragFailures[draggedId] = (geoState.dragFailures[draggedId] || 0) + 1;
+
+        if (targetPath) {
+            targetPath.classList.add('incorrect');
+            setTimeout(() => { targetPath.classList.remove('incorrect'); }, 500);
+
+            // Show name on wrong drop for learning
+            showRegionName(targetPath, false);
+        }
+
+        // Check for hint condition
+        if (geoState.dragFailures[draggedId] >= 3) {
+            // Show hint for the CORRECT destination of the dragged item
+            const correctId = draggedId;
+            const correctPath = document.getElementById(correctId);
+            if (correctPath) {
+                correctPath.classList.add('hint');
+                showHintArrow(correctPath);
+            }
+        }
+    }
+    updateGeoScore();
+}
+
+
+// --- SHARED HELPERS ---
+
 function updateGeoInstruction(text) {
     const el = document.getElementById('game-instruction');
     if (el) el.textContent = text;
 }
 
 function updateGeoScore() {
-    // Show score out of TOTAL rounds (max)
     const el = document.getElementById('score-display');
     if (el) el.textContent = T.score.replace('{score}', geoState.score).replace('{total}', geoState.totalRounds);
 }
@@ -244,6 +444,8 @@ function updateGeoScore() {
 function endGeoGame() {
     updateGeoInstruction(T.win);
     geoState.currentRegion = null;
+    const dragContainer = document.getElementById('drag-container');
+    if (dragContainer) dragContainer.innerHTML = '';
 }
 
 function toggleGeoLabels() {
@@ -252,6 +454,17 @@ function toggleGeoLabels() {
     if (!svg) return;
     const labels = svg.querySelectorAll('text, g[id*="Abbr"], g[id*="Name"]');
     labels.forEach(l => {
+        l.style.display = geoState.labelsVisible ? '' : 'none';
+
+        // Also toggle our permanent labels
+        // But maybe we want them to stay visible if solved?
+        // Logic below hides ALL text elements.
+        // If we want solved labels to always show, we need specific class checks.
+        // For now, simple standard behavior.
+    });
+
+    const regionLabels = document.querySelectorAll('.region-label');
+    regionLabels.forEach(l => {
         l.style.display = geoState.labelsVisible ? '' : 'none';
     });
 }

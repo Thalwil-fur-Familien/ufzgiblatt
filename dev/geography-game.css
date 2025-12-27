@@ -158,6 +158,12 @@ body {
     flex-wrap: wrap;
 }
 
+.controls-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
 /* Game Selector */
 .game-select {
     padding: 12px 24px;
@@ -422,4 +428,53 @@ button:active {
     #game-instruction {
         font-size: 1.1rem;
     }
+}
+
+/* Drag and Drop Mode Styles */
+.drag-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    min-height: 50px;
+    padding: 10px;
+    border: 2px dashed #ccc;
+    border-radius: 12px;
+    background: #fdfdfd;
+}
+
+.draggable-item {
+    background: white;
+    padding: 8px 16px;
+    border: 1px solid var(--primary-color);
+    border-radius: 20px;
+    cursor: grab;
+    font-weight: bold;
+    color: var(--text-color);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    user-select: none;
+    z-index: 100;
+}
+
+.draggable-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.draggable-item:active {
+    cursor: grabbing;
+    transform: scale(0.98);
+}
+
+.draggable-item.dragging {
+    opacity: 0.5;
+}
+
+/* Droppable highlights */
+.region-path.drag-over {
+    stroke: var(--primary-color);
+    stroke-width: 2px;
+    filter: drop-shadow(0 0 5px var(--primary-color));
 }

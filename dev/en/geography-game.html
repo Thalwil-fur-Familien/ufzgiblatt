@@ -27,15 +27,22 @@
         <div class="game-container">
             <h1 id="game-instruction">Initializing...</h1>
             <div id="score-display">Score: 0 / 0</div>
+            <div id="drag-container" class="drag-container" style="display: none;"></div>
             <div id="map-container">
                 <p>Loading map...</p>
             </div>
             <div class="game-controls">
-                <select id="map-selector" class="game-select">
-                    <option value="switzerland">Switzerland</option>
-                    <option value="europe">Europe</option>
-                    <option value="world">World</option>
-                </select>
+                <div class="controls-group">
+                    <select id="map-selector" class="game-selector">
+                        <option value="switzerland">Switzerland</option>
+                        <option value="europe">Europe</option>
+                        <!-- <option value="world">World</option> -->
+                    </select>
+                    <select id="mode-selector" class="game-selector">
+                        <option value="find">Find ...</option>
+                        <option value="drag">Allocate Name</option>
+                    </select>
+                </div>
                 <button id="toggle-labels" class="btn-secondary">Show/Hide Names</button>
                 <button id="restart-game" class="btn-primary">Restart</button>
             </div>

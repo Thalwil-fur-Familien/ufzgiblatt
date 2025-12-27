@@ -65,13 +65,16 @@ export const TRANSLATIONS = {
             geoGame: {
                 instruction: "Wo ist {region}?",
                 instructionStart: "Klicke auf: {region}",
+                instructionDrag: "Ziehe die Namen auf das richtige Gebiet!",
                 score: "Punkte: {score} / {total}",
                 loading: "Lade Karte...",
                 error: "Fehler beim Laden der Karte.",
                 win: "Super! Du hast alles gefunden!",
                 nextRound: "Nächste Runde...",
                 toggleLabels: "Namen anzeigen/ausblenden",
-                feedbackWrong: "❌ Das ist {region}"
+                feedbackWrong: "❌ Das ist {region}",
+                modeFind: "Finde ...",
+                modeDrag: "Namen zuordnen"
             },
             geoNames: {
                 "Europe": "Europa",
@@ -296,13 +299,16 @@ export const TRANSLATIONS = {
             geoGame: {
                 instruction: "Where is {region}?",
                 instructionStart: "Click on: {region}",
+                instructionDrag: "Drag the names to the correct region!",
                 score: "Score: {score} / {total}",
                 loading: "Loading map...",
                 error: "Error loading map.",
                 win: "Great job! You found everything!",
                 nextRound: "Next round...",
                 toggleLabels: "Show/Hide Names",
-                feedbackWrong: "❌ That is {region}"
+                feedbackWrong: "❌ That is {region}",
+                modeFind: "Find ...",
+                modeDrag: "Allocate Name"
             },
             geoNames: {
                 "Appenzell Inner-Rhoden": "Appenzell Innerrhoden",
