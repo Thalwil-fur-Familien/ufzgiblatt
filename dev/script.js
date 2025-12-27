@@ -10,10 +10,14 @@ window.updateURLState = updateURLState;
 window.toggleLogoVisibility = toggleLogoVisibility;
 window.toggleQRVisibility = toggleQRVisibility;
 window.validateInput = validateInput;
+window.switchLanguage = switchLanguage;
 
-const lang = window.location.pathname.includes('/en') ? 'en' : 'de';
-const basePath = lang === 'en' ? '../' : './';
-const T = TRANSLATIONS[lang];
+let lang = new URLSearchParams(window.location.search).get('lang') || (window.location.pathname.includes('/en') ? 'en' : 'de');
+// Normalize lang to supported values
+if (lang !== 'en' && lang !== 'de') lang = 'de';
+
+let basePath = window.location.pathname.includes('/en') ? '../' : './';
+let T = TRANSLATIONS[lang];
 
 if (document.getElementById('htmlRoot')) {
     document.getElementById('htmlRoot').lang = lang;
@@ -129,21 +133,28 @@ function updateCustomCheckboxes(topics) {
 function updateTopicSelector() {
     const grade = document.getElementById('gradeSelector').value;
     const topicSelector = document.getElementById('topicSelector');
+    // Save current selection before wiping options
+    const currentTopic = topicSelector.value;
+
     const topics = GRADE_TOPICS[grade] || [];
 
     updateTopicSelectorNodes(topics);
     updateCustomCheckboxes(topics);
 
-    // Set the selected value to the first topic
-    if (topics.length > 0) {
-        // Only set if not already set (e.g. from URL)
-        // Actually this overrides URL unless we guard it?
-        // But loadStateFromURL calls this THEN sets value.
-        // Wait, loadStateFromURL sets grade then calls updateTopicSelector.
-        // Then it sets topic value. So we should NOT force value[0] if one is selected.
-        if (!topicSelector.value) {
-            topicSelector.value = topics[0].value;
+    // Try to restore previous selection if valid for this grade
+    let restored = false;
+    if (currentTopic) {
+        // Check if currentTopic exists in new options
+        const exists = Array.from(topicSelector.options).some(opt => opt.value === currentTopic);
+        if (exists) {
+            topicSelector.value = currentTopic;
+            restored = true;
         }
+    }
+
+    // Set default if not restored
+    if (!restored && topics.length > 0) {
+        topicSelector.value = topics[0].value;
     }
 
     // Toggle Custom Options Visibility based on selection change
@@ -250,6 +261,11 @@ function generateSheet(keepSeed = false) {
 
 function updateURLState() {
     const params = new URLSearchParams();
+
+    // Lang (preserve)
+    if (lang && lang !== 'de') {
+        params.set('lang', lang);
+    }
 
     // Grade
     const grade = document.getElementById('gradeSelector').value;
@@ -1455,6 +1471,9 @@ function init() {
         // 5. Setup Focus Navigation
         setupFocusNavigation();
 
+        // 6. Update Language Buttons state
+        updateLanguageButtons();
+
         // 6. Setup Section Navigation
         setupSectionNavigation();
     } catch (e) {
@@ -1933,9 +1952,12 @@ function setupSectionNavigation() {
 
 
 // --- INITIALIZATION ---
-applyTranslations();
-updateTopicSelector();
-generateSheet();
+// execute init on load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 
 // Setup Section Navigation (Moved inside initialization flow or called directly)
 if (document.readyState === 'loading') {
@@ -1944,4 +1966,46 @@ if (document.readyState === 'loading') {
     setupSectionNavigation();
 }
 
+function updateLanguageButtons() {
+    const nextLang = lang === 'en' ? 'de' : 'en';
+    const nextLabel = lang === 'en' ? 'DE' : 'EN';
 
+    const lnk1 = document.getElementById('langLinkHeader');
+    const lnk2 = document.getElementById('langLinkControls'); // If exists
+
+    if (lnk1) {
+        lnk1.textContent = nextLabel;
+        lnk1.onclick = () => switchLanguage(nextLang);
+    }
+    if (lnk2) {
+        lnk2.textContent = nextLabel;
+        lnk2.onclick = () => switchLanguage(nextLang);
+    }
+}
+
+function switchLanguage(newLang) {
+    if (newLang === lang) return;
+    lang = newLang;
+    T = TRANSLATIONS[lang];
+
+    // Update HTML lang attribute
+    const root = document.getElementById('htmlRoot');
+    if (root) root.lang = lang;
+
+    // Update translations
+    applyTranslations();
+
+    // Re-populate topics (labels change)
+    updateTopicSelector();
+
+    // Regenerate sheet (word problems rely on lang)
+    // Pass true to preserve seed/values where possible, but text changes
+    generateSheet(true);
+
+    // Update URL without reload
+    const url = new URL(window.location);
+    url.searchParams.set('lang', lang);
+    window.history.pushState({}, '', url);
+
+    updateLanguageButtons();
+}

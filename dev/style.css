@@ -1107,6 +1107,32 @@ input.triangle-field {
     border-radius: 2px;
 }
 
+.house-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 120px;
+    /* Fixed width for better look */
+    margin: 0 auto;
+}
+
+/* Dome style roof for Zahlenhaus */
+.house-roof {
+    width: 100%;
+    height: 40px;
+    background: #e8e8e8;
+    border-radius: 50px 50px 0 0;
+    /* Dome style roof */
+    border: 2px solid #ddd;
+    border-bottom: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: var(--primary-color);
+}
+
 .house-body {
     width: 100%;
     border: 2px solid #ddd;

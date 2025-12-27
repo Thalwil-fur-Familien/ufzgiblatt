@@ -460,6 +460,7 @@ export function generatePyramid(maxTop, levels = 3) {
     do {
         values = [];
         let baseCount = levels;
+        // Heuristic to avoid too large numbers (start small)
         let maxBase = Math.max(1, Math.floor(maxTop / (2 ** (levels - 1))));
 
         for (let i = 0; i < baseCount; i++) {
@@ -481,18 +482,112 @@ export function generatePyramid(maxTop, levels = 3) {
     } while (top > maxTop);
 
     const totalItems = values.length;
-    const itemsToHide = Math.floor(totalItems * 0.5);
-    const mask = new Array(totalItems).fill(false);
-    let hiddenCount = 0;
-    while (hiddenCount < itemsToHide) {
-        let idx = getRandomInt(0, totalItems - 1);
-        if (!mask[idx]) {
-            mask[idx] = true;
-            hiddenCount++;
+    const relations = getPyramidRelations(levels);
+
+    // Determine how many items to hide (e.g. 40-60%)
+    const minHidden = Math.floor(totalItems * 0.4);
+    const maxHidden = Math.floor(totalItems * 0.6);
+    // Target hidden count
+    let targetHidden = getRandomInt(minHidden, maxHidden);
+    if (levels === 3) targetHidden = 3; // For 3 levels (6 items), hide 3 is standard good puzzle
+    if (levels === 4) targetHidden = 6; // For 4 levels (10 items), hide 6
+
+    let mask;
+    let solvable = false;
+    let attempts = 0;
+
+    while (!solvable && attempts < 200) {
+        mask = new Array(totalItems).fill(false);
+        let hiddenCount = 0;
+        let currentTarget = targetHidden;
+
+        // If we fail many times, try hiding fewer items
+        if (attempts > 50) currentTarget = Math.max(1, targetHidden - 1);
+        if (attempts > 100) currentTarget = Math.max(1, targetHidden - 2);
+
+        while (hiddenCount < currentTarget) {
+            let idx = getRandomInt(0, totalItems - 1);
+            if (!mask[idx]) {
+                mask[idx] = true;
+                hiddenCount++;
+            }
+        }
+
+        if (checkPyramidSolvable(relations, totalItems, mask)) {
+            solvable = true;
+        } else {
+            attempts++;
         }
     }
 
+    // Fallback: if not found, show everything (should rarely happen)
+    if (!solvable) {
+        mask.fill(false);
+    }
+
     return { type: 'pyramid', values, mask, levels };
+}
+
+function getPyramidRelations(levels) {
+    const relations = [];
+    let currentLayerStart = 0;
+    let currentLayerLength = levels;
+
+    // A pyramid with 'levels' has levels-1 layers of relationships
+    for (let l = 0; l < levels - 1; l++) {
+        for (let i = 0; i < currentLayerLength - 1; i++) {
+            // Relation: Parent = Left + Right
+            // Indices based on flat array construction order: Base layer, then next, etc.
+            // Left child index: currentLayerStart + i
+            // Right child index: currentLayerStart + i + 1
+            // Parent index: Next layer start + i
+            // Next layer start is currentLayerStart + currentLayerLength
+
+            const left = currentLayerStart + i;
+            const right = currentLayerStart + i + 1;
+            const parent = currentLayerStart + currentLayerLength + i;
+
+            relations.push([parent, left, right]);
+        }
+        currentLayerStart += currentLayerLength;
+        currentLayerLength--;
+    }
+    return relations;
+}
+
+function checkPyramidSolvable(relations, totalItems, mask) {
+    // mask[i] = true means HIDDEN (unknown)
+    // known[i] = true means VISIBLE (known)
+    // We simulate solving.
+
+    // workingKnown state: true if number is known/derived
+    const known = mask.map(m => !m);
+
+    let progress = true;
+    while (progress) {
+        progress = false;
+        for (const [p, l, r] of relations) {
+            // Rule: If 2 of 3 (Parent, Left, Right) are known, the 3rd is determined.
+
+            const pKnown = known[p];
+            const lKnown = known[l];
+            const rKnown = known[r];
+
+            if (!pKnown && lKnown && rKnown) {
+                known[p] = true;
+                progress = true;
+            } else if (pKnown && !lKnown && rKnown) {
+                known[l] = true;
+                progress = true;
+            } else if (pKnown && lKnown && !rKnown) {
+                known[r] = true;
+                progress = true;
+            }
+        }
+    }
+
+    // Solvable if all fields are eventually known
+    return known.every(k => k);
 }
 
 export function generateTriangle(maxSum) {
