@@ -26,6 +26,12 @@ let geoState = {
     dragFailures: {} // Track wrong drops per region ID
 };
 
+function trackEvent(name, props = {}) {
+    if (window.posthog) {
+        window.posthog.capture(name, props);
+    }
+}
+
 export async function initGeoGame(config) {
     lang = config.lang;
     basePath = config.basePath;
@@ -589,6 +595,15 @@ function updateGeoScore() {
 
 function endGeoGame() {
     updateGeoInstruction(T.win);
+
+    trackEvent('game_complete', {
+        mode: geoState.gameMode,
+        map: geoState.currentMap,
+        score: geoState.score,
+        rounds: geoState.totalRounds,
+        lang: lang
+    });
+
     geoState.currentRegion = null;
     const dragContainer = document.getElementById('drag-container');
     if (dragContainer) dragContainer.innerHTML = '';
@@ -616,6 +631,11 @@ function toggleGeoLabels() {
 }
 
 function restartGame() {
+    trackEvent('game_start', {
+        mode: geoState.gameMode,
+        map: geoState.currentMap,
+        lang: lang
+    });
     resetGeoGameState();
     setupGeoGame();
 }
