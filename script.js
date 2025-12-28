@@ -46,29 +46,32 @@ function trackEvent(name, props = {}) {
 }
 
 function printSheet() {
-    const topic = document.getElementById('topicSelector').value;
-    const props = {
-        grade: document.getElementById('gradeSelector').value,
-        topic: topic,
-        count: document.getElementById('pageCount').value,
-        solutions: document.getElementById('solutionToggle').checked,
-        lang: lang
-    };
+    try {
+        const topic = document.getElementById('topicSelector').value;
+        const props = {
+            grade: document.getElementById('gradeSelector').value,
+            topic: topic,
+            count: document.getElementById('pageCount').value,
+            solutions: document.getElementById('solutionToggle').checked,
+            lang: lang
+        };
 
-    if (topic === 'custom') {
-        const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
-        props.custom_modules = Array.from(checkboxes).map(cb => cb.value).join(',');
+        if (topic === 'custom') {
+            const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+            props.custom_modules = Array.from(checkboxes).map(cb => cb.value).join(',');
+        }
+
+        trackEvent('print_sheet', props);
+    } catch (e) {
+        console.error('Analytics error:', e);
     }
 
-    trackEvent('print_sheet', props);
     window.print();
 }
 window.printSheet = printSheet;
-
 function applyTranslations() {
     document.title = T.ui.title;
     const ids = {
-        'labelCount': T.ui.countLabel,
         'labelSolutions': T.ui.solutionsLabel,
         'btnGenerate': T.ui.btnGenerate,
         'btnSave': T.ui.btnSave,
@@ -93,6 +96,7 @@ function applyTranslations() {
         'gameCantonDesc': T.ui.gameCantonDesc,
         'aboutIntro': T.ui.aboutIntro
     };
+
     for (const [id, text] of Object.entries(ids)) {
         const el = document.getElementById(id);
         if (el) el.innerHTML = text;
@@ -222,7 +226,11 @@ function updateTopicSelector() {
 
 // --- GENERATION & RENDERING ---
 
+// Tracking State
+let workStarted = false;
+
 function generateSheet(keepSeed = false) {
+    workStarted = false; // Reset interaction tracking
     if (!keepSeed) {
         setSeed(Math.floor(Math.random() * 0xFFFFFFFF));
     } else {
@@ -1494,6 +1502,24 @@ window.setupFocusNavigation = function () {
                     nextInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }
+        }
+    });
+
+    // Track First Interaction (Work Started)
+    wrapper.addEventListener('input', (e) => {
+        if (!workStarted && e.target.tagName === 'INPUT') {
+            workStarted = true;
+            const props = {
+                grade: document.getElementById('gradeSelector').value,
+                topic: document.getElementById('topicSelector').value,
+                count: document.getElementById('pageCount').value,
+                lang: lang
+            };
+            if (props.topic === 'custom') {
+                const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+                props.custom_modules = Array.from(checkboxes).map(cb => cb.value).join(',');
+            }
+            trackEvent('work_started', props);
         }
     });
 };

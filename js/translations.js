@@ -205,6 +205,7 @@ export const TRANSLATIONS = {
             units: "⚖️ Einheiten umrechnen (m, kg, s)",
             frac_simplify: "🍰 Brüche: Kürzen/Erweitern",
             frac_add: "🍰 Brüche: Addition",
+            percent_basic: "📊 Prozentrechnung (Basis)"
         },
         word_problems: [
             { q: "Lisa hat 5 Äpfel. Sie kauft 3 dazu. Wie viele hat sie?", a: 8 },
