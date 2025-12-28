@@ -7,6 +7,7 @@
     <title>Mathe Arbeitsblatt Generator</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="js/analytics.js"></script>
 </head>
 
 <header class="site-header no-print">
@@ -60,7 +61,7 @@
             <button class="btn-save" id="btnSave" onclick="saveCurrentState()">💾 Speichern</button>
             <button class="btn-saved" id="btnSaved" onclick="toggleSavedModal()">📂 Gespeichert</button>
             <!-- Check button removed in favor of real-time validation -->
-            <button class="btn-print" id="btnPrint" onclick="window.print()">🖨️ Drucken</button>
+            <button class="btn-print" id="btnPrint" onclick="printSheet()">🖨️ Drucken</button>
             <div style="display:flex; align-items:center; gap: 15px;">
                 <div style="display:flex; align-items:center;">
                     <input type="checkbox" id="hideLogo" style="width:20px; height:20px; margin-right:5px;"

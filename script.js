@@ -39,6 +39,32 @@ Object.keys(GRADE_TOPICS_STRUCTURE).forEach(g => {
 
 const mascots = ['🦊', '🦉', '🦁', '🐼', '🐨', '🐯', '🦄', '🦖'];
 
+function trackEvent(name, props = {}) {
+    if (window.posthog) {
+        window.posthog.capture(name, props);
+    }
+}
+
+function printSheet() {
+    const topic = document.getElementById('topicSelector').value;
+    const props = {
+        grade: document.getElementById('gradeSelector').value,
+        topic: topic,
+        count: document.getElementById('pageCount').value,
+        solutions: document.getElementById('solutionToggle').checked,
+        lang: lang
+    };
+
+    if (topic === 'custom') {
+        const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+        props.custom_modules = Array.from(checkboxes).map(cb => cb.value).join(',');
+    }
+
+    trackEvent('print_sheet', props);
+    window.print();
+}
+window.printSheet = printSheet;
+
 function applyTranslations() {
     document.title = T.ui.title;
     const ids = {
@@ -202,6 +228,33 @@ function generateSheet(keepSeed = false) {
     } else {
         // Reset generator with current seed to ensure same sequence if re-rendering same state
         setSeed(globalSeed);
+    }
+
+    // Track generation (only if new seed/sheet)
+    if (!keepSeed) {
+        const props = {
+            grade: document.getElementById('gradeSelector').value,
+            topic: document.getElementById('topicSelector').value,
+            count: document.getElementById('pageCount').value,
+            solutions: document.getElementById('solutionToggle').checked,
+            lang: lang
+        };
+
+        if (props.topic === 'custom') {
+            const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+            props.custom_modules = Array.from(checkboxes).map(cb => cb.value).join(',');
+        }
+
+        trackEvent('generate_sheet', props);
+    }
+
+    // Track generation (only if new seed/sheet)
+    if (!keepSeed) {
+        trackEvent('generate_sheet', {
+            grade: document.getElementById('gradeSelector').value,
+            topic: document.getElementById('topicSelector').value,
+            count: document.getElementById('pageCount').value
+        });
     }
 
     const selector = document.getElementById('topicSelector');
@@ -1468,6 +1521,20 @@ function init() {
         // 4. Scale
         autoScaleSheet();
 
+        // Check for Shared URL (deep linking)
+        const params = new URLSearchParams(window.location.search);
+        const isShared = params.has('seed') || params.has('topic');
+
+        // Track Page View
+        trackEvent('page_view', {
+            grade: document.getElementById('gradeSelector').value,
+            topic: document.getElementById('topicSelector').value,
+            is_shared_url: isShared,
+            hostname: window.location.hostname,
+            path: window.location.pathname,
+            lang: lang
+        });
+
         // 5. Setup Focus Navigation
         setupFocusNavigation();
 
@@ -1985,6 +2052,9 @@ function updateLanguageButtons() {
 
 function switchLanguage(newLang) {
     if (newLang === lang) return;
+
+    trackEvent('switch_language', { from: lang, to: newLang });
+
     lang = newLang;
     T = TRANSLATIONS[lang];
 
