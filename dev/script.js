@@ -33,9 +33,14 @@ const GRADE_TOPICS_STRUCTURE = {
 };
 
 const GRADE_TOPICS = {};
-Object.keys(GRADE_TOPICS_STRUCTURE).forEach(g => {
-    GRADE_TOPICS[g] = GRADE_TOPICS_STRUCTURE[g].map(v => ({ value: v, text: T.topics[v] }));
-});
+// Initial Population
+updateGradeTopics();
+
+function updateGradeTopics() {
+    Object.keys(GRADE_TOPICS_STRUCTURE).forEach(g => {
+        GRADE_TOPICS[g] = GRADE_TOPICS_STRUCTURE[g].map(v => ({ value: v, text: T.topics[v] }));
+    });
+}
 
 const mascots = ['🦊', '🦉', '🦁', '🐼', '🐨', '🐯', '🦄', '🦖'];
 
@@ -2090,6 +2095,9 @@ function switchLanguage(newLang) {
 
     // Update translations
     applyTranslations();
+
+    // Update Topic Definitions with new language
+    updateGradeTopics();
 
     // Re-populate topics (labels change)
     updateTopicSelector();
