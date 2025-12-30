@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canton Master - Learn Swiss Cantons</title>
+    <link rel="stylesheet" href="../geography-game.css">
+    <script src="../js/analytics.js"></script>
+</head>
+
+<body>
+    <header class="game-header">
+        <div class="header-content">
+            <div class="site-logo">
+                <a href="index.html">
+                    <span>study-sheet.com</span>
+                </a>
+            </div>
+            <div class="header-controls">
+                <a href="index.html#games" class="btn-back">← Back</a>
+                <a href="../geography-game.html" class="lang-link">DE</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="game-main">
+        <div class="game-container">
+            <h1 id="game-instruction">Initializing...</h1>
+            <div id="score-display">Score: 0 / 0</div>
+            <div id="drag-container" class="drag-container" style="display: none;"></div>
+            <div id="flag-container" class="flag-container" style="display: none;"></div>
+            <div id="map-container">
+                <p>Loading map...</p>
+            </div>
+            <div class="game-controls">
+                <div class="controls-group">
+                    <select id="map-selector" class="game-selector">
+                        <option value="switzerland">Switzerland</option>
+                        <option value="europe">Europe</option>
+                        <!-- <option value="world">World</option> -->
+                    </select>
+                    <select id="mode-selector" class="game-selector">
+                        <option value="find">Find ...</option>
+                        <option value="allocate">Allocate Name</option>
+                        <option value="flag">Match Flags</option>
+                    </select>
+                </div>
+                <button id="toggle-labels" class="btn-secondary">Show/Hide Names</button>
+                <button id="restart-game" class="btn-primary">Restart</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="game-footer">
+        <p>© 2024 Thalwil for Families - <a href="https://github.com/Thalwil-fur-Familien/ufzgiblatt"
+                target="_blank">GitHub</a></p>
+    </footer>
+
+    <script type="module">
+        import { initGeoGame } from '../js/geography-game-core.js';
+
+        // Initialize game with English configuration
+        initGeoGame({
+            lang: 'en',
+            basePath: '../'
+        });
+    </script>
+</body>
+
+</html>

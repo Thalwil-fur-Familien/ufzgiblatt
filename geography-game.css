@@ -1,0 +1,563 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap');
+
+:root {
+    --primary-color: #4facfe;
+    --secondary-color: #00f2fe;
+    --accent-color: #ff9a9e;
+    --text-color: #333;
+    --bg-color: #f0f4f8;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Nunito', sans-serif;
+    background: linear-gradient(120deg, var(--bg-color), #d9e2ec);
+    color: var(--text-color);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.game-header {
+    width: 100%;
+    background: white;
+    padding: 1rem 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.site-logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.site-logo img {
+    height: 40px;
+}
+
+.site-logo span {
+    font-size: 1.4rem;
+    color: var(--primary-color);
+    font-weight: bold;
+    letter-spacing: -0.5px;
+}
+
+.site-logo a {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    align-items: center;
+}
+
+.header-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.btn-back {
+    text-decoration: none;
+    color: var(--text-color);
+    font-weight: bold;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.btn-back:hover {
+    background: var(--bg-color);
+    color: var(--primary-color);
+}
+
+.lang-link {
+    text-decoration: none;
+    color: var(--primary-color);
+    font-weight: bold;
+    border: 2px solid var(--primary-color);
+    padding: 5px 10px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.lang-link:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* Main Game Area */
+.game-main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+.game-container {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    max-width: 1000px;
+    width: 100%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+#game-instruction {
+    text-align: center;
+    font-size: 1.8rem;
+    color: var(--text-color);
+    margin-bottom: 1rem;
+}
+
+#score-display {
+    text-align: center;
+    font-size: 1.2rem;
+    color: var(--primary-color);
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+}
+
+#map-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+}
+
+#map-container svg {
+    max-width: 100%;
+    height: auto;
+    cursor: pointer;
+}
+
+.game-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.controls-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Game Selector */
+.game-select {
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 700;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    color: var(--text-color);
+    background-color: white;
+    transition: box-shadow 0.2s;
+}
+
+.game-select:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.game-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+button {
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    font-family: 'Nunito', sans-serif;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* SVG Map Interaction Styles */
+.region-path {
+    cursor: pointer;
+    transition: fill 0.3s, opacity 0.3s;
+    fill: #cccccc;
+    stroke: white;
+    stroke-width: 0.5;
+}
+
+.region-path:hover {
+    fill: var(--primary-color);
+    opacity: 0.8;
+}
+
+.region-path.correct {
+    fill: #2ecc71 !important;
+    opacity: 1;
+    pointer-events: none;
+}
+
+.region-path.incorrect {
+    fill: #e74c3c !important;
+    animation: shake 0.5s;
+}
+
+.region-path.hint {
+    fill: #f1c40f !important;
+    animation: highlight-pulse 0.5s infinite alternate;
+}
+
+.region-path.not-found {
+    fill: #e74c3c !important;
+    opacity: 1;
+}
+
+.hint-arrow {
+    fill: #f1c40f;
+    stroke: white;
+    stroke-width: 2px;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+    pointer-events: none;
+    z-index: 1000;
+}
+
+@keyframes arrow-fly-in {
+    0% {
+        opacity: 0;
+        transform: translate(-50px, -50px) scale(0.5);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+@keyframes arrow-bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes highlight-pulse {
+    from {
+        fill-opacity: 1;
+    }
+
+    to {
+        fill-opacity: 0.6;
+    }
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+.region-label,
+.temp-label {
+    font-size: 14px;
+    font-weight: bold;
+    fill: #333;
+    pointer-events: none;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    text-shadow:
+        -1px -1px 0 #fff,
+        1px -1px 0 #fff,
+        -1px 1px 0 #fff,
+        1px 1px 0 #fff;
+    user-select: none;
+}
+
+.temp-label {
+    fill: #d32f2f;
+    font-size: 16px;
+    opacity: 0;
+    animation: fadeInOut 1.5s ease-in-out forwards;
+}
+
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    10% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    20% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    80% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(1);
+    }
+}
+
+/* Footer */
+.game-footer {
+    background: white;
+    padding: 1rem;
+    text-align: center;
+    color: #666;
+    font-size: 0.9rem;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.game-footer a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.game-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .game-main {
+        padding: 1rem;
+    }
+
+    .game-container {
+        padding: 1rem;
+    }
+
+    #game-instruction {
+        font-size: 1.3rem;
+    }
+
+    #score-display {
+        font-size: 1rem;
+    }
+
+    .site-logo span {
+        font-size: 1.1rem;
+    }
+
+    .header-content {
+        padding: 0 10px;
+    }
+
+    .game-controls {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    button {
+        width: 100%;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .site-logo img {
+        height: 30px;
+    }
+
+    .site-logo span {
+        font-size: 1rem;
+    }
+
+    #game-instruction {
+        font-size: 1.1rem;
+    }
+}
+
+/* Drag and Drop Mode Styles */
+.drag-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    min-height: 50px;
+    padding: 10px;
+    border: 2px dashed #ccc;
+    border-radius: 12px;
+    background: #fdfdfd;
+}
+
+.draggable-item {
+    background: white;
+    padding: 8px 16px;
+    border: 1px solid var(--primary-color);
+    border-radius: 20px;
+    cursor: grab;
+    font-weight: bold;
+    color: var(--text-color);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    user-select: none;
+    z-index: 100;
+}
+
+.draggable-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.draggable-item:active {
+    cursor: grabbing;
+    transform: scale(0.98);
+}
+
+.draggable-item.dragging {
+    opacity: 0.5;
+}
+
+/* Droppable highlights */
+.region-path.drag-over {
+    stroke: var(--primary-color);
+    stroke-width: 2px;
+    filter: drop-shadow(0 0 5px var(--primary-color));
+    fill: rgba(74, 144, 226, 0.4) !important;
+    /* Semi-transparent blue */
+}
+
+/* Flag Mode Styles */
+.flag-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    padding: 20px;
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.flag-item {
+    width: 120px;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.flag-item img {
+    max-width: 100%;
+    max-height: 80px;
+    object-fit: contain;
+    margin-bottom: 5px;
+    pointer-events: none;
+}
+
+.flag-item.drag-over {
+    transform: scale(1.05);
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 0 8px rgba(74, 144, 226, 0.5);
+    background-color: rgba(74, 144, 226, 0.1);
+}
+
+.flag-item.correct {
+    border-color: #2ecc71;
+    background-color: rgba(46, 204, 113, 0.1);
+}
+
+.flag-item.correct div {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.flag-item.incorrect {
+    animation: shake 0.5s;
+    border-color: #e74c3c;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-5px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(5px);
+    }
+}

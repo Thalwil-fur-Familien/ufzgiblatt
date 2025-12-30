@@ -10,10 +10,14 @@ window.updateURLState = updateURLState;
 window.toggleLogoVisibility = toggleLogoVisibility;
 window.toggleQRVisibility = toggleQRVisibility;
 window.validateInput = validateInput;
+window.switchLanguage = switchLanguage;
 
-const lang = window.location.pathname.includes('/en') ? 'en' : 'de';
-const basePath = lang === 'en' ? '../' : './';
-const T = TRANSLATIONS[lang];
+let lang = new URLSearchParams(window.location.search).get('lang') || (window.location.pathname.includes('/en') ? 'en' : 'de');
+// Normalize lang to supported values
+if (lang !== 'en' && lang !== 'de') lang = 'de';
+
+let basePath = window.location.pathname.includes('/en') ? '../' : './';
+let T = TRANSLATIONS[lang];
 
 if (document.getElementById('htmlRoot')) {
     document.getElementById('htmlRoot').lang = lang;
@@ -29,16 +33,50 @@ const GRADE_TOPICS_STRUCTURE = {
 };
 
 const GRADE_TOPICS = {};
-Object.keys(GRADE_TOPICS_STRUCTURE).forEach(g => {
-    GRADE_TOPICS[g] = GRADE_TOPICS_STRUCTURE[g].map(v => ({ value: v, text: T.topics[v] }));
-});
+// Initial Population
+updateGradeTopics();
+
+function updateGradeTopics() {
+    Object.keys(GRADE_TOPICS_STRUCTURE).forEach(g => {
+        GRADE_TOPICS[g] = GRADE_TOPICS_STRUCTURE[g].map(v => ({ value: v, text: T.topics[v] }));
+    });
+}
 
 const mascots = ['🦊', '🦉', '🦁', '🐼', '🐨', '🐯', '🦄', '🦖'];
 
+function trackEvent(name, props = {}) {
+    if (window.posthog) {
+        window.posthog.capture(name, props);
+    }
+}
+
+function printSheet() {
+    try {
+        const topic = document.getElementById('topicSelector').value;
+        const props = {
+            grade: document.getElementById('gradeSelector').value,
+            topic: topic,
+            count: document.getElementById('pageCount').value,
+            solutions: document.getElementById('solutionToggle').checked,
+            lang: lang
+        };
+
+        if (topic === 'custom') {
+            const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+            props.custom_modules = Array.from(checkboxes).map(cb => cb.value).join(',');
+        }
+
+        trackEvent('print_sheet', props);
+    } catch (e) {
+        console.error('Analytics error:', e);
+    }
+
+    window.print();
+}
+window.printSheet = printSheet;
 function applyTranslations() {
     document.title = T.ui.title;
     const ids = {
-        'labelCount': T.ui.countLabel,
         'labelSolutions': T.ui.solutionsLabel,
         'btnGenerate': T.ui.btnGenerate,
         'btnSave': T.ui.btnSave,
@@ -53,8 +91,17 @@ function applyTranslations() {
         'labelMinutes': T.ui.minutes,
         'modalTitle': T.ui.modalTitle,
         'btnModalClose': T.ui.modalClose,
-        'labelFeedback': T.ui.feedback
+        'labelFeedback': T.ui.feedback,
+        'navGenerator': T.ui.navGenerator,
+        'navGames': T.ui.navGames,
+        'navAbout': T.ui.navAbout,
+        'titleGames': T.ui.titleGames,
+        'titleAbout': T.ui.titleAbout,
+        'gameCantonTitle': T.ui.gameCantonTitle,
+        'gameCantonDesc': T.ui.gameCantonDesc,
+        'aboutIntro': T.ui.aboutIntro
     };
+
     for (const [id, text] of Object.entries(ids)) {
         const el = document.getElementById(id);
         if (el) el.innerHTML = text;
@@ -121,21 +168,28 @@ function updateCustomCheckboxes(topics) {
 function updateTopicSelector() {
     const grade = document.getElementById('gradeSelector').value;
     const topicSelector = document.getElementById('topicSelector');
+    // Save current selection before wiping options
+    const currentTopic = topicSelector.value;
+
     const topics = GRADE_TOPICS[grade] || [];
 
     updateTopicSelectorNodes(topics);
     updateCustomCheckboxes(topics);
 
-    // Set the selected value to the first topic
-    if (topics.length > 0) {
-        // Only set if not already set (e.g. from URL)
-        // Actually this overrides URL unless we guard it?
-        // But loadStateFromURL calls this THEN sets value.
-        // Wait, loadStateFromURL sets grade then calls updateTopicSelector.
-        // Then it sets topic value. So we should NOT force value[0] if one is selected.
-        if (!topicSelector.value) {
-            topicSelector.value = topics[0].value;
+    // Try to restore previous selection if valid for this grade
+    let restored = false;
+    if (currentTopic) {
+        // Check if currentTopic exists in new options
+        const exists = Array.from(topicSelector.options).some(opt => opt.value === currentTopic);
+        if (exists) {
+            topicSelector.value = currentTopic;
+            restored = true;
         }
+    }
+
+    // Set default if not restored
+    if (!restored && topics.length > 0) {
+        topicSelector.value = topics[0].value;
     }
 
     // Toggle Custom Options Visibility based on selection change
@@ -177,12 +231,43 @@ function updateTopicSelector() {
 
 // --- GENERATION & RENDERING ---
 
+// Tracking State
+let workStarted = false;
+
 function generateSheet(keepSeed = false) {
+    workStarted = false; // Reset interaction tracking
     if (!keepSeed) {
         setSeed(Math.floor(Math.random() * 0xFFFFFFFF));
     } else {
         // Reset generator with current seed to ensure same sequence if re-rendering same state
         setSeed(globalSeed);
+    }
+
+    // Track generation (only if new seed/sheet)
+    if (!keepSeed) {
+        const props = {
+            grade: document.getElementById('gradeSelector').value,
+            topic: document.getElementById('topicSelector').value,
+            count: document.getElementById('pageCount').value,
+            solutions: document.getElementById('solutionToggle').checked,
+            lang: lang
+        };
+
+        if (props.topic === 'custom') {
+            const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+            props.custom_modules = Array.from(checkboxes).map(cb => cb.value).join(',');
+        }
+
+        trackEvent('generate_sheet', props);
+    }
+
+    // Track generation (only if new seed/sheet)
+    if (!keepSeed) {
+        trackEvent('generate_sheet', {
+            grade: document.getElementById('gradeSelector').value,
+            topic: document.getElementById('topicSelector').value,
+            count: document.getElementById('pageCount').value
+        });
     }
 
     const selector = document.getElementById('topicSelector');
@@ -242,6 +327,11 @@ function generateSheet(keepSeed = false) {
 
 function updateURLState() {
     const params = new URLSearchParams();
+
+    // Lang (preserve)
+    if (lang && lang !== 'de') {
+        params.set('lang', lang);
+    }
 
     // Grade
     const grade = document.getElementById('gradeSelector').value;
@@ -740,36 +830,6 @@ function createProblemElement(problemData, isSolution) {
            <input type="text" class="answer-input" style="width:60px;" placeholder="a/b" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
          `;
 
-    } else if (problemData.type === 'written') {
-        // Vertical Alignment
-        const { a, b, op, answer } = problemData;
-        // Format numbers with space as thousands separator? standard JS toLocaleString('de-CH') uses ' 
-        const strA = a.toLocaleString('de-CH');
-        const strB = b.toLocaleString('de-CH');
-        const valAns = isSolution ? answer.toLocaleString('de-CH') : '';
-
-        problemDiv.innerHTML = `
-                <div class="written-vertical">
-                    <div class="written-row">${strA}</div>
-                    <div class="written-row"><span class="written-operator">${op}</span>${strB}</div>
-                    <div class="written-line"></div>
-                    <div class="written-row">
-                        <input type="text" class="answer-input" style="width:100%; text-align:right; border:none; background:transparent; font-family:inherit; font-size:inherit; padding:0;" 
-                        data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
-                    </div>
-                </div>
-            `;
-
-    } else if (problemData.type === 'rounding') {
-        const { val, place, answer } = problemData;
-        const valAns = isSolution ? answer : '';
-
-        problemDiv.style.flexDirection = 'column';
-        problemDiv.innerHTML = `
-                 <div style="margin-bottom:5px;">Runde <b>${val}</b> auf <b>${place}er</b>:</div>
-                 <input type="number" class="answer-input" style="width:80px;" 
-                        data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
-            `;
     } else if (problemData.type === 'time_reading') {
         const { hours, minutes, answer } = problemData;
         const valAns = isSolution ? answer : '';
@@ -1249,8 +1309,8 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     // Simplest is to pass the 'type' string to this function or check content.
     // problemDataList[0].type ...
 
-    // Let's rely on standard Layout unless it's a pyramid.
     const isPyramid = problemDataList.length > 0 && problemDataList[0].type === 'pyramid';
+    const isGeo = false;
 
     if (isPyramid) {
         const levels = problemDataList[0].levels || 3;
@@ -1449,6 +1509,24 @@ window.setupFocusNavigation = function () {
             }
         }
     });
+
+    // Track First Interaction (Work Started)
+    wrapper.addEventListener('input', (e) => {
+        if (!workStarted && e.target.tagName === 'INPUT') {
+            workStarted = true;
+            const props = {
+                grade: document.getElementById('gradeSelector').value,
+                topic: document.getElementById('topicSelector').value,
+                count: document.getElementById('pageCount').value,
+                lang: lang
+            };
+            if (props.topic === 'custom') {
+                const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+                props.custom_modules = Array.from(checkboxes).map(cb => cb.value).join(',');
+            }
+            trackEvent('work_started', props);
+        }
+    });
 };
 
 // Initialize on load
@@ -1474,8 +1552,28 @@ function init() {
         // 4. Scale
         autoScaleSheet();
 
+        // Check for Shared URL (deep linking)
+        const params = new URLSearchParams(window.location.search);
+        const isShared = params.has('seed') || params.has('topic');
+
+        // Track Page View
+        trackEvent('page_view', {
+            grade: document.getElementById('gradeSelector').value,
+            topic: document.getElementById('topicSelector').value,
+            is_shared_url: isShared,
+            hostname: window.location.hostname,
+            path: window.location.pathname,
+            lang: lang
+        });
+
         // 5. Setup Focus Navigation
         setupFocusNavigation();
+
+        // 6. Update Language Buttons state
+        updateLanguageButtons();
+
+        // 6. Setup Section Navigation
+        setupSectionNavigation();
     } catch (e) {
         console.error("Initialization Error:", e);
         alert("Fehler beim Starten: " + e.message);
@@ -1919,8 +2017,99 @@ window.validateWord = function (el) {
 }
 
 
-// --- INITIALIZATION ---
-applyTranslations();
-updateTopicSelector();
-generateSheet();
+// --- SECTION NAVIGATION ---
+function setupSectionNavigation() {
+    const links = document.querySelectorAll('.nav-link');
+    const sections = document.querySelectorAll('section');
 
+    function showSection(hash) {
+        const targetId = hash.replace('#', '') || 'generator';
+        sections.forEach(s => {
+            s.classList.remove('active-section');
+            if (s.id === targetId) s.classList.add('active-section');
+        });
+        links.forEach(l => {
+            l.classList.remove('active');
+            if (l.getAttribute('href') === hash || (hash === '' && l.getAttribute('href') === '#generator')) {
+                l.classList.add('active');
+            }
+        });
+    }
+
+    links.forEach(link => {
+        link.addEventListener('click', (e) => {
+            // No preventDefault to allow hash change
+            const hash = link.getAttribute('href');
+            showSection(hash);
+        });
+    });
+
+    // Handle initial load
+    showSection(window.location.hash);
+}
+
+
+// --- INITIALIZATION ---
+// execute init on load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+
+// Setup Section Navigation (Moved inside initialization flow or called directly)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupSectionNavigation);
+} else {
+    setupSectionNavigation();
+}
+
+function updateLanguageButtons() {
+    const nextLang = lang === 'en' ? 'de' : 'en';
+    const nextLabel = lang === 'en' ? 'DE' : 'EN';
+
+    const lnk1 = document.getElementById('langLinkHeader');
+    const lnk2 = document.getElementById('langLinkControls'); // If exists
+
+    if (lnk1) {
+        lnk1.textContent = nextLabel;
+        lnk1.onclick = () => switchLanguage(nextLang);
+    }
+    if (lnk2) {
+        lnk2.textContent = nextLabel;
+        lnk2.onclick = () => switchLanguage(nextLang);
+    }
+}
+
+function switchLanguage(newLang) {
+    if (newLang === lang) return;
+
+    trackEvent('switch_language', { from: lang, to: newLang });
+
+    lang = newLang;
+    T = TRANSLATIONS[lang];
+
+    // Update HTML lang attribute
+    const root = document.getElementById('htmlRoot');
+    if (root) root.lang = lang;
+
+    // Update translations
+    applyTranslations();
+
+    // Update Topic Definitions with new language
+    updateGradeTopics();
+
+    // Re-populate topics (labels change)
+    updateTopicSelector();
+
+    // Regenerate sheet (word problems rely on lang)
+    // Pass true to preserve seed/values where possible, but text changes
+    generateSheet(true);
+
+    // Update URL without reload
+    const url = new URL(window.location);
+    url.searchParams.set('lang', lang);
+    window.history.pushState({}, '', url);
+
+    updateLanguageButtons();
+}
