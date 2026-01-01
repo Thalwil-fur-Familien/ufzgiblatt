@@ -5,21 +5,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kanton Master - Schweizer Kantone lernen</title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="geography-game.css">
     <script src="js/analytics.js"></script>
 </head>
 
-<body>
-    <header class="game-header">
+<body style="visibility: hidden; opacity: 0; transition: opacity 0.2s;">
+    <header class="site-header no-print">
         <div class="header-content">
             <div class="site-logo">
                 <a href="index.html">
                     <span>ufzgiblatt.ch</span>
                 </a>
             </div>
-            <div class="header-controls">
-                <a href="index.html#games" class="btn-back">← Zurück</a>
-                <a href="en/geography-game.html" class="lang-link">EN</a>
+            <nav class="main-nav">
+                <a href="index.html#generator" class="nav-link" id="navGenerator">Arbeitsblätter</a>
+                <div class="nav-dropdown">
+                    <span class="nav-link dropdown-trigger active" id="navGames">Spiele</span>
+                    <div class="dropdown-content">
+                        <a href="geography-game.html" class="active" id="navGameGeo">Geographie</a>
+                    </div>
+                </div>
+            </nav>
+            <div class="lang-switch">
+                <a href="?lang=en" class="lang-link" id="langLinkHeader">EN</a>
             </div>
         </div>
     </header>
@@ -63,7 +72,6 @@
 
         // Initialize game with German configuration
         initGeoGame({
-            lang: 'de',
             basePath: './'
         });
     </script>

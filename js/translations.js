@@ -17,6 +17,8 @@ export const TRANSLATIONS = {
             btnSave: "💾 Speichern",
             btnSaved: "📂 Gespeichert",
             btnPrint: "🖨️ Drucken",
+            btnPlay: "Spielen",
+            btnBack: "← Zurück",
             hideLogo: "Logo ausblenden",
             hideQR: "QR-Code ausblenden",
             customTitle: "Wähle die Aufgabentypen:",
@@ -26,10 +28,12 @@ export const TRANSLATIONS = {
             buildInfo: "Build Info",
             navGenerator: "Arbeitsblätter",
             navGames: "Spiele",
+            navGameGeo: "Geographie",
             navAbout: "Über uns",
             titleGames: "Lernspiele",
             titleAbout: "Über uns",
-            gameCantonTitle: "Kanton Master",
+            gameTitle: "Geographie - Schweizer Kantone lernen",
+            gameCantonTitle: "Geographie",
             gameCantonDesc: "Lerne die Schweizer Kantone auf der interaktiven Karte kennen.",
             aboutIntro: "\"Thalwil für Familien\" ist eine Initiative, die sich für eine familienfreundliche Gemeinde einsetzt. Mit ufzgiblatt.ch möchten wir Eltern und Kinder unterstützen.",
             headerName: "Name:",
@@ -252,6 +256,8 @@ export const TRANSLATIONS = {
             btnSave: "💾 Save",
             btnSaved: "📂 Saved",
             btnPrint: "🖨️ Print",
+            btnPlay: "Play Now",
+            btnBack: "← Back",
             hideLogo: "Hide Logo",
             hideQR: "Hide QR Code",
             customTitle: "Select task types:",
@@ -261,12 +267,14 @@ export const TRANSLATIONS = {
             buildInfo: "Build Info",
             navGenerator: "Worksheets",
             navGames: "Games",
+            navGameGeo: "Geography",
             navAbout: "About Us",
             titleGames: "Learning Games",
             titleAbout: "About Us",
-            gameCantonTitle: "Canton Master",
+            gameTitle: "Geography - Learn Swiss Cantons",
+            gameCantonTitle: "Geography",
             gameCantonDesc: "Get to know the Swiss cantons on the interactive map.",
-            aboutIntro: "\"Thalwil for Families\" is an initiative dedicated to a family-friendly community. With study-sheet.com, we aim to support parents and children.",
+            aboutIntro: "\"Thalwil for Families\" is an initiative dedicated to a family-friendly community. With ufzgiblatt.ch, we aim to support parents and children.",
             headerName: "Name:",
             headerDate: "Date:",
             solutionsSuffix: " (Answers)",
@@ -402,3 +410,38 @@ export const TRANSLATIONS = {
         ]
     }
 };
+
+export function getPreferredLanguage() {
+    // 1. URL Param
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('lang')) {
+        const urlLang = urlParams.get('lang');
+        if (urlLang === 'en' || urlLang === 'de') return urlLang;
+    }
+
+    // 2. Local Storage
+    try {
+        const stored = localStorage.getItem('ufzgiblatt_lang');
+        if (stored === 'en' || stored === 'de') return stored;
+    } catch (e) {
+        // Access denied
+    }
+
+    // 3. Browser Language
+    const navLang = navigator.language || navigator.userLanguage;
+    if (navLang && navLang.startsWith('en')) {
+        return 'en';
+    }
+
+    // 4. Default
+    return 'de';
+}
+
+export function setPreferredLanguage(lang) {
+    if (lang !== 'en' && lang !== 'de') return;
+    try {
+        localStorage.setItem('ufzgiblatt_lang', lang);
+    } catch (e) {
+        console.warn('Could not save language preference:', e);
+    }
+}
