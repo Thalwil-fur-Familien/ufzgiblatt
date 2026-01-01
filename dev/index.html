@@ -22,12 +22,12 @@
             <div class="nav-dropdown">
                 <span class="nav-link dropdown-trigger" id="navGames">Spiele</span>
                 <div class="dropdown-content">
-                    <a href="geography-game.html">Geographie</a>
+                    <a href="geography-game.html" id="navGameGeo">Geographie</a>
                 </div>
             </div>
         </nav>
         <div class="lang-switch">
-            <a href="javascript:void(0)" onclick="switchLanguage('en')" class="lang-link" id="langLinkHeader">EN</a>
+            <a href="?lang=en" class="lang-link" id="langLinkHeader">EN</a>
         </div>
     </div>
 </header>
@@ -73,21 +73,19 @@
                         onchange="toggleQRVisibility()">
                     <label for="hideQR" id="labelHideQR">QR-Code ausblenden</label>
                 </div>
-                <a href="javascript:void(0)" onclick="switchLanguage('en')" id="langLinkControls"
+                <a href="?lang=en" id="langLinkControls"
                     style="margin-left: 10px; text-decoration: none; font-weight: bold; color: var(--primary-color);">EN</a>
             </div>
-            <a href="en/"
-                style="margin-left: 10px; text-decoration: none; font-weight: bold; color: var(--primary-color);">EN</a>
         </div>
 
-    <div class="controls" id="customOptions"
-        style="display:none; flex-direction:column; align-items:flex-start; margin-top:-1rem; font-family:'Nunito',sans-serif;">
-        <div id="customTitle" style="margin-bottom:10px; font-weight:bold;">Wähle die Aufgabentypen:</div>
-        <div id="checkboxContainer" style="display:flex; flex-wrap:wrap; gap:15px;">
-            <!-- Checkboxes populated by JS -->
-        </div>
-    </div>
+        <div class="controls" id="customOptions"
+            style="display:none; flex-direction:column; align-items:flex-start; margin-top:-1rem; font-family:'Nunito',sans-serif;">
+            <div id="customTitle" style="margin-bottom:10px; font-weight:bold;">Wähle die Aufgabentypen:</div>
+            <div id="checkboxContainer" style="display:flex; flex-wrap:wrap; gap:15px;">
+                <!-- Checkboxes populated by JS -->
             </div>
+        </div>
+        </div>
         </div>
 
         <div class="controls" id="marriedOptions"
@@ -131,7 +129,7 @@
                     <div class="game-icon">🇨🇭</div>
                     <h3 id="gameCantonTitle">Kanton Master</h3>
                     <p id="gameCantonDesc">Lerne die Schweizer Kantone auf der interaktiven Karte kennen.</p>
-                    <a href="geography-game.html" class="btn-primary"
+                    <a href="geography-game.html" class="btn-primary" id="btnPlay"
                         style="display: inline-block; text-decoration: none;">Spielen</a>
                 </div>
             </div>
@@ -169,7 +167,7 @@
         </svg>
         <span id="labelFeedback">Feedback & Fehler melden</span>
     </a>
-    <div id="build-info" style="margin-top:10px; font-size:0.8rem; color:#888;">Build: 9d7ec75 (2025-12-30 21:20 CET) - DEV</div>
+    <div id="build-info" style="margin-top:10px; font-size:0.8rem; color:#888;">Build: 7072729 (2026-01-01 14:17 CET) - DEV</div>
 </footer>
 </body>
 

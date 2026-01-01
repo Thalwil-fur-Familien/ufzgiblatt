@@ -1,6 +1,6 @@
 import { globalSeed, setSeed } from './js/mathUtils.js';
 import { generateProblemsData as genData } from './js/problemGenerators.js?v=4';
-import { TRANSLATIONS } from './js/translations.js';
+import { TRANSLATIONS, getPreferredLanguage, setPreferredLanguage } from './js/translations.js';
 
 // Expose to window for inline HTML handlers
 window.updateTopicSelector = updateTopicSelector;
@@ -12,11 +12,11 @@ window.toggleQRVisibility = toggleQRVisibility;
 window.validateInput = validateInput;
 window.switchLanguage = switchLanguage;
 
-let lang = new URLSearchParams(window.location.search).get('lang') || (window.location.pathname.includes('/en') ? 'en' : 'de');
-// Normalize lang to supported values
-if (lang !== 'en' && lang !== 'de') lang = 'de';
+let lang = getPreferredLanguage();
+// Update storage to ensure consistency
+setPreferredLanguage(lang);
 
-let basePath = window.location.pathname.includes('/en') ? '../' : './';
+let basePath = './';
 let T = TRANSLATIONS[lang];
 
 if (document.getElementById('htmlRoot')) {
@@ -82,6 +82,7 @@ function applyTranslations() {
         'btnSave': T.ui.btnSave,
         'btnSaved': T.ui.btnSaved,
         'btnPrint': T.ui.btnPrint,
+        'btnPlay': T.ui.btnPlay,
         'labelHideLogo': T.ui.hideLogo,
         'labelHideQR': T.ui.hideQR,
         'customTitle': T.ui.customTitle,
@@ -94,6 +95,7 @@ function applyTranslations() {
         'labelFeedback': T.ui.feedback,
         'navGenerator': T.ui.navGenerator,
         'navGames': T.ui.navGames,
+        'navGameGeo': T.ui.navGameGeo,
         'navAbout': T.ui.navAbout,
         'titleGames': T.ui.titleGames,
         'titleAbout': T.ui.titleAbout,
@@ -1531,6 +1533,8 @@ window.setupFocusNavigation = function () {
 
 // Initialize on load
 function init() {
+    applyTranslations();
+    updateLanguageButtons();
     try {
         // 1. Initial UI Setup (Defaults)
         // Grade 2 is default in HTML
@@ -2067,17 +2071,20 @@ if (document.readyState === 'loading') {
 function updateLanguageButtons() {
     const nextLang = lang === 'en' ? 'de' : 'en';
     const nextLabel = lang === 'en' ? 'DE' : 'EN';
+    const nextHref = '?lang=' + nextLang;
 
     const lnk1 = document.getElementById('langLinkHeader');
     const lnk2 = document.getElementById('langLinkControls'); // If exists
 
     if (lnk1) {
         lnk1.textContent = nextLabel;
-        lnk1.onclick = () => switchLanguage(nextLang);
+        lnk1.href = nextHref;
+        lnk1.onclick = null; // Ensure no conflicting handlers
     }
     if (lnk2) {
         lnk2.textContent = nextLabel;
-        lnk2.onclick = () => switchLanguage(nextLang);
+        lnk2.href = nextHref;
+        lnk2.onclick = null;
     }
 }
 
@@ -2086,6 +2093,7 @@ function switchLanguage(newLang) {
 
     trackEvent('switch_language', { from: lang, to: newLang });
 
+    setPreferredLanguage(newLang);
     lang = newLang;
     T = TRANSLATIONS[lang];
 
