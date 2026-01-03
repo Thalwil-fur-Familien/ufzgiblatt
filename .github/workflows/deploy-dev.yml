@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 jobs:
-  deploy-dev:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,20 +28,23 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      # --- 🧠 LOGIC CHECK ONLY ---
-      # We skip E2E (Playwright) here to save ~40 seconds.
-      # If the layout is broken, that's fine, it's just Dev.
-      - name: Run Unit Tests (Logic Only)
-        run: npm test -- tests/
+      # - name: Install Playwright Browsers
+      #   run: npx playwright install --with-deps
 
-      # --- DEPLOY ---
+      # --- 🧪 TESTS ---
+      - name: Run Unit Tests
+        run: npm test
+
+      # - name: Run GUI Tests
+      #   run: npm run test:gui
+
+      # --- 🚀 DEPLOY ---
       - name: Inject Build Info
         env:
           TZ: 'Europe/Zurich'
         run: |
             HASH=$(git rev-parse --short HEAD)
             DATE=$(date +'%Y-%m-%d %H:%M %Z')
-            # Label clearly as DEV
             sed -i "s|Local Development Build|Build: $HASH ($DATE) - DEV|g" index.html
 
       - name: Deploy to Dev Subfolder
@@ -50,4 +53,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .
           destination_dir: dev
-          keep_files: true  # Keeps /testing and Root alive
+          keep_files: true

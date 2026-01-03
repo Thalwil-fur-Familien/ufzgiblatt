@@ -9,6 +9,14 @@
     --sheet-bg: #fff;
 }
 
+* {
+    box-sizing: border-box;
+}
+
+html {
+    overflow-y: scroll; /* Force scrollbar to prevent jump */
+}
+
 body {
     font-family: 'Nunito', sans-serif;
     background: linear-gradient(120deg, var(--bg-color), #d9e2ec);

@@ -1,4 +1,4 @@
-import { TRANSLATIONS } from './translations.js';
+import { TRANSLATIONS, getPreferredLanguage, setPreferredLanguage } from './translations.js';
 
 let T;
 let lang;
@@ -33,7 +33,8 @@ function trackEvent(name, props = {}) {
 }
 
 export async function initGeoGame(config) {
-    lang = config.lang;
+    lang = getPreferredLanguage();
+    setPreferredLanguage(lang);
     basePath = config.basePath;
 
     const mapSelector = document.getElementById('map-selector');
@@ -47,7 +48,25 @@ export async function initGeoGame(config) {
     }
 
     try {
-        T = TRANSLATIONS[lang].ui.geoGame;
+        const UI = TRANSLATIONS[lang].ui;
+        T = UI.geoGame;
+
+        const btnBack = document.getElementById('btnBack');
+        if (btnBack && UI.btnBack) btnBack.textContent = UI.btnBack;
+
+        if (UI.gameTitle) document.title = UI.gameTitle;
+
+        // Apply Nav Translations
+        const ids = ['navGenerator', 'navGames', 'navGameGeo'];
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && UI[id]) el.textContent = UI[id];
+        });
+
+        // Translations applied, show content
+        document.body.style.visibility = 'visible';
+        document.body.style.opacity = '1';
+
         // Translations might be missing the mode keys if not reloaded, but we assume file is updated.
     } catch (e) {
         console.error('Translation error:', e);
@@ -62,6 +81,29 @@ export async function initGeoGame(config) {
 
     const restartBtn = document.getElementById('restart-game');
     if (restartBtn) restartBtn.onclick = restartGame;
+
+
+    // Update Lang Links to use query params
+    const langLinks = document.querySelectorAll('.lang-link');
+    const nextLang = lang === 'en' ? 'de' : 'en';
+    const nextHref = '?lang=' + nextLang;
+
+    langLinks.forEach(link => {
+        link.href = nextHref;
+        // Ensure no hardcoded paths override this (though HTML might have hardcoded paths, they will be overwritten)
+        // If link text matches current lang, we might want to hide it?
+        // But usually there is only one link "DE" or "EN".
+        // The game HTML has "DE" link when in English mode?
+        // Actually geography-game.html has "EN" link.
+        // We need to update TEXT of the link too if we reuse the same HTML file.
+        // geography-game.html: <a href="..." class="lang-link">EN</a>
+
+        if (lang === 'en') {
+            link.textContent = 'DE';
+        } else {
+            link.textContent = 'EN';
+        }
+    });
 }
 
 function setGameMode(mode) {

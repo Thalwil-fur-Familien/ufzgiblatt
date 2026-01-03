@@ -12,11 +12,12 @@ permissions:
   contents: write
 
 jobs:
-  deploy-prod:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
+      # --- 🚀 DEPLOY ---
       - name: Inject Build Info
         env:
           TZ: 'Europe/Zurich'
@@ -31,4 +32,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .
           # destination_dir is empty, so it goes to root
-          keep_files: true  # CRITICAL: Don't delete the testing folder!
+          keep_files: true
