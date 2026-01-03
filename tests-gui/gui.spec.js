@@ -71,7 +71,7 @@ test.describe('Mathe Arbeitsblatt Generator GUI', () => {
         expect(page.url()).toContain('solutions=1');
 
         // Verify sheet-title has "Lösungen"
-        const titles = await page.locator('.sheet-title').all();
+        const titles = await page.locator('.sheet h1').all();
         for (const title of titles) {
             await expect(title).toContainText('Lösungen');
         }
