@@ -32,4 +32,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .
           # destination_dir is empty, so it goes to root
-          keep_files: true  # CRITICAL: Don't delete the testing folder!
+          keep_files: true
