@@ -1,6 +1,7 @@
 import { getRandomInt, seededRandom, gcd } from './mathUtils.js';
+import { TRANSLATIONS } from './translations.js';
 
-export function generateProblemsData(type, count, availableTopics = [], allowedCurrencies = ['CHF'], options = {}) {
+export function generateProblemsData(type, count, availableTopics = [], allowedCurrencies = ['CHF'], options = {}, lang = 'de') {
     const data = [];
 
     const getCurrencyForProblem = () => {
@@ -46,12 +47,18 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
 
         const shuffledTopics = [...availableTopics].sort(() => seededRandom() - 0.5);
 
+        // Pre-shuffle sentences for word_types if present
+        const currentWordTypes = TRANSLATIONS[lang].word_types;
+        const wordTypeIndices = Array.from({ length: currentWordTypes.length }, (_, i) => i);
+        wordTypeIndices.sort(() => seededRandom() - 0.5);
+        let wordTypeCount = 0;
+
         shuffledTopics.forEach(topic => {
             if (currentLoad < PAGE_CAPACITY) {
                 let w = WEIGHTS[topic] || 1;
                 // For money topics, pick a currency
                 const currency = getCurrencyForProblem();
-                data.push(generateProblem(topic, currency, options));
+                data.push(generateProblem(topic, currency, options, topic === 'word_types' ? wordTypeIndices[wordTypeCount++ % currentWordTypes.length] : -1, lang));
                 currentLoad += w;
             }
         });
@@ -63,7 +70,7 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
 
             if (currentLoad + w <= PAGE_CAPACITY) {
                 const currency = getCurrencyForProblem();
-                data.push(generateProblem(topic, currency, options));
+                data.push(generateProblem(topic, currency, options, topic === 'word_types' ? wordTypeIndices[wordTypeCount++ % WORD_TYPES_SENTENCES.length] : -1));
                 currentLoad += w;
                 retries = 0;
             } else {
@@ -71,15 +78,34 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
             }
         }
     } else {
+        // Normal topic (could be word_types or geo)
+        const isWordTypes = type === 'word_types';
+        const isGeo = false;
+
+        if (isGeo) {
+            // Only 1 map per page
+            for (let i = 0; i < count; i++) {
+                data.push(generateProblem(type, 'CHF', options, -1, lang));
+            }
+            return data;
+        }
+
+        const currentWordTypes = TRANSLATIONS[lang].word_types;
+        let shuffledIndices = [];
+        if (isWordTypes) {
+            shuffledIndices = Array.from({ length: currentWordTypes.length }, (_, i) => i);
+            shuffledIndices.sort(() => seededRandom() - 0.5);
+        }
+
         for (let i = 0; i < count; i++) {
             const currency = getCurrencyForProblem();
-            data.push(generateProblem(type, currency, options));
+            data.push(generateProblem(type, currency, options, isWordTypes ? shuffledIndices[i % currentWordTypes.length] : -1, lang));
         }
     }
     return data;
 }
 
-export function generateProblem(type, currency = 'CHF', options = {}) {
+export function generateProblem(type, currency = 'CHF', options = {}, index = -1, lang = 'de') {
     let a, b, op;
 
     switch (type) {
@@ -190,15 +216,8 @@ export function generateProblem(type, currency = 'CHF', options = {}) {
         case 'rechenmauer_4':
             return generatePyramid(100, 4);
         case 'word_problems':
-            const problems = [
-                { q: "Lisa hat 5 Äpfel. Sie kauft 3 dazu. Wie viele hat sie?", a: 8 },
-                { q: "Tom hat 10 Ballons. 2 fliegen weg. Wie viele bleiben?", a: 8 },
-                { q: "Eine Katze hat 4 Beine. Wie viele Beine haben 2 Katzen?", a: 8 },
-                { q: "Oma backt 12 Kekse. Sie verteilt sie an 3 Enkel. Wie viele kriegt jeder?", a: 4 },
-                { q: "Im Bus sind 5 Leute. An der Haltestelle steigen 4 ein. Wie viele sind es?", a: 9 },
-                { q: "Max hat 20 Franken. Ein Buch kostet 15. Wie viel bleibt übrig?", a: 5 }
-            ];
-            return { type: 'text', ...problems[getRandomInt(0, problems.length - 1)] };
+            const wordProblems = TRANSLATIONS[lang].word_problems;
+            return { type: 'text', ...wordProblems[getRandomInt(0, wordProblems.length - 1)] };
         case 'add_1000':
             a = getRandomInt(100, 899);
             b = getRandomInt(1, 999 - a);
@@ -317,6 +336,8 @@ export function generateProblem(type, currency = 'CHF', options = {}) {
             return generateMoneyProblem(10, currency);
         case 'money_100':
             return generateMoneyProblem(100, currency);
+        case 'word_types':
+            return generateWordTypeProblem(index, lang);
         case 'time_reading':
             {
                 const minutes = getRandomInt(0, 11) * 5;
@@ -324,6 +345,21 @@ export function generateProblem(type, currency = 'CHF', options = {}) {
                 const minStr = minutes.toString().padStart(2, '0');
                 const answer = `${hours}:${minStr}`;
                 return { type: 'time_reading', hours, minutes, answer };
+            }
+        case 'time_analog_set':
+            {
+                const minutes = getRandomInt(0, 3) * 15;
+                const hours = getRandomInt(1, 12);
+                const minStr = minutes.toString().padStart(2, '0');
+                return { type: 'time_analog_set', hours, minutes, digital: `${hours}:${minStr}` };
+            }
+        case 'time_analog_set_complex':
+            {
+                const minutes = getRandomInt(0, 59);
+                const hours = getRandomInt(0, 23);
+                const hStr = hours.toString().padStart(2, '0');
+                const minStr = minutes.toString().padStart(2, '0');
+                return { type: 'time_analog_set', hours, minutes, digital: `${hStr}:${minStr}`, isComplex: true };
             }
         case 'time_duration':
             {
@@ -340,9 +376,13 @@ export function generateProblem(type, currency = 'CHF', options = {}) {
                 const sM = startM.toString().padStart(2, '0');
                 const eH = endH.toString();
                 const eM = endM.toString().padStart(2, '0');
+
+                const qTemplate = TRANSLATIONS[lang].ui.timeReadingQuestion;
+                const question = qTemplate.replace('{time}', `${sH}:${sM}`).replace('{duration}', duration);
+
                 return {
                     type: 'time_duration',
-                    q: `Es ist ${sH}:${sM} Uhr. Wie spät ist es in ${duration} Min?`,
+                    q: question,
                     answer: `${eH}:${eM}`
                 };
             }
@@ -408,11 +448,8 @@ export function generateMarriedNumbers(onlyMultiplesOf10) {
     if (onlyMultiplesOf10) {
         a = getRandomInt(0, 10) * 10;
     } else {
-        if (seededRandom() < 0.3) {
-            a = getRandomInt(0, 10) * 10;
-        } else {
-            a = getRandomInt(1, 99);
-        }
+        // Pure random 1-99 (approx 10% chance of multiple of 10)
+        a = getRandomInt(1, 99);
     }
     return { type: 'married_numbers', a: a, sum: 100, op: '+', answer: 100 - a };
 }
@@ -423,6 +460,7 @@ export function generatePyramid(maxTop, levels = 3) {
     do {
         values = [];
         let baseCount = levels;
+        // Heuristic to avoid too large numbers (start small)
         let maxBase = Math.max(1, Math.floor(maxTop / (2 ** (levels - 1))));
 
         for (let i = 0; i < baseCount; i++) {
@@ -444,18 +482,112 @@ export function generatePyramid(maxTop, levels = 3) {
     } while (top > maxTop);
 
     const totalItems = values.length;
-    const itemsToHide = Math.floor(totalItems * 0.5);
-    const mask = new Array(totalItems).fill(false);
-    let hiddenCount = 0;
-    while (hiddenCount < itemsToHide) {
-        let idx = getRandomInt(0, totalItems - 1);
-        if (!mask[idx]) {
-            mask[idx] = true;
-            hiddenCount++;
+    const relations = getPyramidRelations(levels);
+
+    // Determine how many items to hide (e.g. 40-60%)
+    const minHidden = Math.floor(totalItems * 0.4);
+    const maxHidden = Math.floor(totalItems * 0.6);
+    // Target hidden count
+    let targetHidden = getRandomInt(minHidden, maxHidden);
+    if (levels === 3) targetHidden = 3; // For 3 levels (6 items), hide 3 is standard good puzzle
+    if (levels === 4) targetHidden = 6; // For 4 levels (10 items), hide 6
+
+    let mask;
+    let solvable = false;
+    let attempts = 0;
+
+    while (!solvable && attempts < 200) {
+        mask = new Array(totalItems).fill(false);
+        let hiddenCount = 0;
+        let currentTarget = targetHidden;
+
+        // If we fail many times, try hiding fewer items
+        if (attempts > 50) currentTarget = Math.max(1, targetHidden - 1);
+        if (attempts > 100) currentTarget = Math.max(1, targetHidden - 2);
+
+        while (hiddenCount < currentTarget) {
+            let idx = getRandomInt(0, totalItems - 1);
+            if (!mask[idx]) {
+                mask[idx] = true;
+                hiddenCount++;
+            }
+        }
+
+        if (checkPyramidSolvable(relations, totalItems, mask)) {
+            solvable = true;
+        } else {
+            attempts++;
         }
     }
 
+    // Fallback: if not found, show everything (should rarely happen)
+    if (!solvable) {
+        mask.fill(false);
+    }
+
     return { type: 'pyramid', values, mask, levels };
+}
+
+function getPyramidRelations(levels) {
+    const relations = [];
+    let currentLayerStart = 0;
+    let currentLayerLength = levels;
+
+    // A pyramid with 'levels' has levels-1 layers of relationships
+    for (let l = 0; l < levels - 1; l++) {
+        for (let i = 0; i < currentLayerLength - 1; i++) {
+            // Relation: Parent = Left + Right
+            // Indices based on flat array construction order: Base layer, then next, etc.
+            // Left child index: currentLayerStart + i
+            // Right child index: currentLayerStart + i + 1
+            // Parent index: Next layer start + i
+            // Next layer start is currentLayerStart + currentLayerLength
+
+            const left = currentLayerStart + i;
+            const right = currentLayerStart + i + 1;
+            const parent = currentLayerStart + currentLayerLength + i;
+
+            relations.push([parent, left, right]);
+        }
+        currentLayerStart += currentLayerLength;
+        currentLayerLength--;
+    }
+    return relations;
+}
+
+function checkPyramidSolvable(relations, totalItems, mask) {
+    // mask[i] = true means HIDDEN (unknown)
+    // known[i] = true means VISIBLE (known)
+    // We simulate solving.
+
+    // workingKnown state: true if number is known/derived
+    const known = mask.map(m => !m);
+
+    let progress = true;
+    while (progress) {
+        progress = false;
+        for (const [p, l, r] of relations) {
+            // Rule: If 2 of 3 (Parent, Left, Right) are known, the 3rd is determined.
+
+            const pKnown = known[p];
+            const lKnown = known[l];
+            const rKnown = known[r];
+
+            if (!pKnown && lKnown && rKnown) {
+                known[p] = true;
+                progress = true;
+            } else if (pKnown && !lKnown && rKnown) {
+                known[l] = true;
+                progress = true;
+            } else if (pKnown && lKnown && !rKnown) {
+                known[r] = true;
+                progress = true;
+            }
+        }
+    }
+
+    // Solvable if all fields are eventually known
+    return known.every(k => k);
 }
 
 export function generateTriangle(maxSum) {
@@ -553,4 +685,14 @@ export function generateMoneyProblem(maxVal, currency = 'CHF') {
     items.sort(() => seededRandom() - 0.5);
 
     return { type: 'money', items: items, answer: target, currency: currency };
+}
+
+export function generateWordTypeProblem(index = -1, lang = 'de') {
+    const currentWordTypes = TRANSLATIONS[lang].word_types;
+    if (index >= 0) {
+        // Deterministic pick based on index (already shuffled if provided by generateProblemsData)
+        return { type: 'word_types', sentence: currentWordTypes[index % currentWordTypes.length] };
+    }
+    const idx = getRandomInt(0, currentWordTypes.length - 1);
+    return { type: 'word_types', sentence: currentWordTypes[idx] };
 }

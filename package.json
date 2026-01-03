@@ -4,7 +4,9 @@
   "description": "",
   "main": "script.js",
   "scripts": {
-    "test": "vitest"
+    "test": "vitest",
+    "test:gui": "playwright test",
+    "test:gui:ui": "playwright test --ui"
   },
   "repository": {
     "type": "git",
@@ -19,6 +21,9 @@
   },
   "homepage": "https://github.com/Thalwil-fur-Familien/ufzgiblatt#readme",
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^25.0.3",
+    "serve": "^14.2.5",
     "vitest": "^4.0.16"
   }
 }

@@ -1,5 +1,6 @@
 import { globalSeed, setSeed } from './js/mathUtils.js';
-import { generateProblemsData as genData } from './js/problemGenerators.js?v=2';
+import { generateProblemsData as genData } from './js/problemGenerators.js?v=4';
+import { TRANSLATIONS, getPreferredLanguage, setPreferredLanguage } from './js/translations.js';
 
 // Expose to window for inline HTML handlers
 window.updateTopicSelector = updateTopicSelector;
@@ -9,76 +10,114 @@ window.updateURLState = updateURLState;
 window.toggleLogoVisibility = toggleLogoVisibility;
 window.toggleQRVisibility = toggleQRVisibility;
 window.validateInput = validateInput;
+window.switchLanguage = switchLanguage;
+
+let lang = getPreferredLanguage();
+// Update storage to ensure consistency
+setPreferredLanguage(lang);
+
+let basePath = './';
+let T = TRANSLATIONS[lang];
+
+if (document.getElementById('htmlRoot')) {
+    document.getElementById('htmlRoot').lang = lang;
+}
+
+const GRADE_TOPICS_STRUCTURE = {
+    '1': ['add_10', 'sub_10', 'add_20_simple', 'sub_20_simple', 'bonds_10', 'rechenmauer_10', 'money_10'],
+    '2': ['add_20', 'sub_20', 'add_100_simple', 'add_100_carry', 'sub_100_simple', 'sub_100_carry', 'mult_2_5_10', 'mult_all', 'div_2_5_10', 'rechenmauer', 'rechenmauer_4', 'doubling_halving', 'zahlenhaus_20', 'word_problems', 'time_reading', 'time_analog_set', 'visual_add_100', 'rechendreiecke', 'rechenstrich', 'married_100', 'money_100', 'word_types'],
+    '3': ['add_1000', 'sub_1000', 'mult_advanced', 'div_100', 'div_remainder', 'rechenmauer_100', 'time_duration', 'time_analog_set_complex', 'rechendreiecke_100', 'zahlenhaus_100'],
+    '4': ['add_written', 'sub_written', 'mult_large', 'div_long', 'rounding'],
+    '5': ['dec_add', 'dec_sub', 'mult_10_100', 'units'],
+    '6': ['frac_simplify', 'frac_add', 'percent_basic']
+};
+
+const GRADE_TOPICS = {};
+// Initial Population
+updateGradeTopics();
+
+function updateGradeTopics() {
+    Object.keys(GRADE_TOPICS_STRUCTURE).forEach(g => {
+        GRADE_TOPICS[g] = GRADE_TOPICS_STRUCTURE[g].map(v => ({ value: v, text: T.topics[v] }));
+    });
+}
 
 const mascots = ['🦊', '🦉', '🦁', '🐼', '🐨', '🐯', '🦄', '🦖'];
 
-const GRADE_TOPICS = {
-    '1': [
-        { value: 'add_10', text: 'Addition bis 10' },
-        { value: 'sub_10', text: 'Subtraktion bis 10' },
-        { value: 'add_20_simple', text: 'Addition bis 20 (ohne Zehnerübergang)' },
-        { value: 'sub_20_simple', text: 'Subtraktion bis 20 (ohne Zehnerübergang)' },
-        { value: 'bonds_10', text: '❤️ Verliebte Zahlen (bis 10)' },
-        { value: 'rechenmauer_10', text: 'Kleine Rechenmauern (bis 10)' },
-        { value: 'money_10', text: '💰 Geld (Münzen bis 10 Fr)' },
-    ],
-    '2': [
-        { value: 'add_20', text: 'Addition bis 20 (mit Zehnerübergang)' },
-        { value: 'sub_20', text: 'Subtraktion bis 20 (mit Zehnerübergang)' },
-        { value: 'add_100_simple', text: 'Addition bis 100 (ohne Zehnerübergang)' },
-        { value: 'add_100_carry', text: 'Addition bis 100 (mit Zehnerübergang)' },
-        { value: 'sub_100_simple', text: 'Subtraktion bis 100 (ohne Zehnerübergang)' },
-        { value: 'sub_100_carry', text: 'Subtraktion bis 100 (mit Zehnerübergang)' },
-        { value: 'mult_2_5_10', text: 'Kleines 1x1 (2er, 5er, 10er)' },
-        { value: 'mult_all', text: 'Kleines 1x1 (Gemischt)' },
-        { value: 'div_2_5_10', text: 'Geteilt (2er, 5er, 10er)' },
-        { value: 'rechenmauer', text: 'Rechenmauern (3 Ebenen)' },
-        { value: 'rechenmauer_4', text: 'Rechenmauern (4 Ebenen)' },
-        { value: 'doubling_halving', text: 'Halbieren und Verdoppeln' },
-        { value: 'zahlenhaus_20', text: 'Zahlenhaus (bis 20)' },
-        { value: 'word_problems', text: 'Sachrechnen (Textaufgaben)' },
+function trackEvent(name, props = {}) {
+    if (window.posthog) {
+        window.posthog.capture(name, props);
+    }
+}
 
-        { value: 'time_reading', text: 'Uhrzeit lesen' },
-        { value: 'visual_add_100', text: 'Hunderterfeld: Addition' },
-        { value: 'rechendreiecke', text: 'Rechendreiecke (bis 20)' },
-        { value: 'rechenstrich', text: 'Rechenstrich (Addition)' },
-        { value: 'married_100', text: '💍 Verheiratete Zahlen (bis 100)' },
-        { value: 'money_100', text: '💰 Geld (Münzen & Noten bis 100 Fr)' }
-    ],
-    '3': [
-        { value: 'add_1000', text: 'Addition bis 1000' },
-        { value: 'sub_1000', text: 'Subtraktion bis 1000' },
-        { value: 'mult_advanced', text: 'Erweitertes 1x1 (bis 20)' }, // Or large mult placeholders
-        { value: 'div_100', text: 'Division (bis 100 ohne Rest)' },
-        { value: 'div_remainder', text: 'Division (mit Rest - Basis)' },
-        { value: 'rechenmauer_100', text: 'Grosse Rechenmauern (bis 100)' },
+function printSheet() {
+    try {
+        const topic = document.getElementById('topicSelector').value;
+        const props = {
+            grade: document.getElementById('gradeSelector').value,
+            topic: topic,
+            count: document.getElementById('pageCount').value,
+            solutions: document.getElementById('solutionToggle').checked,
+            lang: lang
+        };
 
-        { value: 'time_duration', text: 'Zeitspannen' },
-        { value: 'rechendreiecke_100', text: 'Rechendreiecke (bis 100)' },
-        { value: 'zahlenhaus_100', text: 'Zahlenhaus (bis 100)' }
-    ],
-    '4': [
-        { value: 'add_written', text: 'Schriftliche Addition (bis 1 Mio)' },
-        { value: 'sub_written', text: 'Schriftliche Subtraktion (bis 1 Mio)' },
-        { value: 'mult_large', text: 'Schriftliche Multiplikation' },
-        { value: 'div_long', text: 'Schriftliche Division' },
-        { value: 'rounding', text: 'Runden (10er, 100er, 1000er)' },
+        if (topic === 'custom') {
+            const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+            props.custom_modules = Array.from(checkboxes).map(cb => cb.value).join(',');
+        }
 
-    ],
-    '5': [
-        { value: 'dec_add', text: 'Dezimalzahlen: Addition' },
-        { value: 'dec_sub', text: 'Dezimalzahlen: Subtraktion' },
-        { value: 'mult_10_100', text: 'Malnehmen mit 10/100/1000' },
-        { value: 'units', text: 'Einheiten umrechnen (m, kg, s)' },
+        trackEvent('print_sheet', props);
+    } catch (e) {
+        console.error('Analytics error:', e);
+    }
 
-    ],
-    '6': [
-        { value: 'frac_simplify', text: 'Brüche: Kürzen/Erweitern' },
-        { value: 'frac_add', text: 'Brüche: Addition' },
-        { value: 'percent_basic', text: 'Prozentrechnung (Basis)' },
+    window.print();
+}
+window.printSheet = printSheet;
+function applyTranslations() {
+    document.title = T.ui.title;
+    const ids = {
+        'labelSolutions': T.ui.solutionsLabel,
+        'btnGenerate': T.ui.btnGenerate,
+        'btnSave': T.ui.btnSave,
+        'btnSaved': T.ui.btnSaved,
+        'btnPrint': T.ui.btnPrint,
+        'btnPlay': T.ui.btnPlay,
+        'labelHideLogo': T.ui.hideLogo,
+        'labelHideQR': T.ui.hideQR,
+        'customTitle': T.ui.customTitle,
+        'labelMultiplesOf10': T.ui.multiplesOf10,
+        'labelCurrency': T.ui.currency,
+        'labelHours': T.ui.hours,
+        'labelMinutes': T.ui.minutes,
+        'modalTitle': T.ui.modalTitle,
+        'btnModalClose': T.ui.modalClose,
+        'labelFeedback': T.ui.feedback,
+        'navGenerator': T.ui.navGenerator,
+        'navGames': T.ui.navGames,
+        'navGameGeo': T.ui.navGameGeo,
+        'navAbout': T.ui.navAbout,
+        'titleGames': T.ui.titleGames,
+        'titleAbout': T.ui.titleAbout,
+        'gameCantonTitle': T.ui.gameCantonTitle,
+        'gameCantonDesc': T.ui.gameCantonDesc,
+        'aboutIntro': T.ui.aboutIntro
+    };
 
-    ]
-};
+    for (const [id, text] of Object.entries(ids)) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = text;
+    }
+
+    const gradeSelector = document.getElementById('gradeSelector');
+    if (gradeSelector) {
+        Array.from(gradeSelector.options).forEach(opt => {
+            if (T.ui.grades[opt.value]) {
+                opt.textContent = T.ui.grades[opt.value];
+            }
+        });
+    }
+}
 
 function updateTopicSelectorNodes(topics) {
     const topicSelector = document.getElementById('topicSelector');
@@ -93,7 +132,7 @@ function updateTopicSelectorNodes(topics) {
     // Add Custom Option
     const customOpt = document.createElement('option');
     customOpt.value = 'custom';
-    customOpt.textContent = '🛠️ Individuelle Aufgaben';
+    customOpt.textContent = T.ui.individuelleAufgaben;
     topicSelector.appendChild(customOpt);
 }
 
@@ -131,21 +170,28 @@ function updateCustomCheckboxes(topics) {
 function updateTopicSelector() {
     const grade = document.getElementById('gradeSelector').value;
     const topicSelector = document.getElementById('topicSelector');
-    const topics = GRADE_TOPICS[grade];
+    // Save current selection before wiping options
+    const currentTopic = topicSelector.value;
+
+    const topics = GRADE_TOPICS[grade] || [];
 
     updateTopicSelectorNodes(topics);
     updateCustomCheckboxes(topics);
 
-    // Set the selected value to the first topic
-    if (topics.length > 0) {
-        // Only set if not already set (e.g. from URL)
-        // Actually this overrides URL unless we guard it?
-        // But loadStateFromURL calls this THEN sets value.
-        // Wait, loadStateFromURL sets grade then calls updateTopicSelector.
-        // Then it sets topic value. So we should NOT force value[0] if one is selected.
-        if (!topicSelector.value) {
-            topicSelector.value = topics[0].value;
+    // Try to restore previous selection if valid for this grade
+    let restored = false;
+    if (currentTopic) {
+        // Check if currentTopic exists in new options
+        const exists = Array.from(topicSelector.options).some(opt => opt.value === currentTopic);
+        if (exists) {
+            topicSelector.value = currentTopic;
+            restored = true;
         }
+    }
+
+    // Set default if not restored
+    if (!restored && topics.length > 0) {
+        topicSelector.value = topics[0].value;
     }
 
     // Toggle Custom Options Visibility based on selection change
@@ -185,23 +231,45 @@ function updateTopicSelector() {
 }
 
 
-function generateProblemsData(type, count) {
-    let availableTopics = [];
-    if (type === 'custom') {
-        const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
-        checkboxes.forEach(cb => availableTopics.push(cb.value));
-    }
-    return genData(type, count, availableTopics);
-}
+// --- GENERATION & RENDERING ---
 
-// ... (rest of logic)
+// Tracking State
+let workStarted = false;
 
 function generateSheet(keepSeed = false) {
+    workStarted = false; // Reset interaction tracking
     if (!keepSeed) {
         setSeed(Math.floor(Math.random() * 0xFFFFFFFF));
     } else {
         // Reset generator with current seed to ensure same sequence if re-rendering same state
         setSeed(globalSeed);
+    }
+
+    // Track generation (only if new seed/sheet)
+    if (!keepSeed) {
+        const props = {
+            grade: document.getElementById('gradeSelector').value,
+            topic: document.getElementById('topicSelector').value,
+            count: document.getElementById('pageCount').value,
+            solutions: document.getElementById('solutionToggle').checked,
+            lang: lang
+        };
+
+        if (props.topic === 'custom') {
+            const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+            props.custom_modules = Array.from(checkboxes).map(cb => cb.value).join(',');
+        }
+
+        trackEvent('generate_sheet', props);
+    }
+
+    // Track generation (only if new seed/sheet)
+    if (!keepSeed) {
+        trackEvent('generate_sheet', {
+            grade: document.getElementById('gradeSelector').value,
+            topic: document.getElementById('topicSelector').value,
+            count: document.getElementById('pageCount').value
+        });
     }
 
     const selector = document.getElementById('topicSelector');
@@ -218,34 +286,38 @@ function generateSheet(keepSeed = false) {
     else if (type === 'rechenmauer_4') numProblems = 8;
     else if (type.includes('rechenmauer')) numProblems = 10;
     else if (['mult_large', 'div_long'].includes(type)) numProblems = 8;
-    else if (type === 'time_reading') numProblems = 8; // Clocks need space
+    else if (type === 'time_reading' || type === 'time_analog_set' || type === 'time_analog_set_complex') numProblems = 8; // Clocks need space
     else if (type === 'visual_add_100') numProblems = 6; // 10x10 grids are large
     else if (type === 'rounding') numProblems = 16;
     else if (type.includes('rechendreiecke')) numProblems = 8;
     else if (['add_written', 'sub_written'].includes(type)) numProblems = 12;
     else if (type === 'rechenstrich') numProblems = 6;
-    else if (['money_10', 'money_100'].includes(type)) numProblems = (type === 'money_10' ? 6 : 4);
+    else if (type.includes('money')) numProblems = (type === 'money_10' ? 6 : 4);
     else if (type.includes('zahlenhaus')) numProblems = 4;
+    else if (type === 'word_types') numProblems = 16;
 
     // 2. Determine Page Count
     const pageCountInput = document.getElementById('pageCount');
-    let pageCount = parseInt(pageCountInput.value);
-    if (isNaN(pageCount) || pageCount < 1) pageCount = 1;
-    if (pageCount > 50) pageCount = 50;
-
-    const allowedCurrencies = [];
-    if (document.getElementById('currencyCHF').checked) allowedCurrencies.push('CHF');
-    if (document.getElementById('currencyEUR').checked) allowedCurrencies.push('EUR');
-    if (allowedCurrencies.length === 0) allowedCurrencies.push('CHF'); // Default fallback
-
-    const options = {
-        marriedMultiplesOf10: document.getElementById('marriedMultiplesOf10').checked
-    };
+    const pageCount = parseInt(document.getElementById('pageCount').value) || 1;
 
     // 3. Generate Data for ALL pages
     currentSheetsData = [];
+    const availableTopics = [];
+    if (type === 'custom') {
+        const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+        checkboxes.forEach(cb => availableTopics.push(cb.value));
+    }
+
     for (let i = 0; i < pageCount; i++) {
-        currentSheetsData.push(genData(type, numProblems, [], allowedCurrencies, options));
+        const allowedCurrencies = [];
+        if (document.getElementById('currencyCHF').checked) allowedCurrencies.push('CHF');
+        if (document.getElementById('currencyEUR').checked) allowedCurrencies.push('EUR');
+        if (allowedCurrencies.length === 0) allowedCurrencies.push('CHF'); // Default fallback
+
+        const options = {
+            marriedMultiplesOf10: document.getElementById('marriedMultiplesOf10').checked
+        };
+        currentSheetsData.push(genData(type, numProblems, availableTopics, allowedCurrencies, options, lang));
     }
 
     // 4. Render
@@ -257,6 +329,11 @@ function generateSheet(keepSeed = false) {
 
 function updateURLState() {
     const params = new URLSearchParams();
+
+    // Lang (preserve)
+    if (lang && lang !== 'de') {
+        params.set('lang', lang);
+    }
 
     // Grade
     const grade = document.getElementById('gradeSelector').value;
@@ -274,19 +351,29 @@ function updateURLState() {
     const showSolutions = document.getElementById('solutionToggle').checked;
     if (showSolutions) params.set('solutions', '1');
 
-    const marriedMultiples = document.getElementById('marriedMultiplesOf10').checked;
-    if (marriedMultiples) params.set('marriedM', '1');
+    const isCustom = (topic === 'custom');
 
-    const showHours = document.getElementById('showHours').checked;
-    if (showHours) params.set('showH', '1');
+    // Only set these parameters if they are relevant to the selected topic or custom mode
+    if (topic === 'married_100' || isCustom) {
+        const marriedMultiples = document.getElementById('marriedMultiplesOf10').checked;
+        if (marriedMultiples) params.set('marriedM', '1');
+    }
 
-    const showMinutes = document.getElementById('showMinutes').checked;
-    if (showMinutes) params.set('showM', '1');
+    if (topic === 'time_reading' || isCustom) {
+        const showHours = document.getElementById('showHours').checked;
+        if (showHours) params.set('showH', '1');
 
-    const currencies = [];
-    if (document.getElementById('currencyCHF').checked) currencies.push('CHF');
-    if (document.getElementById('currencyEUR').checked) currencies.push('EUR');
-    if (currencies.length > 0) params.set('currencies', currencies.join(','));
+        const showMinutes = document.getElementById('showMinutes').checked;
+        if (showMinutes) params.set('showM', '1');
+    }
+
+    const isMoney = topic === 'money_10' || topic === 'money_100';
+    if (isMoney || isCustom) {
+        const currencies = [];
+        if (document.getElementById('currencyCHF').checked) currencies.push('CHF');
+        if (document.getElementById('currencyEUR').checked) currencies.push('EUR');
+        if (currencies.length > 0) params.set('currencies', currencies.join(','));
+    }
 
     if (document.getElementById('hideQR').checked) params.set('hideQR', '1');
     if (document.getElementById('hideLogo').checked) params.set('hideLogo', '1');
@@ -346,7 +433,7 @@ function createProblemElement(problemData, isSolution) {
         problemDiv.style.flexDirection = 'column';
         problemDiv.style.alignItems = 'flex-start';
         problemDiv.style.borderBottom = '1px solid #eee';
-        problemDiv.style.paddingBottom = '10px';
+        problemDiv.style.paddingBottom = '9px';
 
         const answerVal = isSolution ? problemData.a : '';
         const correctClass = isSolution ? 'correct-answer-show' : ''; // custom class if needed
@@ -354,7 +441,7 @@ function createProblemElement(problemData, isSolution) {
         problemDiv.innerHTML = `
                     <div style="font-size: 14pt; margin-bottom:10px;"> ${problemData.q}</div>
                         <div style="display:flex; gap:10px; align-items:center; width:100%; justify-content: flex-end;">
-                            <span>Antwort:</span>
+                            <span>${T.ui.answerLabel}</span>
                             <input type="number" class="answer-input ${correctClass}" style="width:100px;"
                                 data-expected="${problemData.a}"
                                 value="${answerVal}"
@@ -482,7 +569,7 @@ function createProblemElement(problemData, isSolution) {
 
     } else if (problemData.type === 'doubling_halving') {
         const { subtype, val, answer } = problemData;
-        const label = subtype === 'double' ? 'Verdopple:' : 'Halbiere:';
+        const label = subtype === 'double' ? T.ui.doubleLabel : T.ui.halfLabel;
         // const icon = subtype === 'double' ? '✨2x' : '✂️½'; // Maybe too noisy? Text is engaging enough.
 
         const valAns = isSolution ? answer : '';
@@ -524,7 +611,7 @@ function createProblemElement(problemData, isSolution) {
 
         problemDiv.style.flexDirection = 'column';
         problemDiv.innerHTML = `
-                 <div style="margin-bottom:5px;">Runde <b>${val}</b> auf <b>${place}er</b>:</div>
+                 <div style="margin-bottom:5px;">${T.ui.roundingLabel.replace('{val}', val).replace('{place}', place)}</div>
                  <input type="number" class="answer-input" style="width:80px;" 
                         data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
             `;
@@ -745,36 +832,6 @@ function createProblemElement(problemData, isSolution) {
            <input type="text" class="answer-input" style="width:60px;" placeholder="a/b" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
          `;
 
-    } else if (problemData.type === 'written') {
-        // Vertical Alignment
-        const { a, b, op, answer } = problemData;
-        // Format numbers with space as thousands separator? standard JS toLocaleString('de-CH') uses ' 
-        const strA = a.toLocaleString('de-CH');
-        const strB = b.toLocaleString('de-CH');
-        const valAns = isSolution ? answer.toLocaleString('de-CH') : '';
-
-        problemDiv.innerHTML = `
-                <div class="written-vertical">
-                    <div class="written-row">${strA}</div>
-                    <div class="written-row"><span class="written-operator">${op}</span>${strB}</div>
-                    <div class="written-line"></div>
-                    <div class="written-row">
-                        <input type="text" class="answer-input" style="width:100%; text-align:right; border:none; background:transparent; font-family:inherit; font-size:inherit; padding:0;" 
-                        data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
-                    </div>
-                </div>
-            `;
-
-    } else if (problemData.type === 'rounding') {
-        const { val, place, answer } = problemData;
-        const valAns = isSolution ? answer : '';
-
-        problemDiv.style.flexDirection = 'column';
-        problemDiv.innerHTML = `
-                 <div style="margin-bottom:5px;">Runde <b>${val}</b> auf <b>${place}er</b>:</div>
-                 <input type="number" class="answer-input" style="width:80px;" 
-                        data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
-            `;
     } else if (problemData.type === 'time_reading') {
         const { hours, minutes, answer } = problemData;
         const valAns = isSolution ? answer : '';
@@ -798,7 +855,7 @@ function createProblemElement(problemData, isSolution) {
                        value="${isSolution ? answer.split(':')[1] : ''}" 
                        oninput="validateInput(this)" 
                        ${isSolution ? 'readonly' : ''}>
-                 <span style="margin-left:5px;">Uhr</span>
+                  <span style="margin-left:5px;">${T.ui.timeLabel}</span>
             </div>
         `;
 
@@ -811,13 +868,13 @@ function createProblemElement(problemData, isSolution) {
         problemDiv.innerHTML = `
             <div style="margin-bottom:8px;">${q}</div>
             <div style="display:flex; align-items:center; gap:5px;">
-                <span>Antwort:</span>
+                <span>${T.ui.answerLabel}</span>
                 <input type="text" class="answer-input" style="width:60px;" 
                        data-expected="${answer}" 
                        value="${valAns}" 
                        oninput="validateInput(this)" 
                        ${isSolution ? 'readonly' : ''}>
-                 <span>Uhr</span>
+                  <span>${T.ui.timeLabel}</span>
             </div>
         `;
 
@@ -936,24 +993,24 @@ function createProblemElement(problemData, isSolution) {
         problemDiv.style.gap = '10px';
 
         const COIN_IMAGES_CHF = {
-            '5': 'images/coins/CHF/smt_coin_5_fr_back.png',
-            '2': 'images/coins/CHF/smt_coin_2_fr_back.png',
-            '1': 'images/coins/CHF/smt_coin_1_fr_back.png',
-            '0.5': 'images/coins/CHF/smt_coin_50rp_back.png',
-            '0.2': 'images/coins/CHF/smt_coin_20rp_back.png',
-            '0.1': 'images/coins/CHF/smt_coin_10rp_back.png',
-            '0.05': 'images/coins/CHF/smt_coin_5rp_back.png'
+            '5': basePath + 'images/coins/CHF/smt_coin_5_fr_back.png',
+            '2': basePath + 'images/coins/CHF/smt_coin_2_fr_back.png',
+            '1': basePath + 'images/coins/CHF/smt_coin_1_fr_back.png',
+            '0.5': basePath + 'images/coins/CHF/smt_coin_50rp_back.png',
+            '0.2': basePath + 'images/coins/CHF/smt_coin_20rp_back.png',
+            '0.1': basePath + 'images/coins/CHF/smt_coin_10rp_back.png',
+            '0.05': basePath + 'images/coins/CHF/smt_coin_5rp_back.png'
         };
 
         const COIN_IMAGES_EUR = {
-            '2': 'images/coins/EUR/Common_face_of_two_euro_coin_(2007).jpg',
-            '1': 'images/coins/EUR/Common_face_of_one_euro_coin.png',
-            '0.5': 'images/coins/EUR/50_eurocent_common_2007.png',
-            '0.2': 'images/coins/EUR/20_eurocent_common_2007.png',
-            '0.1': 'images/coins/EUR/10_eurocent_common_2007.png',
-            '0.05': 'images/coins/EUR/5_eurocent_common_1999.png',
-            '0.02': 'images/coins/EUR/2_eurocent_common_1999.png',
-            '0.01': 'images/coins/EUR/1_cent_euro_coin_common_side.png'
+            '2': basePath + 'images/coins/EUR/Common_face_of_two_euro_coin_(2007).jpg',
+            '1': basePath + 'images/coins/EUR/Common_face_of_one_euro_coin.png',
+            '0.5': basePath + 'images/coins/EUR/50_eurocent_common_2007.png',
+            '0.2': basePath + 'images/coins/EUR/20_eurocent_common_2007.png',
+            '0.1': basePath + 'images/coins/EUR/10_eurocent_common_2007.png',
+            '0.05': basePath + 'images/coins/EUR/5_eurocent_common_1999.png', // This was missing, added placeholder
+            '0.02': basePath + 'images/coins/EUR/2_eurocent_common_1999.png',
+            '0.01': basePath + 'images/coins/EUR/1_cent_euro_coin_common_side.png'
         };
         // Wait, did I list 5 cent in EUR?
         // checking list_dir output from earlier...
@@ -963,47 +1020,28 @@ function createProblemElement(problemData, isSolution) {
         // 2_eurocent_common_1999.png
         // 1_cent_euro_coin_common_side.png
         // MISSING 5 cent in list? 
-        // list_dir output:
-        // 10_eurocent_common_2007.png
-        // 1_cent_euro_coin_common_side.png
-        // 20_eurocent_common_2007.png
-        // 2_eurocent_common_1999.png
-        // 50_eurocent_common_2007.png
-        // Common_face_of_one_euro_coin.png
-        // Common_face_of_two_euro_coin_(2007).jpg
-        //
-        // I seem to be missing the 5 cent coin in the EUR directory!
-        // I will use 2 cent for 5 cent as placeholder or omit 5 cent generation?
-        // Generator uses 0.05... 
-        // I should probably check if I missed it in the list or if it's really missing.
-        // Assuming it's missing, I should maybe request it or map to something else.
-        // For now I will assume I missed it or will map to 2 cent temporarily to avoid breaking image load.
-        // Actually, listing had 7 files. 
-        // 10, 1, 20, 2, 50, 1e, 2e. 
-        // That's 7 files. 5 cent is indeed missing!
-
         // I will update COIN_IMAGES_EUR with what I have.
 
         const COIN_IMAGES = (currency === 'EUR') ? COIN_IMAGES_EUR : COIN_IMAGES_CHF;
 
 
         const NOTE_IMAGES_CHF = {
-            '10': 'images/banknotes/CHF/CHF10_8_front.jpg',
-            '20': 'images/banknotes/CHF/CHF20_8_front.jpg',
-            '50': 'images/banknotes/CHF/CHF50_8_front.jpg',
-            '100': 'images/banknotes/CHF/CHF100_8_front.jpg',
-            '200': 'images/banknotes/CHF/CHF200_8_front.jpg',
-            '1000': 'images/banknotes/CHF/CHF1000_8_front.jpg'
+            '10': basePath + 'images/banknotes/CHF/CHF10_8_front.jpg',
+            '20': basePath + 'images/banknotes/CHF/CHF20_8_front.jpg',
+            '50': basePath + 'images/banknotes/CHF/CHF50_8_front.jpg',
+            '100': basePath + 'images/banknotes/CHF/CHF100_8_front.jpg',
+            '200': basePath + 'images/banknotes/CHF/CHF200_8_front.jpg',
+            '1000': basePath + 'images/banknotes/CHF/CHF1000_8_front.jpg'
         };
 
         const NOTE_IMAGES_EUR = {
-            '5': 'images/banknotes/EUR/EUR_5_obverse_(2002_issue).jpg',
-            '10': 'images/banknotes/EUR/EUR_10_obverse_(2002_issue).jpg',
-            '20': 'images/banknotes/EUR/EUR_20_obverse_(2002_issue).jpg',
-            '50': 'images/banknotes/EUR/EUR_50_obverse_(2002_issue).jpg',
-            '100': 'images/banknotes/EUR/EUR_100_obverse_(2002_issue).jpg',
-            '200': 'images/banknotes/EUR/EUR_200_obverse_(2002_issue).jpg',
-            '500': 'images/banknotes/EUR/EUR_500_obverse_(2002_issue).jpg'
+            '5': basePath + 'images/banknotes/EUR/EUR_5_obverse_(2002_issue).jpg',
+            '10': basePath + 'images/banknotes/EUR/EUR_10_obverse_(2002_issue).jpg',
+            '20': basePath + 'images/banknotes/EUR/EUR_20_obverse_(2002_issue).jpg',
+            '50': basePath + 'images/banknotes/EUR/EUR_50_obverse_(2002_issue).jpg',
+            '100': basePath + 'images/banknotes/EUR/EUR_100_obverse_(2002_issue).jpg',
+            '200': basePath + 'images/banknotes/EUR/EUR_200_obverse_(2002_issue).jpg',
+            '500': basePath + 'images/banknotes/EUR/EUR_500_obverse_(2002_issue).jpg'
         };
 
         const NOTE_IMAGES = (currency === 'EUR') ? NOTE_IMAGES_EUR : NOTE_IMAGES_CHF;
@@ -1079,12 +1117,107 @@ function createProblemElement(problemData, isSolution) {
 
         const unitLabel = currency === 'EUR' ? '€' : 'Fr.';
         const inputHtml = `<div style="display:flex; align-items:center; gap:10px; font-weight:bold;">
-            <span>Total:</span>
+            <span>${T.ui.totalLabel}</span>
             <input type="number" step="${currency === 'EUR' ? '0.01' : '0.05'}" class="answer-input" style="width:100px;" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${readonlyAttr} ${style}>
             <span>${unitLabel}</span>
         </div>`;
 
         problemDiv.innerHTML = itemsHtml + inputHtml;
+
+    } else if (problemData.type === 'time_analog_set') {
+        const { hours, minutes, digital } = problemData;
+
+        problemDiv.style.flexDirection = 'column';
+        problemDiv.style.alignItems = 'center';
+        problemDiv.style.gap = '10px';
+
+        // For solutions, show correct hands. For problems, show empty clock in print.
+        // In interactive mode (screen), we'll show hands at 12:00.
+        const clockHtml = renderClock(hours, minutes, false, false, isSolution);
+        const displayHtml = `<div style="font-size: 1.4rem; font-weight: bold; margin-bottom: 5px;">${digital} Uhr</div>`;
+
+        if (!isSolution) {
+            const interactiveClock = renderClock(12, 0, false, false, true);
+            const controlsHtml = `
+                <div class="time-controls no-print">
+                    <div class="time-control-group">
+                        <span class="time-label">Std</span>
+                        <div class="arrow-stack">
+                            <button class="btn-arrow" 
+                                onmousedown="startTimeAdjustment(this, 'h', 1)" 
+                                onmouseup="stopTimeAdjustment()" 
+                                onmouseleave="stopTimeAdjustment()"
+                                ontouchstart="startTimeAdjustment(this, 'h', 1)"
+                                ontouchend="stopTimeAdjustment()">▲</button>
+                            <button class="btn-arrow" 
+                                onmousedown="startTimeAdjustment(this, 'h', -1)" 
+                                onmouseup="stopTimeAdjustment()" 
+                                onmouseleave="stopTimeAdjustment()"
+                                ontouchstart="startTimeAdjustment(this, 'h', -1)"
+                                ontouchend="stopTimeAdjustment()">▼</button>
+                        </div>
+                    </div>
+                    <div class="time-control-group">
+                        <span class="time-label">Min</span>
+                        <div class="arrow-stack">
+                            <button class="btn-arrow" 
+                                onmousedown="startTimeAdjustment(this, 'm', ${problemData.isComplex ? 1 : 5})" 
+                                onmouseup="stopTimeAdjustment()" 
+                                onmouseleave="stopTimeAdjustment()"
+                                ontouchstart="startTimeAdjustment(this, 'm', ${problemData.isComplex ? 1 : 5})"
+                                ontouchend="stopTimeAdjustment()">▲</button>
+                            <button class="btn-arrow" 
+                                onmousedown="startTimeAdjustment(this, 'm', ${problemData.isComplex ? -1 : -5})" 
+                                onmouseup="stopTimeAdjustment()" 
+                                onmouseleave="stopTimeAdjustment()"
+                                ontouchstart="startTimeAdjustment(this, 'm', ${problemData.isComplex ? -1 : -5})"
+                                ontouchend="stopTimeAdjustment()">▼</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            problemDiv.innerHTML = displayHtml + interactiveClock + controlsHtml;
+            problemDiv.dataset.type = 'time_analog_set';
+            problemDiv.dataset.targetH = hours % 12;
+            problemDiv.dataset.targetM = minutes;
+            problemDiv.dataset.currH = 12;
+            problemDiv.dataset.currM = 0;
+        } else {
+            problemDiv.innerHTML = displayHtml + clockHtml;
+        }
+
+    } else if (problemData.type === 'word_types') {
+        problemDiv.dataset.type = 'word_types';
+        problemDiv.style.flexDirection = 'row';
+        problemDiv.style.flexWrap = 'wrap';
+        problemDiv.style.justifyContent = 'flex-start';
+        problemDiv.style.gap = '8px';
+        problemDiv.style.lineHeight = '0.5';
+        problemDiv.style.fontSize = '1.3rem';
+
+        let sentenceHtml = "";
+
+        problemData.sentence.forEach((word, idx) => {
+            let style = "";
+            const isPunctuation = ['.', '!', '?', ',', ';', ':'].includes(word.text);
+            const punctuationStyle = isPunctuation ? 'margin-left: -8px;' : '';
+
+            if (isSolution) {
+                if (word.type === 'noun') style = "border-bottom: 3px solid red;";
+                else if (word.type === 'verb') style = "border-bottom: 3px solid blue;";
+                else if (word.type === 'adj') style = "border-bottom: 3px solid green;";
+                else if (word.type === 'artikel') style = "border-bottom: 3px solid orange;";
+
+                sentenceHtml += `<span style="${style} padding:0 2px; ${punctuationStyle}">${word.text}</span>`;
+            } else {
+                sentenceHtml += `<span class="interactive-word" 
+                    data-type="${word.type}" 
+                    data-state="none"
+                    style="${punctuationStyle}"
+                    onclick="toggleWordType(this)">${word.text}</span>`;
+            }
+        });
+        problemDiv.innerHTML = sentenceHtml;
 
     } else if (problemData.type === 'standard') {
         // Reuse standard logic but explicitly handle here if needed, or fall through?
@@ -1142,7 +1275,7 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
 
     // Sheet Logo (Top Left)
     const sheetLogo = document.createElement('img');
-    sheetLogo.src = 'images/Thalwil_Familien_Logo.png';
+    sheetLogo.src = basePath + 'images/Thalwil_Familien_Logo.png';
     sheetLogo.className = 'sheet-logo';
     if (document.getElementById('hideLogo').checked) {
         sheetLogo.classList.add('logo-hidden');
@@ -1155,8 +1288,8 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     header.innerHTML = `
                                                                                     <div style="width:100px;"></div> <!-- Spacer for Logo -->
                                                                                     <div style="display:flex; gap: 40px;">
-                                                                                        <div class="header-field">Name: <span class="line"></span></div>
-                                                                                        <div class="header-field">Datum: <span class="line"></span></div>
+                                                                                         <div class="header-field">${T.ui.headerName} <span class="line"></span></div>
+                                                                                         <div class="header-field">${T.ui.headerDate} <span class="line"></span></div>
                                                                                     </div>
                                                                                     <div style="width:100px;"></div> <!-- Spacer for QR Code -->
                                                                                     `;
@@ -1164,7 +1297,7 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
 
     // Title
     const h1 = document.createElement('h1');
-    h1.textContent = titleText + (isSolution ? ' (Lösungen)' : '');
+    h1.textContent = titleText + (isSolution ? T.ui.solutionsSuffix : '');
     if (isSolution) h1.style.color = '#27ae60';
     sheetDiv.appendChild(h1);
 
@@ -1178,8 +1311,8 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     // Simplest is to pass the 'type' string to this function or check content.
     // problemDataList[0].type ...
 
-    // Let's rely on standard Layout unless it's a pyramid.
     const isPyramid = problemDataList.length > 0 && problemDataList[0].type === 'pyramid';
+    const isGeo = false;
 
     if (isPyramid) {
         const levels = problemDataList[0].levels || 3;
@@ -1199,6 +1332,20 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
 
     sheetDiv.appendChild(grid);
 
+    if (problemDataList.length > 0 && problemDataList[0].type === 'word_types' && !isSolution) {
+        const legend = document.createElement('div');
+        legend.className = 'word-types-legend';
+        legend.innerHTML = `
+            <div class="legend-item" data-type="noun" onclick="setActiveWordType('noun')"><div class="legend-color" style="background:red"></div> ${T.ui.wordTypesLegend.noun}</div>
+            <div class="legend-item" data-type="verb" onclick="setActiveWordType('verb')"><div class="legend-color" style="background:blue"></div> ${T.ui.wordTypesLegend.verb}</div>
+            <div class="legend-item" data-type="adj" onclick="setActiveWordType('adj')"><div class="legend-color" style="background:green"></div> ${T.ui.wordTypesLegend.adj}</div>
+            <div class="legend-item" data-type="artikel" onclick="setActiveWordType('artikel')"><div class="legend-color" style="background:orange"></div> ${T.ui.wordTypesLegend.artikel}</div>
+            <div class="legend-item" data-type="none" onclick="setActiveWordType('none')"><div class="legend-color" style="background:#888; height: 10px; width: 10px; border-radius: 2px;"></div> ${T.ui.wordTypesLegend.eraser}</div>
+            <div style="font-style:italic; margin-left:10px;">${T.ui.wordTypesLegend.instruction}</div>
+        `;
+        sheetDiv.insertBefore(legend, grid);
+    }
+
     // Layout adjustments: Removed Mascot and Footer per user request NO WAIT - User wants Page Numbers now.
     const footer = document.createElement('div');
     footer.className = 'sheet-footer';
@@ -1211,7 +1358,7 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
 
     // Page numbering
     if (pageInfo) {
-        footer.textContent = `${pageInfo.current}${isSolution ? ' (Lösungen)' : ''}`;
+        footer.textContent = `${pageInfo.current}${isSolution ? T.ui.solutionsSuffix : ''}`;
     }
 
     sheetDiv.appendChild(footer);
@@ -1333,8 +1480,61 @@ function checkAllDone() {
     }
 }
 
+window.setupFocusNavigation = function () {
+    const wrapper = document.getElementById('sheetsWrapper');
+    if (!wrapper) return;
+
+    // Use event delegation on the wrapper to catch Enter key on any input
+    wrapper.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const target = e.target;
+            // Check if it's one of our answer inputs
+            if (target.matches('.answer-input, .rechenstrich-input, .house-input, .brick-input, .triangle-field')) {
+                e.preventDefault(); // Prevent accidental form submission or other default behaviors
+
+                // Find all visible, non-readonly numeric inputs in the worksheet
+                const allInputs = Array.from(wrapper.querySelectorAll('input:not([readonly])'));
+                const currentIndex = allInputs.indexOf(target);
+
+                if (currentIndex !== -1 && currentIndex < allInputs.length - 1) {
+                    const nextInput = allInputs[currentIndex + 1];
+                    nextInput.focus();
+
+                    // Optional: highlight text for easier overwriting
+                    if (nextInput.type === 'number' || nextInput.type === 'text') {
+                        nextInput.select();
+                    }
+
+                    // Smooth scroll into view if hidden (especially useful for mobile)
+                    nextInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+    });
+
+    // Track First Interaction (Work Started)
+    wrapper.addEventListener('input', (e) => {
+        if (!workStarted && e.target.tagName === 'INPUT') {
+            workStarted = true;
+            const props = {
+                grade: document.getElementById('gradeSelector').value,
+                topic: document.getElementById('topicSelector').value,
+                count: document.getElementById('pageCount').value,
+                lang: lang
+            };
+            if (props.topic === 'custom') {
+                const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+                props.custom_modules = Array.from(checkboxes).map(cb => cb.value).join(',');
+            }
+            trackEvent('work_started', props);
+        }
+    });
+};
+
 // Initialize on load
 function init() {
+    applyTranslations();
+    updateLanguageButtons();
     try {
         // 1. Initial UI Setup (Defaults)
         // Grade 2 is default in HTML
@@ -1355,6 +1555,29 @@ function init() {
 
         // 4. Scale
         autoScaleSheet();
+
+        // Check for Shared URL (deep linking)
+        const params = new URLSearchParams(window.location.search);
+        const isShared = params.has('seed') || params.has('topic');
+
+        // Track Page View
+        trackEvent('page_view', {
+            grade: document.getElementById('gradeSelector').value,
+            topic: document.getElementById('topicSelector').value,
+            is_shared_url: isShared,
+            hostname: window.location.hostname,
+            path: window.location.pathname,
+            lang: lang
+        });
+
+        // 5. Setup Focus Navigation
+        setupFocusNavigation();
+
+        // 6. Update Language Buttons state
+        updateLanguageButtons();
+
+        // 6. Setup Section Navigation
+        setupSectionNavigation();
     } catch (e) {
         console.error("Initialization Error:", e);
         alert("Fehler beim Starten: " + e.message);
@@ -1502,7 +1725,7 @@ function renderQRCode(url) {
 }
 
 
-function renderClock(hours, minutes, showHours = false, showMinutes = false) {
+function renderClock(hours, minutes, showHours = false, showMinutes = false, showHands = true) {
     let html = '<div class="clock-face"><div class="clock-center"></div>';
 
     // Hours (Inner, Green)
@@ -1536,13 +1759,147 @@ function renderClock(hours, minutes, showHours = false, showMinutes = false) {
     const hColor = showHours ? 'green' : '#333';
     const mColor = showMinutes ? 'blueviolet' : '#000';
 
-    html += `<div class="clock-hand hand-hour" style="background:${hColor}; transform: rotate(${hourDeg}deg)"></div>`;
-    html += `<div class="clock-hand hand-minute" style="background:${mColor}; transform: rotate(${minDeg}deg)"></div>`;
+    if (showHands) {
+        html += `<div class="clock-hand hand-hour" style="background:${hColor}; transform: rotate(${hourDeg}deg)"></div>`;
+        html += `<div class="clock-hand hand-minute" style="background:${mColor}; transform: rotate(${minDeg}deg)"></div>`;
+    }
     html += '</div>';
     return html;
 }
 
+window.adjustTime = function (btn, type, amount = 1) {
+    const problem = btn.closest('.problem');
+    let h = parseInt(problem.dataset.currH);
+    let m = parseInt(problem.dataset.currM);
+
+    if (type === 'h') {
+        h = (h + amount) % 12;
+        if (h <= 0) h += 12;
+    } else {
+        m = (m + amount + 60) % 60;
+    }
+
+    problem.dataset.currH = h;
+    problem.dataset.currM = m;
+
+    const hourHand = problem.querySelector('.hand-hour');
+    const minHand = problem.querySelector('.hand-minute');
+
+    const minDeg = m * 6;
+    const hourDeg = (h % 12) * 30 + m * 0.5;
+
+    hourHand.style.transform = `rotate(${hourDeg}deg)`;
+    minHand.style.transform = `rotate(${minDeg}deg)`;
+
+    // Check if correct
+    const targetH = parseInt(problem.dataset.targetH);
+    const targetM = parseInt(problem.dataset.targetM);
+
+    problem.classList.remove('correct', 'incorrect');
+    if (h % 12 === targetH % 12 && m === targetM) {
+        problem.classList.add('correct');
+    }
+};
+
+let adjustmentInterval = null;
+
+window.startTimeAdjustment = function (btn, type, amount) {
+    adjustTime(btn, type, amount);
+    adjustmentInterval = setInterval(() => {
+        adjustTime(btn, type, amount);
+    }, 150);
+};
+
+window.stopTimeAdjustment = function () {
+    if (adjustmentInterval) {
+        clearInterval(adjustmentInterval);
+        adjustmentInterval = null;
+    }
+};
+
 window.onload = init;
+
+window.saveCurrentState = function () {
+    updateURLState(); // Sync current state to URL
+    const params = window.location.search;
+    if (!params) {
+        alert(T.ui.saveNothing);
+        return;
+    }
+
+    const topicName = document.getElementById('topicSelector').options[document.getElementById('topicSelector').selectedIndex].text;
+    const defaultName = `${topicName} (${new Date().toLocaleDateString(lang === 'de' ? 'de-CH' : 'en-US')})`;
+    const name = prompt(T.ui.savePrompt, defaultName);
+    if (name === null) return; // Cancelled
+
+    const saved = JSON.parse(localStorage.getItem('ufzgiblatt_saved') || '[]');
+    saved.push({
+        id: Date.now(),
+        name: name || defaultName,
+        params: params,
+        timestamp: new Date().toLocaleString(lang === 'de' ? 'de-CH' : 'en-US')
+    });
+
+    localStorage.setItem('ufzgiblatt_saved', JSON.stringify(saved));
+    alert(T.ui.saveSuccess);
+};
+
+window.toggleSavedModal = function () {
+    const modal = document.getElementById('savedModal');
+    if (modal.style.display === 'block') {
+        modal.style.display = 'none';
+    } else {
+        renderSavedList();
+        modal.style.display = 'block';
+    }
+};
+
+window.renderSavedList = function () {
+    const list = document.getElementById('savedList');
+    const saved = JSON.parse(localStorage.getItem('ufzgiblatt_saved') || '[]');
+
+    if (saved.length === 0) {
+        list.innerHTML = `<p style="text-align:center; padding: 20px;">${T.ui.noSavedWorksheets}</p>`;
+        return;
+    }
+
+    // Sort by most recent
+    saved.sort((a, b) => b.id - a.id);
+
+    list.innerHTML = saved.map(item => `
+        <div class="saved-item">
+            <div class="saved-item-info">
+                <span class="saved-item-name">${item.name}</span>
+                <span class="saved-item-date">${item.timestamp}</span>
+            </div>
+            <div class="saved-item-actions">
+                <button class="btn-load" onclick="loadSavedState(${item.id})">${T.ui.btnLoad}</button>
+                <button class="btn-delete" onclick="deleteSavedState(${item.id})">${T.ui.btnDelete}</button>
+            </div>
+        </div>
+    `).join('');
+};
+
+window.loadSavedState = function (id) {
+    const saved = JSON.parse(localStorage.getItem('ufzgiblatt_saved') || '[]');
+    const item = saved.find(s => s.id === id);
+    if (!item) return;
+
+    // Apply the saved parameters to the URL and reload
+    window.history.replaceState({}, '', window.location.pathname + item.params);
+    loadStateFromURL();
+    generateSheet(true);
+    toggleSavedModal();
+};
+
+window.deleteSavedState = function (id) {
+    if (!confirm(T.ui.confirmDelete)) return;
+
+    let saved = JSON.parse(localStorage.getItem('ufzgiblatt_saved') || '[]');
+    saved = saved.filter(s => s.id !== id);
+    localStorage.setItem('ufzgiblatt_saved', JSON.stringify(saved));
+    renderSavedList();
+};
 
 window.onresize = autoScaleSheet;
 
@@ -1587,8 +1944,180 @@ function autoScaleSheet() {
     }
 }
 
+// --- Interactive Word Types Logic ---
+let activeWordType = 'none';
+
+window.setActiveWordType = function (type) {
+    activeWordType = type;
+    // Update legend item visual states (they exist in the DOM inside sheets)
+    const legendItems = document.querySelectorAll('.legend-item');
+    legendItems.forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.type === type) {
+            item.classList.add('active');
+        }
+    });
+
+    // Update cursor style based on word type
+    const problems = document.querySelectorAll('.problem[data-type="word_types"]');
+    problems.forEach(problem => {
+        // Remove all cursor classes
+        problem.classList.remove('cursor-noun', 'cursor-verb', 'cursor-adj', 'cursor-artikel', 'cursor-eraser');
+
+        // Add appropriate cursor class
+        if (type === 'noun') {
+            problem.classList.add('cursor-noun');
+        } else if (type === 'verb') {
+            problem.classList.add('cursor-verb');
+        } else if (type === 'adj') {
+            problem.classList.add('cursor-adj');
+        } else if (type === 'artikel') {
+            problem.classList.add('cursor-artikel');
+        } else if (type === 'none') {
+            problem.classList.add('cursor-eraser');
+        }
+    });
+};
+
+window.toggleWordType = function (el) {
+    const currentState = el.dataset.state;
+    const nextState = activeWordType || 'none';
+
+    // If clicking with the same type, clear it.
+    // If clicking with a different type, update it.
+    const newState = (currentState === nextState) ? 'none' : nextState;
+
+    el.dataset.state = newState;
+
+    // Remove all marked classes
+    el.classList.remove('marked-noun', 'marked-verb', 'marked-adj', 'marked-artikel');
+
+    // Add new class if not 'none'
+    if (newState === 'noun') el.classList.add('marked-noun');
+    else if (newState === 'verb') el.classList.add('marked-verb');
+    else if (newState === 'adj') el.classList.add('marked-adj');
+    else if (newState === 'artikel') el.classList.add('marked-artikel');
+
+    validateWord(el);
+};
+
+window.validateWord = function (el) {
+    const expected = el.dataset.type; // noun, verb, adj, other
+    const actual = el.dataset.state;  // noun, verb, adj, none
+
+    el.classList.remove('correct', 'incorrect');
+
+    if (actual === 'none') {
+        // Neutral state, remove feedback classes
+        return;
+    }
+
+    if (expected === actual) {
+        el.classList.add('correct');
+        checkAllDone();
+    } else {
+        el.classList.add('incorrect');
+    }
+}
 
 
+// --- SECTION NAVIGATION ---
+function setupSectionNavigation() {
+    const links = document.querySelectorAll('.nav-link');
+    const sections = document.querySelectorAll('section');
+
+    function showSection(hash) {
+        const targetId = hash.replace('#', '') || 'generator';
+        sections.forEach(s => {
+            s.classList.remove('active-section');
+            if (s.id === targetId) s.classList.add('active-section');
+        });
+        links.forEach(l => {
+            l.classList.remove('active');
+            if (l.getAttribute('href') === hash || (hash === '' && l.getAttribute('href') === '#generator')) {
+                l.classList.add('active');
+            }
+        });
+    }
+
+    links.forEach(link => {
+        link.addEventListener('click', (e) => {
+            // No preventDefault to allow hash change
+            const hash = link.getAttribute('href');
+            showSection(hash);
+        });
+    });
+
+    // Handle initial load
+    showSection(window.location.hash);
+}
 
 
+// --- INITIALIZATION ---
+// execute init on load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 
+// Setup Section Navigation (Moved inside initialization flow or called directly)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupSectionNavigation);
+} else {
+    setupSectionNavigation();
+}
+
+function updateLanguageButtons() {
+    const nextLang = lang === 'en' ? 'de' : 'en';
+    const nextLabel = lang === 'en' ? 'DE' : 'EN';
+    const nextHref = '?lang=' + nextLang;
+
+    const lnk1 = document.getElementById('langLinkHeader');
+    const lnk2 = document.getElementById('langLinkControls'); // If exists
+
+    if (lnk1) {
+        lnk1.textContent = nextLabel;
+        lnk1.href = nextHref;
+        lnk1.onclick = null; // Ensure no conflicting handlers
+    }
+    if (lnk2) {
+        lnk2.textContent = nextLabel;
+        lnk2.href = nextHref;
+        lnk2.onclick = null;
+    }
+}
+
+function switchLanguage(newLang) {
+    if (newLang === lang) return;
+
+    trackEvent('switch_language', { from: lang, to: newLang });
+
+    setPreferredLanguage(newLang);
+    lang = newLang;
+    T = TRANSLATIONS[lang];
+
+    // Update HTML lang attribute
+    const root = document.getElementById('htmlRoot');
+    if (root) root.lang = lang;
+
+    // Update translations
+    applyTranslations();
+
+    // Update Topic Definitions with new language
+    updateGradeTopics();
+
+    // Re-populate topics (labels change)
+    updateTopicSelector();
+
+    // Regenerate sheet (word problems rely on lang)
+    // Pass true to preserve seed/values where possible, but text changes
+    generateSheet(true);
+
+    // Update URL without reload
+    const url = new URL(window.location);
+    url.searchParams.set('lang', lang);
+    window.history.pushState({}, '', url);
+
+    updateLanguageButtons();
+}
