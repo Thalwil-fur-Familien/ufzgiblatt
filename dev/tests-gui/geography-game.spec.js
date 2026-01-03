@@ -48,20 +48,14 @@ test.describe('Geography Game & Language Persistence', () => {
         await expect(page.locator('.sheet h1')).toHaveText(/Worksheet Generator/); // English Title
     });
 
-    test('should redirect to correct game language based on preference', async ({ page }) => {
+    test('should load correct game language based on preference', async ({ page }) => {
         // 1. Set preference to English via main site
-        await page.goto('/');
-        await page.click('#langLinkHeader'); // Switch to EN
+        await page.goto('/?lang=en');
 
-        // 2. Navigate to Game (click Play)
-        // Note: The link on the English page points to 'geography-game.html' (German file) in our current setup?
-        // Wait, en/index.html links to geography-game.html (relative to en/, so en/geography-game.html).
-        // But let's simulate the harder case: manually going to German game URL with EN preference.
-
+        // 2. Navigate to Game
         await page.goto('/geography-game.html');
 
-        // 3. Should redirect to en/geography-game.html
-        await expect(page).toHaveURL(/en\/geography-game\.html/);
+        // 3. Should show English text (local storage preference)
         await expect(page.locator('h1#game-instruction')).toHaveText(/Initializing/); // English text
     });
 
@@ -72,8 +66,9 @@ test.describe('Geography Game & Language Persistence', () => {
         // 2. Click "EN" link
         await page.click('.lang-link'); // "EN"
 
-        // 3. Should navigate to en/geography-game.html
-        await expect(page).toHaveURL(/en\/geography-game\.html/);
+        // 3. Should navigate to ?lang=en
+        await expect(page).toHaveURL(/\?lang=en/);
+        await expect(page.locator('h1#game-instruction')).toHaveText(/Initializing/);
 
         // 4. Go back to main site (root)
         await page.goto('/');
