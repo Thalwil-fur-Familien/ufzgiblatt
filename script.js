@@ -154,7 +154,7 @@ function updateCustomCheckboxes(topics) {
         cb.style.marginRight = '8px';
         cb.style.width = '18px';
         cb.style.height = '18px';
-        cb.onchange = generateSheet;
+        cb.onchange = () => generateSheet(true);
 
         const label = document.createElement('label');
         label.htmlFor = 'cb_' + t.value;
@@ -167,11 +167,11 @@ function updateCustomCheckboxes(topics) {
     });
 }
 
-function updateTopicSelector() {
+function updateTopicSelector(targetTopic = null) {
     const grade = document.getElementById('gradeSelector').value;
     const topicSelector = document.getElementById('topicSelector');
-    // Save current selection before wiping options
-    const currentTopic = topicSelector.value;
+    // Save current selection before wiping options (unless targetTopic is provided)
+    const currentTopic = targetTopic || topicSelector.value;
 
     const topics = GRADE_TOPICS[grade] || [];
 
@@ -208,7 +208,7 @@ function updateTopicSelector() {
         const moneyDiv = document.getElementById('moneyOptions');
         if (moneyDiv) moneyDiv.style.display = isMoney ? 'flex' : 'none';
 
-        generateSheet();
+        generateSheet(true);
     };
 
     // Initial selection visibility sync
@@ -319,19 +319,30 @@ function generateSheet(keepSeed = false) {
         };
         currentSheetsData.push(genData(type, numProblems, availableTopics, allowedCurrencies, options, lang));
     }
-
     // 4. Render
     renderCurrentState();
 
     // 5. Update URL
-    updateURLState();
+    updateLanguageButtons();
+}
+
+// Save current worksheet state to sessionStorage before navigating to geography game
+function saveWorksheetState() {
+    const state = {
+        grade: document.getElementById('gradeSelector').value,
+        topic: document.getElementById('topicSelector').value,
+        count: document.getElementById('pageCount').value,
+        seed: globalSeed,
+        lang: lang
+    };
+    sessionStorage.setItem('worksheetState', JSON.stringify(state));
 }
 
 function updateURLState() {
     const params = new URLSearchParams();
 
-    // Lang (preserve)
-    if (lang && lang !== 'de') {
+    // Lang (always include)
+    if (lang) {
         params.set('lang', lang);
     }
 
@@ -393,6 +404,12 @@ function updateURLState() {
 
     // Also update QR Code on existing sheets
     renderQRCode(window.location.href);
+
+    // Update language toggle buttons to reflect current state
+    updateLanguageButtons();
+
+    // Update navigation links to reflect current state
+    updateNavigationLinks();
 }
 
 
@@ -1576,7 +1593,10 @@ function init() {
         // 6. Update Language Buttons state
         updateLanguageButtons();
 
-        // 6. Setup Section Navigation
+        // 7. Update navigation links with current language
+        updateNavigationLinks();
+
+        // 8. Setup Section Navigation
         setupSectionNavigation();
     } catch (e) {
         console.error("Initialization Error:", e);
@@ -1585,35 +1605,66 @@ function init() {
 }
 
 function loadStateFromURL() {
+    // First, check if we have saved state from geography game navigation
+    const savedState = sessionStorage.getItem('worksheetState');
+    if (savedState) {
+        const state = JSON.parse(savedState);
+
+        // Restore state
+        const gradeSelector = document.getElementById('gradeSelector');
+        if (gradeSelector) gradeSelector.value = state.grade;
+
+        updateTopicSelector(state.topic);
+
+        const topicSelector = document.getElementById('topicSelector');
+        if (topicSelector) topicSelector.value = state.topic;
+
+        const pageCount = document.getElementById('pageCount');
+        if (pageCount) pageCount.value = state.count;
+
+        setSeed(state.seed);
+
+        // Clear the saved state
+        sessionStorage.removeItem('worksheetState');
+
+        // Update URL to reflect restored state
+        updateURLState();
+        return;
+    }
+
     const params = new URLSearchParams(window.location.search);
 
-    // 1. Grade
+    // IMPORTANT: Load seed FIRST before any handlers that might call generateSheet()
+    // 1. Seed
+    if (params.has('seed')) {
+        setSeed(parseInt(params.get('seed')));
+        // We will call generateSheet(true) in init to use this seed
+    }
+
+    // 2. Grade
     if (params.has('grade')) {
         const grade = params.get('grade');
         const sel = document.getElementById('gradeSelector');
         if (sel) {
             sel.value = grade;
-            // Trigger topic update for this grade
-            updateTopicSelector();
         }
-    } else {
-        // Ensure topics are populated for default grade
-        updateTopicSelector();
     }
 
-    // 2. Topic
+    // Get topic from URL before calling updateTopicSelector
+    const topicFromURL = params.has('topic') ? params.get('topic') : null;
+
+    // Trigger topic update for this grade, passing the desired topic
+    updateTopicSelector(topicFromURL);
+
+    // 3. Topic - additional handling for custom topics
     if (params.has('topic')) {
         const topic = params.get('topic');
         const topicSel = document.getElementById('topicSelector');
         if (topicSel) {
-            // Check if option exists (might be invalid for grade?)
-            // If custom, we added it.
-            topicSel.value = topic;
-
             // If Custom, handle visibility
             if (topic === 'custom') {
                 const customContainer = document.getElementById('customOptions');
-                customContainer.style.display = 'flex'; // show it
+                if (customContainer) customContainer.style.display = 'flex'; // show it
 
                 if (params.has('custom')) {
                     const customVal = params.get('custom').split(',');
@@ -1633,7 +1684,7 @@ function loadStateFromURL() {
         }
     }
 
-    // 3. Count
+    // 4. Count
     if (params.has('count')) {
         const count = params.get('count');
         const pageInput = document.getElementById('pageCount');
@@ -1642,7 +1693,7 @@ function loadStateFromURL() {
         }
     }
 
-    // 4. Options
+    // 5. Options
     if (params.has('solutions')) {
         document.getElementById('solutionToggle').checked = params.get('solutions') === '1';
     }
@@ -1673,12 +1724,6 @@ function loadStateFromURL() {
         const c = params.get('currency');
         document.getElementById('currencyCHF').checked = (c === 'CHF');
         document.getElementById('currencyEUR').checked = (c === 'EUR');
-    }
-
-    // 5. Seed
-    if (params.has('seed')) {
-        setSeed(parseInt(params.get('seed')));
-        // We will call generateSheet(true) in init to use this seed
     }
 
 }
@@ -2052,6 +2097,27 @@ function setupSectionNavigation() {
     showSection(window.location.hash);
 }
 
+function updateNavigationLinks() {
+    // Update geography game links to only include lang and seed
+    const geoLinks = document.querySelectorAll('a[href*="geography-game"]');
+
+    geoLinks.forEach(link => {
+        const params = new URLSearchParams();
+        params.set('lang', lang);
+        if (globalSeed) {
+            params.set('seed', globalSeed.toString());
+        }
+
+        link.href = `geography-game?${params.toString()}`;
+
+        // Save worksheet state before navigating
+        link.onclick = (e) => {
+            saveWorksheetState();
+            // Let the link navigate normally
+        };
+    });
+}
+
 
 // --- INITIALIZATION ---
 // execute init on load
@@ -2069,23 +2135,35 @@ if (document.readyState === 'loading') {
 }
 
 function updateLanguageButtons() {
-    const nextLang = lang === 'en' ? 'de' : 'en';
-    const nextLabel = lang === 'en' ? 'DE' : 'EN';
-    const nextHref = '?lang=' + nextLang;
+    const pairs = [
+        { de: 'lang-de-header', en: 'lang-en-header' }
+    ];
 
-    const lnk1 = document.getElementById('langLinkHeader');
-    const lnk2 = document.getElementById('langLinkControls'); // If exists
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(url.search);
 
-    if (lnk1) {
-        lnk1.textContent = nextLabel;
-        lnk1.href = nextHref;
-        lnk1.onclick = null; // Ensure no conflicting handlers
-    }
-    if (lnk2) {
-        lnk2.textContent = nextLabel;
-        lnk2.href = nextHref;
-        lnk2.onclick = null;
-    }
+    pairs.forEach(pair => {
+        const deEl = document.getElementById(pair.de);
+        const enEl = document.getElementById(pair.en);
+
+        if (deEl && enEl) {
+            if (lang === 'de') {
+                deEl.classList.add('active');
+                deEl.href = 'javascript:void(0)';
+                enEl.classList.remove('active');
+
+                params.set('lang', 'en');
+                enEl.href = '?' + params.toString();
+            } else {
+                enEl.classList.add('active');
+                enEl.href = 'javascript:void(0)';
+                deEl.classList.remove('active');
+
+                params.set('lang', 'de');
+                deEl.href = '?' + params.toString();
+            }
+        }
+    });
 }
 
 function switchLanguage(newLang) {
@@ -2120,4 +2198,5 @@ function switchLanguage(newLang) {
     window.history.pushState({}, '', url);
 
     updateLanguageButtons();
+    updateNavigationLinks();
 }

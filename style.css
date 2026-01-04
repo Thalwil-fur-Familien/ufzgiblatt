@@ -14,7 +14,8 @@
 }
 
 html {
-    overflow-y: scroll; /* Force scrollbar to prevent jump */
+    overflow-y: scroll;
+    /* Force scrollbar to prevent jump */
 }
 
 body {
@@ -106,19 +107,47 @@ body {
     border-radius: 2px;
 }
 
-.lang-switch .lang-link {
-    text-decoration: none;
-    color: var(--primary-color);
-    font-weight: bold;
-    border: 2px solid var(--primary-color);
-    padding: 5px 10px;
-    border-radius: 8px;
-    transition: all 0.3s;
+/* Language Toggle */
+.lang-group {
+    display: flex;
+    align-items: center;
 }
 
-.lang-switch .lang-link:hover {
-    background: var(--primary-color);
+.lang-btn {
+    text-decoration: none;
+    color: #0b6ffd;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border: 1px solid #0b6ffd;
+    background: transparent;
+    transition: all 0.2s;
+    line-height: 1;
+}
+
+[id^="lang-de"] {
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+[id^="lang-en"] {
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    margin-left: -1px;
+}
+
+.lang-btn:hover {
+    background: #0b6ffd;
     color: white;
+    z-index: 1;
+}
+
+.lang-btn.active {
+    color: #34495e;
+    border-color: #34495e;
+    pointer-events: none;
+    background: transparent;
+    z-index: 0;
 }
 
 /* Dropdown Navigation */
@@ -1008,6 +1037,36 @@ input.brick-input {
 .triangle-pos {
     position: absolute;
     transform: translate(-50%, -50%);
+}
+
+.corner-top {
+    top: 20px;
+    left: 100px;
+}
+
+.corner-right {
+    top: 150px;
+    left: 180px;
+}
+
+.corner-left {
+    top: 150px;
+    left: 20px;
+}
+
+.side-right {
+    top: 85px;
+    left: 140px;
+}
+
+.side-bottom {
+    top: 150px;
+    left: 100px;
+}
+
+.side-left {
+    top: 85px;
+    left: 60px;
 }
 
 .triangle-field {
