@@ -1,7 +1,7 @@
 export const TRANSLATIONS = {
     de: {
         ui: {
-            title: "Mathe Arbeitsblatt Generator",
+            title: "ufzgiblatt.ch",
             gradeLabel: "Klasse",
             grades: {
                 "1": "1. Klasse",
@@ -75,7 +75,6 @@ export const TRANSLATIONS = {
                 error: "Fehler beim Laden der Karte.",
                 win: "Super! Du hast alles gefunden!",
                 nextRound: "Nächste Runde...",
-                toggleLabels: "Namen anzeigen/ausblenden",
                 feedbackWrong: "❌ Das ist {region}",
                 modeFind: "Finde ...",
                 modeDrag: "Namen zuordnen"
@@ -240,7 +239,7 @@ export const TRANSLATIONS = {
     },
     en: {
         ui: {
-            title: "Math Worksheet Generator",
+            title: "ufzgiblatt.ch",
             gradeLabel: "Grade",
             grades: {
                 "1": "1st Grade",
@@ -314,7 +313,6 @@ export const TRANSLATIONS = {
                 error: "Error loading map.",
                 win: "Great job! You found everything!",
                 nextRound: "Next round...",
-                toggleLabels: "Show/Hide Names",
                 feedbackWrong: "❌ That is {region}",
                 modeFind: "Find ...",
                 modeDrag: "Allocate Name"

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mathe Arbeitsblatt Generator</title>
+    <title>ufzgiblatt.ch</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="js/analytics.js"></script>
@@ -13,7 +13,7 @@
 <header class="site-header no-print">
     <div class="header-content">
         <div class="site-logo">
-            <a href="index.html">
+            <a href="/">
                 <span>ufzgiblatt.ch</span>
             </a>
         </div>
@@ -22,12 +22,13 @@
             <div class="nav-dropdown">
                 <span class="nav-link dropdown-trigger" id="navGames">Spiele</span>
                 <div class="dropdown-content">
-                    <a href="geography-game.html" id="navGameGeo">Geographie</a>
+                    <a href="geography-game" id="navGameGeo">Geographie</a>
                 </div>
             </div>
         </nav>
-        <div class="lang-switch">
-            <a href="?lang=en" class="lang-link" id="langLinkHeader">EN</a>
+        <div class="lang-group">
+            <a href="?lang=de" class="lang-btn" id="lang-de-header">DE</a>
+            <a href="?lang=en" class="lang-btn" id="lang-en-header">EN</a>
         </div>
     </div>
 </header>
@@ -35,7 +36,7 @@
 <main>
     <section id="generator" class="active-section">
         <div class="controls">
-            <select id="gradeSelector" onchange="updateTopicSelector(); generateSheet();">
+            <select id="gradeSelector" onchange="updateTopicSelector(); generateSheet(true);">
                 <option value="1">1. Klasse</option>
                 <option value="2">2. Klasse</option>
                 <option value="3">3. Klasse</option>
@@ -43,7 +44,7 @@
                 <option value="5">5. Klasse</option>
                 <option value="6">6. Klasse</option>
             </select>
-            <select id="topicSelector" onchange="generateSheet()">
+            <select id="topicSelector" onchange="generateSheet(true)">
                 <!-- Options populated by JS -->
             </select>
             <div style="display:flex; align-items:center;">
@@ -73,8 +74,6 @@
                         onchange="toggleQRVisibility()">
                     <label for="hideQR" id="labelHideQR">QR-Code ausblenden</label>
                 </div>
-                <a href="?lang=en" id="langLinkControls"
-                    style="margin-left: 10px; text-decoration: none; font-weight: bold; color: var(--primary-color);">EN</a>
             </div>
         </div>
 
@@ -129,7 +128,7 @@
                     <div class="game-icon">🇨🇭</div>
                     <h3 id="gameCantonTitle">Kanton Master</h3>
                     <p id="gameCantonDesc">Lerne die Schweizer Kantone auf der interaktiven Karte kennen.</p>
-                    <a href="geography-game.html" class="btn-primary" id="btnPlay"
+                    <a href="geography-game" class="btn-primary" id="btnPlay"
                         style="display: inline-block; text-decoration: none;">Spielen</a>
                 </div>
             </div>
@@ -167,7 +166,7 @@
         </svg>
         <span id="labelFeedback">Feedback & Fehler melden</span>
     </a>
-    <div id="build-info" style="margin-top:10px; font-size:0.8rem; color:#888;">Build: 93a7092 (2026-01-03 13:53 CET) - DEV</div>
+    <div id="build-info" style="margin-top:10px; font-size:0.8rem; color:#888;">Build: 4aa230d (2026-01-04 17:13 CET) - DEV</div>
 </footer>
 </body>
 
