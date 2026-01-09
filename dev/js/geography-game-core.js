@@ -74,7 +74,7 @@ export async function initGeoGame(config) {
         return;
     }
 
-    // Load seed from URL if present
+    // Load state from URL if present
     const params = new URLSearchParams(window.location.search);
     if (params.has('seed')) {
         const seedValue = parseInt(params.get('seed'));
@@ -83,7 +83,14 @@ export async function initGeoGame(config) {
         }
     }
 
-    await loadMap('switzerland');
+    const initialMap = params.get('map') || 'switzerland';
+    const initialMode = params.get('mode') || 'find';
+
+    if (mapSelector) mapSelector.value = initialMap;
+    if (modeSelector) modeSelector.value = initialMode;
+
+    geoState.gameMode = initialMode;
+    await loadMap(initialMap);
 
     const restartBtn = document.getElementById('restart-game');
     if (restartBtn) restartBtn.onclick = restartGame;
@@ -166,11 +173,39 @@ function updateNavigationLinks() {
 
 function setGameMode(mode) {
     geoState.gameMode = mode;
+    updateURLState();
     restartGame();
+}
+
+function updateURLState() {
+    const url = new URL(window.location.href);
+    url.searchParams.set('map', geoState.currentMap);
+    url.searchParams.set('mode', geoState.gameMode);
+    url.searchParams.set('seed', globalSeed);
+    window.history.replaceState({}, '', url);
 }
 
 async function loadMap(mapKey) {
     geoState.currentMap = mapKey;
+
+    // Flag mode only supported for Switzerland (we only have canton flags)
+    const modeSelector = document.getElementById('mode-selector');
+    if (modeSelector) {
+        const flagOption = modeSelector.querySelector('option[value="flag"]');
+        if (flagOption) {
+            if (mapKey !== 'switzerland') {
+                flagOption.style.display = 'none';
+                if (geoState.gameMode === 'flag') {
+                    geoState.gameMode = 'find';
+                    modeSelector.value = 'find';
+                }
+            } else {
+                flagOption.style.display = 'block';
+            }
+        }
+    }
+
+    updateURLState();
     const mapContainer = document.getElementById('map-container');
     const instructionEl = document.getElementById('game-instruction');
 
