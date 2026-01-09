@@ -47,41 +47,33 @@
     cursor: pointer;
 }
 
-.game-controls {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    flex-wrap: wrap;
+.game-controls-new {
+    margin-top: -1rem;
+    margin-bottom: 2rem;
 }
 
-.controls-group {
+.game-controls-new .controls-group {
     display: flex;
-    gap: 0.5rem;
+    gap: 10px;
     align-items: center;
 }
 
-/* Game Selector */
-.game-select {
-    padding: 12px 24px;
-    font-size: 1rem;
-    font-weight: 700;
-    border: 1px solid #ddd;
+.game-selector {
+    padding: 12px;
     border-radius: 12px;
-    cursor: pointer;
+    border: 2px solid #ddd;
     font-family: 'Nunito', sans-serif;
-    color: var(--text-color);
-    background-color: white;
-    transition: box-shadow 0.2s;
-}
-
-.game-select:hover {
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.game-select:focus {
+    font-size: 1rem;
     outline: none;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.game-selector:focus {
     border-color: var(--primary-color);
 }
+
 
 button {
     padding: 12px 24px;
