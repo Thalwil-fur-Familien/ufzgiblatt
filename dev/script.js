@@ -277,7 +277,7 @@ function generateSheet(keepSeed = false) {
     currentTitle = selector.options[selector.selectedIndex].text;
 
     // 1. Determine Count per Sheet
-    let numProblems = 20;
+    let numProblems = (type === 'custom') ? 12 : 20;
 
     // Heuristic for count
 
@@ -322,8 +322,8 @@ function generateSheet(keepSeed = false) {
     // 4. Render
     renderCurrentState();
 
-    // 5. Update URL
-    updateLanguageButtons();
+    // 5. Update URL & QR Codes
+    updateURLState();
 }
 
 // Save current worksheet state to sessionStorage before navigating to geography game
@@ -776,11 +776,11 @@ function createProblemElement(problemData, isSolution) {
                     <polygon points="100,20 180,150 20,150" fill="none" stroke="#ddd" stroke-width="2"/>
                 </svg>
                 <div class="triangle-pos corner-top">${renderField(inner[0], inner[0], isInnerHidden)}</div>
-                <div class="triangle-pos corner-right">${renderField(inner[1], inner[1], isInnerHidden)}</div>
-                <div class="triangle-pos corner-left">${renderField(inner[2], inner[2], isInnerHidden)}</div>
-                <div class="triangle-pos side-right">${renderField(outer[0], outer[0], !isInnerHidden)}</div>
-                <div class="triangle-pos side-bottom">${renderField(outer[1], outer[1], !isInnerHidden)}</div>
                 <div class="triangle-pos side-left">${renderField(outer[2], outer[2], !isInnerHidden)}</div>
+                <div class="triangle-pos side-right">${renderField(outer[0], outer[0], !isInnerHidden)}</div>
+                <div class="triangle-pos corner-left">${renderField(inner[2], inner[2], isInnerHidden)}</div>
+                <div class="triangle-pos side-bottom">${renderField(outer[1], outer[1], !isInnerHidden)}</div>
+                <div class="triangle-pos corner-right">${renderField(inner[1], inner[1], isInnerHidden)}</div>
             </div>
         `;
 
@@ -908,7 +908,7 @@ function createProblemElement(problemData, isSolution) {
 
         // 2. Render Equation Inputs
         // Form: [Count1] + [Count2] = [Total]
-        let inputsHtml = '<div style="display:flex; align-items:center; gap:5px; margin-top:10px;">';
+        let inputsHtml = '<div style="display:flex; align-items:center; gap:5px; margin-top:5px;">';
         parts.forEach((p, idx) => {
             const valAns = isSolution ? p : '';
             // Match input border color to group? We can use classes for that.
@@ -1292,7 +1292,7 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
 
     // Sheet Logo (Top Left)
     const sheetLogo = document.createElement('img');
-    sheetLogo.src = basePath + 'images/Thalwil_Familien_Logo.png';
+    sheetLogo.src = basePath + 'images/logo/logo_ufzgiblatt1_text_below_centered.png';
     sheetLogo.className = 'sheet-logo';
     if (document.getElementById('hideLogo').checked) {
         sheetLogo.classList.add('logo-hidden');
@@ -1303,7 +1303,7 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     const header = document.createElement('div');
     header.className = 'sheet-header';
     header.innerHTML = `
-                                                                                    <div style="width:100px;"></div> <!-- Spacer for Logo -->
+                                                                                    <div style="width:200px;"></div> <!-- Spacer for Logo -->
                                                                                     <div style="display:flex; gap: 40px;">
                                                                                          <div class="header-field">${T.ui.headerName} <span class="line"></span></div>
                                                                                          <div class="header-field">${T.ui.headerDate} <span class="line"></span></div>
@@ -1336,11 +1336,11 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
 
         grid.style.gridTemplateColumns = '1fr 1fr';
         grid.style.columnGap = '20px';
-        grid.style.rowGap = '25px';
+        // grid.style.rowGap = '25px'; // Removed to allow CSS control
     } else {
         grid.style.gridTemplateColumns = '1fr 1fr';
         grid.style.columnGap = '40px';
-        grid.style.rowGap = '25px';
+        // grid.style.rowGap = '25px'; // Removed to allow CSS control
     }
 
     problemDataList.forEach(p => {
@@ -1366,12 +1366,6 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     // Layout adjustments: Removed Mascot and Footer per user request NO WAIT - User wants Page Numbers now.
     const footer = document.createElement('div');
     footer.className = 'sheet-footer';
-    // Style inline or in CSS? CSS is cleaner but let's do minimal changes here.
-    footer.style.position = 'absolute';
-    footer.style.bottom = '15mm';
-    footer.style.right = '15mm';
-    footer.style.fontSize = '0.9rem';
-    footer.style.color = '#7f8c8d';
 
     // Page numbering
     if (pageInfo) {

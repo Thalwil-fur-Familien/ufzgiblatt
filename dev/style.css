@@ -7,6 +7,13 @@
     --text-color: #333;
     --bg-color: #f0f4f8;
     --sheet-bg: #fff;
+    /* Branding and Spacing Controls */
+    --sheet-padding-top: 18mm;
+    --sheet-logo-top: 5mm;
+    --sheet-qr-top: 5mm;
+    --header-field-shift: 30px;
+    --logo-blue: #1b3b5a;
+    --logo-green: #91c13d;
 }
 
 * {
@@ -58,21 +65,27 @@ body {
     gap: 15px;
 }
 
-.site-logo img {
-    height: 40px;
+.logo-text {
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--logo-blue);
+    letter-spacing: -1px;
+    display: flex;
+    align-items: center;
 }
 
-.site-logo span {
-    font-size: 1.4rem;
-    color: var(--primary-color);
-    letter-spacing: -0.5px;
+.logo-suffix {
+    color: var(--logo-green);
 }
+
 
 .site-logo a {
     text-decoration: none;
     color: inherit;
     display: flex;
     align-items: center;
+    gap: 12px;
 }
 
 .main-nav {
@@ -213,7 +226,6 @@ body {
     top: 100%;
     left: 0;
     width: 100%;
-    height: 10px;
 }
 
 main {
@@ -458,9 +470,8 @@ button:hover {
 
 /* Print Optimization */
 @page {
-    size: A4;
+    size: A4 portrait;
     margin: 0;
-    /* Let the body/sheet handle margins */
 }
 
 /* Mobile Responsiveness */
@@ -504,8 +515,8 @@ button:hover {
 .sheet {
     background: var(--sheet-bg);
     width: 210mm;
-    min-height: 297mm;
-    padding: 10mm;
+    min-height: 287mm;
+    padding: var(--sheet-padding-top) 10mm 10mm;
     box-sizing: border-box;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     position: relative;
@@ -520,15 +531,21 @@ button:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 60px;
+    height: 70px;
     margin-bottom: 5px;
     padding-bottom: 5px;
+}
+
+.sheet-header img {
+    height: 30px;
+    object-fit: contain;
 }
 
 .header-field {
     display: flex;
     align-items: baseline;
     gap: 10px;
+    margin-top: var(--header-field-shift);
 }
 
 .line {
@@ -540,7 +557,7 @@ button:hover {
 h1 {
     text-align: center;
     color: var(--primary-color);
-    margin-bottom: 15px;
+    margin-bottom: 5px;
     font-size: 22pt;
     margin-top: 0;
 }
@@ -549,14 +566,14 @@ h1 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     column-gap: 40px;
-    row-gap: 9px;
+    row-gap: 4px;
 }
 
 .problem {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 7px 10px;
+    padding: 4px 10px;
     /* Reduced padding */
     /* border-bottom: 1px dashed #eee; */
     /* Optional guide lines */
@@ -693,7 +710,7 @@ input.answer-input.incorrect {
     background: #000;
 }
 
-.footer {
+.sheet-footer {
     position: absolute;
     /* Fix footer to bottom */
     bottom: 15mm;
@@ -777,31 +794,48 @@ input.brick-input {
 
 @media print {
 
-    body,
-    html {
-        margin: 0;
-        padding: 0;
-        background: none;
-        width: 210mm;
-        height: auto;
+    html,
+    body {
+        width: auto !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: none !important;
+        display: block !important;
     }
 
-    /* Ensure pyramids don't break across pages awkwardly (though grid handles most) */
+    #sheetsWrapper {
+        width: 100% !important;
+        display: block !important;
+        transform: none !important;
+    }
+
+    /* Ensure pyramids don't break across pages awkwardly */
     .pyramid-container {
         page-break-inside: avoid;
     }
 
     .controls,
     #customOptions,
-    .site-footer {
+    .site-footer,
+    footer,
+    .no-print,
+    .word-types-legend,
+    #games,
+    section:not(.active-section) {
         display: none !important;
     }
 
-    footer {
-        display: none !important;
+    main,
+    section,
+    .section-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+        display: block !important;
     }
 
-    /* Print friendly inputs */
     /* Print friendly inputs */
     input.answer-input {
         border: 2px solid #ccc;
@@ -822,16 +856,21 @@ input.brick-input {
 
     .sheet {
         box-shadow: none;
-        margin: 0;
-        width: 100%;
-        height: auto !important;
-        min-height: 0 !important;
+        margin: 0 auto !important;
+        width: 100% !important;
+        max-width: 210mm;
+        height: auto;
+        min-height: 286mm;
+        max-height: 287mm;
         page-break-after: always;
         break-after: page;
         border: none;
-        overflow: visible;
-        padding: 10mm !important;
-        /* Tighten padding */
+        overflow: hidden;
+        /* Prevent spillover */
+        padding-left: 10mm !important;
+        padding-right: 10mm !important;
+        padding-bottom: 10mm !important;
+        /* Top padding is inherited from main styles (--sheet-padding-top) */
     }
 
     .sheet:last-child {
@@ -839,41 +878,41 @@ input.brick-input {
         break-after: auto;
     }
 
-    /* Prevent breaking after header or title */
     .sheet-header,
     h1 {
         break-after: avoid;
         page-break-after: avoid;
     }
 
-    /* Tighten vertical space in print */
-    h1 {
-        margin-bottom: 10px !important;
-        margin-top: 5px !important;
-    }
-
-    .sheet-header {
-        margin-bottom: 10px !important;
-    }
-
-    #sheetsWrapper {
-        transform: none !important;
-        width: auto !important;
-        display: block !important;
-    }
-
     .problem-grid {
         display: grid !important;
         break-inside: auto;
-        /* Allow breaking inside the grid */
-        row-gap: 13.5px !important;
-        /* Tighter gap */
     }
 
     .problem {
         break-inside: avoid;
-        /* Keep individual problems intact */
         page-break-inside: avoid;
+    }
+
+    /* Specific element tweaks for print */
+    .problem[data-type="time_analog_set"] .clock-hand {
+        display: none !important;
+    }
+
+    .interactive-word {
+        border-bottom: none;
+    }
+
+    .marked-noun {
+        border-bottom: 3px solid red !important;
+    }
+
+    .marked-verb {
+        border-bottom: 3px solid blue !important;
+    }
+
+    .marked-adj {
+        border-bottom: 3px solid green !important;
     }
 }
 
@@ -955,17 +994,17 @@ input.brick-input {
 .visual-grid-100 {
     display: grid;
     grid-template-columns: repeat(10, 1fr);
-    gap: 3px;
+    gap: 2px;
     background: #f9f9f9;
-    padding: 5px;
+    padding: 3px;
     border-radius: 4px;
     width: fit-content;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
 }
 
 .visual-circle {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     border: 1px solid #ddd;
     box-sizing: border-box;
@@ -1017,80 +1056,81 @@ input.brick-input {
 .triangle-problem {
     display: flex;
     justify-content: center;
-    padding: 15px 0;
+    padding: 5px 0;
 }
 
 .triangle-container {
     position: relative;
     width: 200px;
-    height: 180px;
-}
+    height: 160px;
 
-.triangle-svg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
 
-.triangle-pos {
-    position: absolute;
-    transform: translate(-50%, -50%);
-}
+    .triangle-svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
 
-.corner-top {
-    top: 20px;
-    left: 100px;
-}
+    .triangle-pos {
+        position: absolute;
+        transform: translate(-50%, -50%);
+    }
 
-.corner-right {
-    top: 150px;
-    left: 180px;
-}
+    .corner-top {
+        top: 20px;
+        left: 100px;
+    }
 
-.corner-left {
-    top: 150px;
-    left: 20px;
-}
+    .corner-right {
+        top: 150px;
+        left: 180px;
+    }
 
-.side-right {
-    top: 85px;
-    left: 140px;
-}
+    .corner-left {
+        top: 150px;
+        left: 20px;
+    }
 
-.side-bottom {
-    top: 150px;
-    left: 100px;
-}
+    .side-right {
+        top: 85px;
+        left: 140px;
+    }
 
-.side-left {
-    top: 85px;
-    left: 60px;
-}
+    .side-bottom {
+        top: 150px;
+        left: 100px;
+    }
 
-.triangle-field {
-    width: 45px;
-    height: 35px;
-    background: white;
-    border: 2px solid #ccc;
-    border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    font-size: 14pt;
-    font-family: 'Comic Neue', cursive;
-}
+    .side-left {
+        top: 85px;
+        left: 60px;
+    }
 
-input.triangle-field {
-    outline: none;
-}
+    .triangle-field {
+        width: 45px;
+        height: 35px;
+        background: white;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        font-size: 14pt;
+        font-family: 'Comic Neue', cursive;
+    }
 
-.triangle-field.static {
-    border: none;
-    background: transparent;
-    font-weight: bold;
+    input.triangle-field {
+        outline: none;
+    }
+
+    .triangle-field.static {
+        border: none;
+        background: transparent;
+        font-weight: bold;
+    }
 }
 
 /* Interactive Word Types */
@@ -1249,24 +1289,11 @@ input.triangle-field {
     color: #444;
 }
 
-@media print {
-    /* Existing print styles */
-
-    .controls,
-    #customOptions,
-    .site-footer {
-        display: none !important;
-    }
-
-    footer {
-        display: none !important;
-    }
-}
 
 /* QR Code */
 .qr-code-container {
     position: absolute;
-    top: 10mm;
+    top: var(--sheet-qr-top);
     right: 10mm;
     width: 100px;
     height: 100px;
@@ -1292,12 +1319,14 @@ input.triangle-field {
 /* Sheet Logo */
 .sheet-logo {
     position: absolute;
-    top: 10mm;
+    top: var(--sheet-logo-top);
     left: 10mm;
     height: 100px;
     width: 100px;
     object-fit: contain;
-    z-index: 10;
+    object-position: top left;
+    z-index: 1;
+    background: none;
 }
 
 .logo-hidden {
@@ -1722,37 +1751,6 @@ input.triangle-field {
     border: 2px solid #4caf50;
 }
 
-@media print {
-    .no-print {
-        display: none !important;
-    }
-
-    .problem[data-type="time_analog_set"] .clock-hand {
-        display: none !important;
-    }
-
-    .word-types-legend {
-        display: none;
-        /* Hide interactive legend on print */
-    }
-
-    .interactive-word {
-        border-bottom: none;
-        /* Reset for clean print */
-    }
-
-    .marked-noun {
-        border-bottom: 3px solid red !important;
-    }
-
-    .marked-verb {
-        border-bottom: 3px solid blue !important;
-    }
-
-    .marked-adj {
-        border-bottom: 3px solid green !important;
-    }
-}
 
 /* Modal Styles */
 .modal {
