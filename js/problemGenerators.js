@@ -14,13 +14,13 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
 
         const WEIGHTS = {
             'default': 1,
-            'rechenmauer_10': 2.2,
-            'rechenmauer_100': 2.5,
-            'rechenmauer': 2.5,
-            'rechenmauer_4': 3.5,
-            'time_reading': 2.5,
+            'rechenmauer_10': 1.8,
+            'rechenmauer_100': 2.0,
+            'rechenmauer': 2.0,
+            'rechenmauer_4': 2.8,
+            'time_reading': 2.0,
             'word_problems': 2.5,
-            'visual_add_100': 4.0,
+            'visual_add_100': 3.0,
             'add_written': 1.8,
             'sub_written': 1.8,
             'mult_large': 2.5,
@@ -32,17 +32,17 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
             'frac_add': 2.0,
             'frac_simplify': 1.8,
             'percent_basic': 1.5,
-            'rechendreiecke': 1.9,
-            'zahlenhaus_10': 3.75,
-            'zahlenhaus_20': 3.75,
-            'zahlenhaus_100': 3.75,
+            'rechendreiecke': 1.5,
+            'zahlenhaus_10': 3.0,
+            'zahlenhaus_20': 3.0,
+            'zahlenhaus_100': 3.0,
             'married_100': 1.0,
-            'rechenstrich': 2.5,
-            'money_10': 3.0,
-            'money_100': 4.0
+            'rechenstrich': 2.2,
+            'money_10': 2.5,
+            'money_100': 3.0
         };
 
-        const PAGE_CAPACITY = 15;
+        const PAGE_CAPACITY = 16;
         let currentLoad = 0;
 
         const shuffledTopics = [...availableTopics].sort(() => seededRandom() - 0.5);

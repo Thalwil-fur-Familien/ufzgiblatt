@@ -1,4 +1,5 @@
 import { TRANSLATIONS, getPreferredLanguage, setPreferredLanguage } from './translations.js';
+import { globalSeed, setSeed, seededRandom } from './mathUtils.js';
 
 let T;
 let lang;
@@ -17,13 +18,13 @@ let geoState = {
     currentRegion: null,
     score: 0,
     totalRounds: 0,
-    labelsVisible: false,
     wrongGuesses: 0,
     currentMap: 'switzerland',
     currentRoundFirstTry: true,
     gameMode: 'find', // 'find' or 'drag'
     dragItems: [], // Items currently in the drag pool
-    dragFailures: {} // Track wrong drops per region ID
+    dragFailures: {}, // Track wrong drops per region ID
+    selectedItemId: null // For tap-to-select on mobile
 };
 
 function trackEvent(name, props = {}) {
@@ -57,7 +58,7 @@ export async function initGeoGame(config) {
         if (UI.gameTitle) document.title = UI.gameTitle;
 
         // Apply Nav Translations
-        const ids = ['navGenerator', 'navGames', 'navGameGeo'];
+        const ids = ['navGenerator', 'navGames', 'navGameGeo', 'labelFeedback', 'buildInfo'];
         ids.forEach(id => {
             const el = document.getElementById(id);
             if (el && UI[id]) el.textContent = UI[id];
@@ -73,46 +74,138 @@ export async function initGeoGame(config) {
         return;
     }
 
-    await loadMap('switzerland');
+    // Load state from URL if present
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('seed')) {
+        const seedValue = parseInt(params.get('seed'));
+        if (!isNaN(seedValue)) {
+            setSeed(seedValue);
+        }
+    }
 
-    // Bind global controls here to confirm they exist
-    const toggleBtn = document.getElementById('toggle-labels');
-    if (toggleBtn) toggleBtn.onclick = toggleGeoLabels;
+    const initialMap = params.get('map') || 'switzerland';
+    const initialMode = params.get('mode') || 'find';
+
+    if (mapSelector) mapSelector.value = initialMap;
+    if (modeSelector) modeSelector.value = initialMode;
+
+    geoState.gameMode = initialMode;
+    await loadMap(initialMap);
 
     const restartBtn = document.getElementById('restart-game');
     if (restartBtn) restartBtn.onclick = restartGame;
 
 
     // Update Lang Links to use query params
-    const langLinks = document.querySelectorAll('.lang-link');
-    const nextLang = lang === 'en' ? 'de' : 'en';
-    const nextHref = '?lang=' + nextLang;
+    const deLink = document.getElementById('lang-de');
+    const enLink = document.getElementById('lang-en');
 
-    langLinks.forEach(link => {
-        link.href = nextHref;
-        // Ensure no hardcoded paths override this (though HTML might have hardcoded paths, they will be overwritten)
-        // If link text matches current lang, we might want to hide it?
-        // But usually there is only one link "DE" or "EN".
-        // The game HTML has "DE" link when in English mode?
-        // Actually geography-game.html has "EN" link.
-        // We need to update TEXT of the link too if we reuse the same HTML file.
-        // geography-game.html: <a href="..." class="lang-link">EN</a>
+    if (deLink && enLink) {
+        const url = new URL(window.location.href);
+        const params = new URLSearchParams(url.search);
 
-        if (lang === 'en') {
-            link.textContent = 'DE';
+        if (lang === 'de') {
+            deLink.classList.add('active');
+            deLink.href = 'javascript:void(0)';
+            enLink.classList.remove('active');
+
+            params.set('lang', 'en');
+            enLink.href = '?' + params.toString();
         } else {
-            link.textContent = 'EN';
+            enLink.classList.add('active');
+            enLink.href = 'javascript:void(0)';
+            deLink.classList.remove('active');
+
+            params.set('lang', 'de');
+            deLink.href = '?' + params.toString();
         }
-    });
+    }
+
+    // Update navigation links to preserve URL parameters
+    updateNavigationLinks();
+}
+
+function updateNavigationLinks() {
+    // Update links back to the main page
+    const currentParams = new URLSearchParams(window.location.search);
+    const lang = currentParams.get('lang') || 'de';
+    const seed = currentParams.get('seed') || '';
+
+    const logoLink = document.querySelector('.site-logo a');
+    const generatorLink = document.getElementById('navGenerator');
+
+    // Check if we have saved worksheet state
+    const savedState = sessionStorage.getItem('worksheetState');
+    let backParams;
+
+    if (savedState) {
+        // Reconstruct full URL from saved state
+        const state = JSON.parse(savedState);
+        backParams = new URLSearchParams();
+        backParams.set('lang', state.lang);
+        backParams.set('grade', state.grade);
+        backParams.set('topic', state.topic);
+        backParams.set('count', state.count);
+        backParams.set('seed', state.seed);
+    } else {
+        // Fallback: just pass lang and seed
+        backParams = new URLSearchParams();
+        if (lang) backParams.set('lang', lang);
+        if (seed) backParams.set('seed', seed);
+    }
+
+    if (logoLink) {
+        const href = logoLink.getAttribute('href');
+        const [baseHref, hash] = href.split('#');
+        const base = baseHref.split('?')[0];
+
+        logoLink.href = hash ? `${base}?${backParams.toString()}#${hash}` : `${base}?${backParams.toString()}`;
+    }
+
+    if (generatorLink) {
+        const href = generatorLink.getAttribute('href');
+        const [baseHref, hash] = href.split('#');
+        const base = baseHref.split('?')[0];
+
+        generatorLink.href = hash ? `${base}?${backParams.toString()}#${hash}` : `${base}?${backParams.toString()}`;
+    }
 }
 
 function setGameMode(mode) {
     geoState.gameMode = mode;
+    updateURLState();
     restartGame();
+}
+
+function updateURLState() {
+    const url = new URL(window.location.href);
+    url.searchParams.set('map', geoState.currentMap);
+    url.searchParams.set('mode', geoState.gameMode);
+    url.searchParams.set('seed', globalSeed);
+    window.history.replaceState({}, '', url);
 }
 
 async function loadMap(mapKey) {
     geoState.currentMap = mapKey;
+
+    // Flag mode only supported for Switzerland (we only have canton flags)
+    const modeSelector = document.getElementById('mode-selector');
+    if (modeSelector) {
+        const flagOption = modeSelector.querySelector('option[value="flag"]');
+        if (flagOption) {
+            if (mapKey !== 'switzerland') {
+                flagOption.style.display = 'none';
+                if (geoState.gameMode === 'flag') {
+                    geoState.gameMode = 'find';
+                    modeSelector.value = 'find';
+                }
+            } else {
+                flagOption.style.display = 'block';
+            }
+        }
+    }
+
+    updateURLState();
     const mapContainer = document.getElementById('map-container');
     const instructionEl = document.getElementById('game-instruction');
 
@@ -203,7 +296,7 @@ function extractRegionsFromSVG(svg) {
     // Re-select labels after potential DOM churn (though typical extract doesn't churn)
     const labels = svg.querySelectorAll('text, g[id*="Abbr"], g[id*="Name"]');
     labels.forEach(l => {
-        l.style.display = geoState.labelsVisible ? '' : 'none';
+        l.style.display = 'none';
         l.style.pointerEvents = 'none';
     });
 }
@@ -213,6 +306,9 @@ function setupPathListeners(pathElement, id) {
     pathElement.addEventListener('click', () => {
         if (geoState.gameMode === 'find') {
             handleGeoRegionClick(id);
+        } else if (geoState.selectedItemId) {
+            // Tap-to-select "drop"
+            handleDragDrop(geoState.selectedItemId, id);
         }
     });
 
@@ -250,6 +346,7 @@ function resetGeoGameState() {
     geoState.currentRoundFirstTry = true;
     geoState.totalRounds = geoState.regionData.length;
     geoState.dragFailures = {};
+    geoState.selectedItemId = null;
 
     const paths = document.querySelectorAll('.region-path');
     paths.forEach(path => {
@@ -307,7 +404,7 @@ function startNewGeoRound() {
         endGeoGame();
         return;
     }
-    const randomIndex = Math.floor(Math.random() * available.length);
+    const randomIndex = Math.floor(seededRandom() * available.length);
     geoState.currentRegion = available[randomIndex];
     geoState.wrongGuesses = 0;
     geoState.currentRoundFirstTry = true;
@@ -396,7 +493,7 @@ function setupFlagMode() {
     }
 
     // Shuffle and pick batch
-    available.sort(() => Math.random() - 0.5);
+    available.sort(() => seededRandom() - 0.5);
     let batch = available.slice(0, batchSize);
 
     // Create Flag Items
@@ -426,7 +523,7 @@ function setupFlagMode() {
         dragContainer.style.display = 'flex';
 
         // Shuffle names for display
-        const nameBatch = [...batch].sort(() => Math.random() - 0.5);
+        const nameBatch = [...batch].sort(() => seededRandom() - 0.5);
 
         nameBatch.forEach(item => {
             const el = document.createElement('div');
@@ -442,6 +539,21 @@ function setupFlagMode() {
 
             el.addEventListener('dragend', () => {
                 el.classList.remove('dragging');
+            });
+
+            // Tap-to-select for mobile
+            el.addEventListener('click', () => {
+                if (geoState.selectedItemId === item.id) {
+                    geoState.selectedItemId = null;
+                    el.classList.remove('selected');
+                } else {
+                    // Deselect previous
+                    const prev = document.querySelector('.draggable-item.selected');
+                    if (prev) prev.classList.remove('selected');
+
+                    geoState.selectedItemId = item.id;
+                    el.classList.add('selected');
+                }
             });
 
             dragContainer.appendChild(el);
@@ -501,7 +613,7 @@ function setupDragMode() {
     // Pick top N or random N
     // Random N is better for variety
     // Shuffle array
-    available.sort(() => Math.random() - 0.5);
+    available.sort(() => seededRandom() - 0.5);
     const batch = available.slice(0, batchSize);
 
     const dragContainer = document.getElementById('drag-container');
@@ -525,6 +637,21 @@ function setupDragMode() {
                 el.classList.remove('dragging');
             });
 
+            // Tap-to-select for mobile
+            el.addEventListener('click', () => {
+                if (geoState.selectedItemId === item.id) {
+                    geoState.selectedItemId = null;
+                    el.classList.remove('selected');
+                } else {
+                    // Deselect previous
+                    const prev = document.querySelector('.draggable-item.selected');
+                    if (prev) prev.classList.remove('selected');
+
+                    geoState.selectedItemId = item.id;
+                    el.classList.add('selected');
+                }
+            });
+
             dragContainer.appendChild(el);
         });
     }
@@ -534,6 +661,11 @@ function setupDragMode() {
 
 function handleDragDrop(draggedId, targetId) {
     const targetPath = document.getElementById(targetId);
+
+    // Clear selection state
+    geoState.selectedItemId = null;
+    const selectedEl = document.querySelector('.draggable-item.selected');
+    if (selectedEl) selectedEl.classList.remove('selected');
 
     if (draggedId === targetId) {
         // Correct
@@ -649,27 +781,6 @@ function endGeoGame() {
     geoState.currentRegion = null;
     const dragContainer = document.getElementById('drag-container');
     if (dragContainer) dragContainer.innerHTML = '';
-}
-
-function toggleGeoLabels() {
-    geoState.labelsVisible = !geoState.labelsVisible;
-    const svg = document.querySelector('#map-container svg');
-    if (!svg) return;
-    const labels = svg.querySelectorAll('text, g[id*="Abbr"], g[id*="Name"]');
-    labels.forEach(l => {
-        l.style.display = geoState.labelsVisible ? '' : 'none';
-
-        // Also toggle our permanent labels
-        // But maybe we want them to stay visible if solved?
-        // Logic below hides ALL text elements.
-        // If we want solved labels to always show, we need specific class checks.
-        // For now, simple standard behavior.
-    });
-
-    const regionLabels = document.querySelectorAll('.region-label');
-    regionLabels.forEach(l => {
-        l.style.display = geoState.labelsVisible ? '' : 'none';
-    });
 }
 
 function restartGame() {
