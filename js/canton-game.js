@@ -20,7 +20,7 @@ let geoState = {
     currentRegion: null,
     score: 0,
     totalRounds: 26,
-    labelsVisible: false
+    selectedItemId: null
 };
 
 // Initialize game on page load
@@ -64,10 +64,6 @@ async function initGame() {
         resetGeoGameState();
         setupGeoGame();
 
-        // Setup toggle labels button
-        const toggleBtn = document.getElementById('toggle-labels');
-        toggleBtn.onclick = toggleGeoLabels;
-
         // Setup restart button
         const restartBtn = document.getElementById('restart-game');
         restartBtn.onclick = restartGame;
@@ -97,7 +93,7 @@ function extractRegionsFromSVG(svg) {
     // Handle labels if they exist in SVG
     const labels = svg.querySelectorAll('text, g[id*="Abbr"], g[id*="Name"]');
     labels.forEach(l => {
-        l.style.display = geoState.labelsVisible ? '' : 'none';
+        l.style.display = 'none';
         l.style.pointerEvents = 'none'; // Ensure they don't block clicks
     });
 }
@@ -113,6 +109,7 @@ function resetGeoGameState() {
     paths.forEach(path => {
         path.classList.remove('correct', 'incorrect');
     });
+    geoState.selectedItemId = null;
 }
 
 function setupGeoGame() {
@@ -139,6 +136,12 @@ function startNewGeoRound() {
 }
 
 function handleGeoRegionClick(regionId) {
+    // In this game mode (Find), click usually means checking if it's the currentRegion.
+    // However, if we wanted to support "select name then tap map", we'd need a names list here too.
+    // Since canton-game.js doesn't seem to have a draggable names list (it's "Find" mode only),
+    // we don't need tap-to-select logic here unless it has other modes.
+    // Based on the code, it's strictly a "Where is...?" game.
+
     if (!geoState.currentRegion) return;
 
     const targetPath = document.getElementById(regionId);
@@ -183,18 +186,6 @@ function updateGeoScore() {
 function endGeoGame() {
     updateGeoInstruction(T.win);
     geoState.currentRegion = null;
-}
-
-function toggleGeoLabels() {
-    geoState.labelsVisible = !geoState.labelsVisible;
-    const svg = document.querySelector('#map-container svg');
-    if (!svg) return;
-
-    // Toggle labels visibility
-    const labels = svg.querySelectorAll('text, g[id*="Abbr"], g[id*="Name"]');
-    labels.forEach(l => {
-        l.style.display = geoState.labelsVisible ? '' : 'none';
-    });
 }
 
 function restartGame() {
