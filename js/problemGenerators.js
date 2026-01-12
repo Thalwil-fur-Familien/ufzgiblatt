@@ -4,76 +4,44 @@ import { LAYOUT_CONFIG } from './problemConfig.js';
 
 export const PAGE_CAPACITY = 80;
 
-export function generateProblemsData(type, count, availableTopics = [], allowedCurrencies = ['CHF'], options = {}, lang = 'de') {
+export function generateProblemsData(type, availableTopics = [], allowedCurrencies = ['CHF'], options = {}, lang = 'de', customCapacity = PAGE_CAPACITY) {
     const data = [];
-
     const getCurrencyForProblem = () => {
         if (!allowedCurrencies || allowedCurrencies.length === 0) return 'CHF';
         return allowedCurrencies[getRandomInt(0, allowedCurrencies.length - 1)];
     };
 
-    if (type === 'custom') {
-        if (availableTopics.length === 0) return [];
+    let currentLoad = 0;
+    const topicsToUse = (type === 'custom') ? availableTopics : [type];
+    if (topicsToUse.length === 0) return [];
 
-        let currentLoad = 0;
+    // Pre-shuffle indices for word_types if present
+    const currentWordTypes = TRANSLATIONS[lang].word_types;
+    const wordTypeIndices = Array.from({ length: currentWordTypes.length }, (_, i) => i);
+    wordTypeIndices.sort(() => seededRandom() - 0.5);
+    let wordTypeCount = 0;
 
-        const shuffledTopics = [...availableTopics].sort(() => seededRandom() - 0.5);
-
-        // Pre-shuffle sentences for word_types if present
-        const currentWordTypes = TRANSLATIONS[lang].word_types;
-        const wordTypeIndices = Array.from({ length: currentWordTypes.length }, (_, i) => i);
-        wordTypeIndices.sort(() => seededRandom() - 0.5);
-        let wordTypeCount = 0;
-
-        shuffledTopics.forEach(topic => {
-            if (currentLoad < PAGE_CAPACITY) {
-                let config = LAYOUT_CONFIG[topic] || LAYOUT_CONFIG['default'];
-                let w = config.weight;
-                // For money topics, pick a currency
-                const currency = getCurrencyForProblem();
-                data.push(generateProblem(topic, currency, options, topic === 'word_types' ? wordTypeIndices[wordTypeCount++ % currentWordTypes.length] : -1, lang));
-                currentLoad += w;
-            }
-        });
-
-        let retries = 0;
-        while (currentLoad < PAGE_CAPACITY && retries < 15) {
-            const topic = availableTopics[getRandomInt(0, availableTopics.length - 1)];
-            let config = LAYOUT_CONFIG[topic] || LAYOUT_CONFIG['default'];
-            let w = config.weight;
-
-            if (currentLoad + w <= PAGE_CAPACITY) {
-                const currency = getCurrencyForProblem();
-                data.push(generateProblem(topic, currency, options, topic === 'word_types' ? wordTypeIndices[wordTypeCount++ % WORD_TYPES_SENTENCES.length] : -1));
-                currentLoad += w;
-                retries = 0;
-            } else {
-                retries++;
-            }
-        }
-    } else {
-        // Normal topic (could be word_types or geo)
-        const isWordTypes = type === 'word_types';
-        const isGeo = false;
-
-        if (isGeo) {
-            // Only 1 map per page
-            for (let i = 0; i < count; i++) {
-                data.push(generateProblem(type, 'CHF', options, -1, lang));
-            }
-            return data;
+    let retries = 0;
+    while (currentLoad < customCapacity && retries < 50) {
+        // Pick a topic
+        let topic;
+        if (type === 'custom') {
+            topic = topicsToUse[getRandomInt(0, topicsToUse.length - 1)];
+        } else {
+            topic = type;
         }
 
-        const currentWordTypes = TRANSLATIONS[lang].word_types;
-        let shuffledIndices = [];
-        if (isWordTypes) {
-            shuffledIndices = Array.from({ length: currentWordTypes.length }, (_, i) => i);
-            shuffledIndices.sort(() => seededRandom() - 0.5);
-        }
+        const config = LAYOUT_CONFIG[topic] || LAYOUT_CONFIG['default'];
+        const w = config.weight;
 
-        for (let i = 0; i < count; i++) {
+        if (currentLoad + w <= customCapacity) {
             const currency = getCurrencyForProblem();
-            data.push(generateProblem(type, currency, options, isWordTypes ? shuffledIndices[i % currentWordTypes.length] : -1, lang));
+            const wordTypeIndex = topic === 'word_types' ? wordTypeIndices[wordTypeCount++ % currentWordTypes.length] : -1;
+            data.push(generateProblem(topic, currency, options, wordTypeIndex, lang));
+            currentLoad += w;
+            retries = 0;
+        } else {
+            retries++;
         }
     }
     return data;
@@ -103,12 +71,12 @@ function _generateProblemInternal(type, currency = 'CHF', options = {}, index = 
             op = '-';
             break;
         case 'add_20_simple':
-            a = getRandomInt(10, 18);
-            b = getRandomInt(1, 19 - a);
+            a = getRandomInt(10, 22);
+            b = getRandomInt(1, 23 - a);
             op = '+';
             break;
         case 'sub_20_simple':
-            a = getRandomInt(11, 19);
+            a = getRandomInt(11, 24);
             b = getRandomInt(1, a - 10);
             op = '-';
             break;
@@ -118,12 +86,12 @@ function _generateProblemInternal(type, currency = 'CHF', options = {}, index = 
         case 'rechenmauer_10':
             return generatePyramid(10);
         case 'add_20':
-            a = getRandomInt(1, 19);
-            b = getRandomInt(1, 20 - a);
+            a = getRandomInt(1, 23);
+            b = getRandomInt(1, 24 - a);
             op = '+';
             break;
         case 'sub_20':
-            a = getRandomInt(1, 20);
+            a = getRandomInt(1, 24);
             b = getRandomInt(1, a);
             op = '-';
             break;
@@ -304,13 +272,13 @@ function _generateProblemInternal(type, currency = 'CHF', options = {}, index = 
                 return { type: 'rounding', val, place, answer: Math.round(val / place) * place };
             }
         case 'rechendreiecke':
-            return generateTriangle(20);
+            return generateTriangle(24);
         case 'rechendreiecke_100':
             return generateTriangle(100);
         case 'zahlenhaus_10':
             return generateHouse(10);
         case 'zahlenhaus_20':
-            return generateHouse(20);
+            return generateHouse(24);
         case 'zahlenhaus_100':
             return generateHouse(100);
         case 'rechenstrich':

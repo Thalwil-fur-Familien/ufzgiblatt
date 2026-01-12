@@ -54,6 +54,13 @@
                 <input type="number" id="pageCount" value="1" min="1" max="50" oninput="generateSheet(true)"
                     style="width:50px; padding:12px; border-radius:12px; border:2px solid #ddd; font-family:'Nunito',sans-serif; font-size:1rem; outline:none; text-align:center;">
             </div>
+            <div style="display:flex; align-items:center; gap: 5px;">
+                <label for="densitySlider" id="labelDensity"
+                    style="font-weight:bold; font-family:'Nunito',sans-serif;">Dichte:</label>
+                <input type="range" id="densitySlider" min="20" max="100" step="20" value="100"
+                    oninput="generateSheet(true)"
+                    style="width:80px; accent-color: var(--primary-color); cursor: pointer;">
+            </div>
             <div style="display:flex; align-items:center;">
                 <input type="checkbox" id="solutionToggle" style="width:20px; height:20px; margin-right:5px;"
                     onchange="renderCurrentState(); updateURLState();">
@@ -64,17 +71,10 @@
             <button class="btn-saved" id="btnSaved" onclick="toggleSavedModal()">📂 Gespeichert</button>
             <!-- Check button removed in favor of real-time validation -->
             <button class="btn-print" id="btnPrint" onclick="printSheet()">🖨️ Drucken</button>
-            <div style="display:flex; align-items:center; gap: 15px;">
-                <div style="display:flex; align-items:center;">
-                    <input type="checkbox" id="hideLogo" style="width:20px; height:20px; margin-right:5px;"
-                        onchange="toggleLogoVisibility()">
-                    <label for="hideLogo" id="labelHideLogo">Logo ausblenden</label>
-                </div>
-                <div style="display:flex; align-items:center;">
-                    <input type="checkbox" id="hideQR" style="width:20px; height:20px; margin-right:5px;"
-                        onchange="toggleQRVisibility()">
-                    <label for="hideQR" id="labelHideQR">QR-Code ausblenden</label>
-                </div>
+            <div style="display:flex; align-items:center;">
+                <input type="checkbox" id="showQR" checked style="width:20px; height:20px; margin-right:5px;"
+                    onchange="toggleQRVisibility()">
+                <label for="showQR" id="labelShowQR">QR-Code anzeigen</label>
             </div>
         </div>
 
@@ -84,8 +84,6 @@
             <div id="checkboxContainer" style="display:flex; flex-wrap:wrap; gap:15px;">
                 <!-- Checkboxes populated by JS -->
             </div>
-        </div>
-        </div>
         </div>
 
         <div class="controls" id="marriedOptions"

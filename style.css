@@ -799,6 +799,8 @@ button:hover {
     /* Slightly smaller font */
     margin: auto;
     /* Center on screen */
+    display: flex;
+    flex-direction: column;
 }
 
 .sheet-header {
@@ -844,6 +846,8 @@ h1 {
     /* Unit-based rows handle spacing */
     grid-auto-rows: var(--unit-height);
     grid-auto-flow: dense;
+    flex: 1;
+    align-content: space-evenly;
 }
 
 .problem {

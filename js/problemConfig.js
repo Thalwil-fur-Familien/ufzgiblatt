@@ -30,7 +30,7 @@ export const LAYOUT_CONFIG = {
     'dec_add': { weight: 2, span: 2 },
     'dec_sub': { weight: 2, span: 2 },
     'mult_10_100': { weight: 2, span: 2 },
-    'units': { weight: 2, span: 2 },
+    'units': { weight: 1, span: 1 },
     'percent_basic': { weight: 2, span: 2 },
     'rounding': { weight: 1, span: 1 },
     'frac_add': { weight: 4, span: 2 }, // Fractions need height
@@ -53,7 +53,7 @@ export const LAYOUT_CONFIG = {
     'time_analog_set_complex': { weight: 4, span: 1 },
     'time_duration': { weight: 2, span: 2 }, // 4x2 units
     'word_problems': { weight: 12, span: 4 }, // 4x3 units
-    'visual_add_100': { weight: 16, span: 4 }, // 4x4 units
+    'visual_add_100': { weight: 8, span: 2 }, // 4x4 units
     'add_written': { weight: 8, span: 4 }, // 4x2 units
     'sub_written': { weight: 8, span: 4 },
     'mult_large': { weight: 12, span: 4 }, // 4x3 units
