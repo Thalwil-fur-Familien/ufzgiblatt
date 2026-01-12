@@ -2242,12 +2242,8 @@ function checkURLForBuilderState() {
     const params = getURLParams();
     const buildState = params.get('build');
     if (buildState) {
-        // Switch to builder tab
-        setTimeout(() => {
-            const navBuilder = document.getElementById('navBuilder');
-            if (navBuilder) navBuilder.click();
-            loadBuilderState(buildState);
-        }, 100);
+        // Load builder state (in background) but respect current hash for view
+        loadBuilderState(buildState);
     }
 }
 
