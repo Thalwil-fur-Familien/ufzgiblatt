@@ -558,7 +558,11 @@ export function generateTriangle(maxSum) {
     return { type: 'triangle', inner: [i1, i2, i3], outer: [o1, o2, o3], maskMode };
 }
 
-export function generateHouse(roofNum) {
+export function generateHouse(maxRoof) {
+    // If we want a fixed roof, we can't tell easily unless we change logic.
+    // But for this app, inputs like 10, 20, 24, 100 are definitely "max" limits.
+    const roofNum = getRandomInt(10, maxRoof);
+
     const floorsCount = 3;
     const floors = [];
     const usedValues = new Set();
