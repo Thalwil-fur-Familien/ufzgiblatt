@@ -27,6 +27,7 @@ export const TRANSLATIONS = {
             feedback: "Feedback & Fehler melden",
             buildInfo: "Build Info",
             navGenerator: "Arbeitsblätter",
+            navBuilder: "Baukasten",
             navGames: "Spiele",
             navGameGeo: "Geographie",
             navAbout: "Über uns",
@@ -155,6 +156,28 @@ export const TRANSLATIONS = {
                 "Ticino": "Tessin",
                 "Vaud": "Waadt",
                 "Valais": "Wallis"
+            },
+            builder: {
+                title: "Individueller Baukasten",
+                addItem: "➕ Aufgabe hinzufügen",
+                refresh: "🔄 Neu würfeln",
+                generate: "✨ Arbeitsblatt erstellen",
+                clear: "🗑️ Leeren",
+                grade: "Klasse:",
+                topic: "Aufgabe:",
+                count: "Anzahl:",
+                duplicate: "Duplizieren",
+                delete: "Löschen",
+                moveUp: "Nach oben",
+                moveDown: "Nach unten",
+                maxReached: "Maximale Anzahl an Aufgaben erreicht (16).",
+                capacity: "Platz auf Seite {page}",
+                options: {
+                    marriedMultiplesOf10: "Nur Zehnerzahlen",
+                    currency: "Währung"
+                },
+                copyLink: "Link kopieren",
+                linkCopied: "Link in die Zwischenablage kopiert!"
             }
         },
         topics: {
@@ -234,7 +257,7 @@ export const TRANSLATIONS = {
             [{ text: "Die", type: "artikel" }, { text: "freundliche", type: "adj" }, { text: "Lehrerin", type: "noun" }, { text: "erklärt", type: "verb" }, { text: "den", type: "artikel" }, { text: "interessanten", type: "adj" }, { text: "Stoff", type: "noun" }, { text: "sehr", type: "other" }, { text: "gut", type: "adj" }, { text: ".", type: "other" }],
             [{ text: "Der", type: "artikel" }, { text: "starke", type: "adj" }, { text: "Löwe", type: "noun" }, { text: "brüllt", type: "verb" }, { text: "laut", type: "adj" }, { text: "in", type: "other" }, { text: "der", type: "artikel" }, { text: "weiten", type: "adj" }, { text: "Steppe", type: "noun" }, { text: ".", type: "other" }],
             [{ text: "Ein", type: "artikel" }, { text: "kleines", type: "adj" }, { text: "Mädchen", type: "noun" }, { text: "liest", type: "verb" }, { text: "ein", type: "artikel" }, { text: "spannendes", type: "adj" }, { text: "Buch", type: "noun" }, { text: "unter", type: "other" }, { text: "dem", type: "artikel" }, { text: "alten", type: "adj" }, { text: "Baum", type: "noun" }, { text: ".", type: "other" }],
-            [{ text: "Wir", type: "other" }, { text: "essen", type: "verb" }, { text: "heute", type: "other" }, { text: "einen", type: "artikel" }, { text: "saftigen", type: "adj" }, { text: "Kuchen", type: "noun" }, { text: "und", type: "other" }, { text: "trinken", type: "verb" }, { text: "dazu", type: "other" }, { text: "kalte", type: "adj" }, { text: "Milch", type: "noun" }, { text: ".", type: "other" }]
+            [{ text: "Wir", type: "other" }, { text: "essen", type: "verb" }, { text: "heute", type: "other" }, { text: "einen", type: "artikel" }, { text: "saftigen", type: "adj" }, { text: "Kuchen", type: "noun" }, { text: "und", type: "other" }, { text: "trinken", type: "verb" }, { text: "dazu", type: "other" }, { text: "kalte", type: "adj" }, { text: "Milch", type: "noun" }, { text: "mit", type: "other" }, { text: "Sahne", type: "noun" }, { text: ".", type: "other" }]
         ]
     },
     en: {
@@ -265,6 +288,7 @@ export const TRANSLATIONS = {
             feedback: "Feedback & Report Bugs",
             buildInfo: "Build Info",
             navGenerator: "Worksheets",
+            navBuilder: "Builder",
             navGames: "Games",
             navGameGeo: "Geography",
             navAbout: "About Us",
@@ -325,6 +349,28 @@ export const TRANSLATIONS = {
                 "Lucerne": "Lucerne",
                 "Sankt Gallen": "St. Gallen",
                 "Zürich": "Zurich"
+            },
+            builder: {
+                title: "Worksheet Builder",
+                addItem: "➕ Add Task",
+                refresh: "🔄 Reseed",
+                generate: "✨ Create Worksheet!",
+                clear: "🗑️ Clear All",
+                grade: "Grade:",
+                topic: "Task:",
+                count: "Quantity:",
+                duplicate: "Duplicate",
+                delete: "Delete",
+                moveUp: "Move Up",
+                moveDown: "Move Down",
+                maxReached: "Maximum number of tasks reached (16).",
+                capacity: "Space on page {page}",
+                options: {
+                    marriedMultiplesOf10: "Only multiples of 10",
+                    currency: "Currency"
+                },
+                copyLink: "Copy Link",
+                linkCopied: "Link copied to clipboard!"
             }
         },
         topics: {

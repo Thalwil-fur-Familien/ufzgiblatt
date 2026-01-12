@@ -19,6 +19,7 @@
         </div>
         <nav class="main-nav">
             <a href="#generator" class="nav-link active" id="navGenerator">Arbeitsblätter</a>
+            <a href="#builder" class="nav-link" id="navBuilder">Baukasten</a>
             <div class="nav-dropdown">
                 <span class="nav-link dropdown-trigger" id="navGames">Spiele</span>
                 <div class="dropdown-content">
@@ -120,6 +121,52 @@
         </div>
     </section>
 
+    <section id="builder">
+        <div class="controls no-print">
+            <h2 id="builderTitle" style="font-family:'Nunito',sans-serif; margin-bottom: 20px;">Individueller Baukasten
+            </h2>
+            <div class="builder-top-controls"
+                style="display:flex; flex-wrap:wrap; gap:15px; align-items:center; width:100%;">
+                <div class="control-group">
+                    <label for="builderTitleInput">Titel:</label>
+                    <input type="text" id="builderTitleInput" placeholder="Eigener Titel"
+                        style="padding: 8px; border-radius: 8px; border: 1px solid #ccc; font-family:'Nunito',sans-serif;">
+                </div>
+                <div class="control-group">
+                    <label for="builderGradeSelector" id="labelBuilderGrade">Klasse:</label>
+                    <select id="builderGradeSelector" onchange="window.updateBuilderTopics()"></select>
+                </div>
+                <div class="control-group">
+                    <label for="builderTopicSelector" id="labelBuilderTopic">Aufgabe:</label>
+                    <select id="builderTopicSelector" onchange="window.updateBuilderTopicOptions()"></select>
+                </div>
+                <div id="builderTopicOptions" class="builder-topic-options"
+                    style="display:flex; gap:15px; align-items:center;">
+                    <!-- Dynamic options will be inserted here -->
+                </div>
+
+                <div style="display:flex; gap:10px; margin-left:auto;">
+                    <button class="btn-generate" id="btnAddElement" onclick="window.addProblemToBuilder()"
+                        style="background: var(--secondary-color);">➕ Aufgabe hinzufügen</button>
+                    <button class="btn-print" id="btnPrintBuilder" onclick="window.printSheet()">🖨️ Drucken</button>
+                </div>
+            </div>
+            <div class="builder-actions-secondary" style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn-generate" id="btnRefreshBuilder" onclick="window.refreshBuilderSeed()"
+                    style="background: #3498db; padding: 8px 16px; font-size: 0.9rem;">🔄 Neu würfeln</button>
+                <button class="btn-save" id="btnCopyBuilderLink" onclick="window.copyBuilderLink()"
+                    style="background: #27ae60; padding: 8px 16px; font-size: 0.9rem;">🔗 Link kopieren</button>
+                <button class="btn-saved" id="btnClearBuilderSheet" onclick="window.clearBuilder()"
+                    style="background: #e74c3c; padding: 8px 16px; font-size: 0.9rem;">🗑️ Leeren</button>
+            </div>
+        </div>
+        <div id="builderSheetContainer" class="builder-sheet-container">
+            <div id="builderSheetsWrapper">
+                <!-- Live worksheet rendering -->
+            </div>
+        </div>
+    </section>
+
     <section id="games" class="content-section">
         <div class="section-container">
             <h2 class="section-title" id="titleGames">Lernspiele</h2>
@@ -157,6 +204,7 @@
 
 <script type="module" src="script.js"></script>
 
+
 <footer style="display:flex; flex-direction:column; align-items:center; gap:5px; margin-top:40px; padding-bottom:20px;">
     <a href="https://github.com/Thalwil-fur-Familien/ufzgiblatt/issues/new" target="_blank" class="feedback-button">
         <svg height="16" viewBox="0 0 16 16" version="1.1" width="16" aria-hidden="true" class="github-icon">
@@ -166,7 +214,7 @@
         </svg>
         <span id="labelFeedback">Feedback & Fehler melden</span>
     </a>
-    <div id="build-info" style="margin-top:10px; font-size:0.8rem; color:#888;">Build: 705b15c (2026-01-09 18:18 CET) - DEV</div>
+    <div id="build-info" style="margin-top:10px; font-size:0.8rem; color:#888;">Build: 6758e31 (2026-01-12 22:17 CET) - DEV</div>
 </footer>
 </body>
 

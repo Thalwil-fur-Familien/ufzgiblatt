@@ -1,6 +1,8 @@
 import { globalSeed, setSeed } from './js/mathUtils.js';
+export { globalSeed, setSeed };
 import { generateProblemsData as genData } from './js/problemGenerators.js?v=4';
 import { TRANSLATIONS, getPreferredLanguage, setPreferredLanguage } from './js/translations.js';
+import { loadBuilderState, initBuilder, getBuilderState, hasBuilderContent } from './js/worksheet-builder.js';
 
 // Expose to window for inline HTML handlers
 window.updateTopicSelector = updateTopicSelector;
@@ -12,18 +14,17 @@ window.toggleQRVisibility = toggleQRVisibility;
 window.validateInput = validateInput;
 window.switchLanguage = switchLanguage;
 
-let lang = getPreferredLanguage();
-// Update storage to ensure consistency
-setPreferredLanguage(lang);
-
+export let lang = getPreferredLanguage();
+window.lang = lang; // Expose for easy access in other modules
 let basePath = './';
-let T = TRANSLATIONS[lang];
+export let T = TRANSLATIONS[lang];
+window.T = T;
 
 if (document.getElementById('htmlRoot')) {
     document.getElementById('htmlRoot').lang = lang;
 }
 
-const GRADE_TOPICS_STRUCTURE = {
+export const GRADE_TOPICS_STRUCTURE = {
     '1': ['add_10', 'sub_10', 'add_20_simple', 'sub_20_simple', 'bonds_10', 'rechenmauer_10', 'money_10'],
     '2': ['add_20', 'sub_20', 'add_100_simple', 'add_100_carry', 'sub_100_simple', 'sub_100_carry', 'mult_2_5_10', 'mult_all', 'div_2_5_10', 'rechenmauer', 'rechenmauer_4', 'doubling_halving', 'zahlenhaus_20', 'word_problems', 'time_reading', 'time_analog_set', 'visual_add_100', 'rechendreiecke', 'rechenstrich', 'married_100', 'money_100', 'word_types'],
     '3': ['add_1000', 'sub_1000', 'mult_advanced', 'div_100', 'div_remainder', 'rechenmauer_100', 'time_duration', 'time_analog_set_complex', 'rechendreiecke_100', 'zahlenhaus_100'],
@@ -101,13 +102,23 @@ function applyTranslations() {
         'titleAbout': T.ui.titleAbout,
         'gameCantonTitle': T.ui.gameCantonTitle,
         'gameCantonDesc': T.ui.gameCantonDesc,
-        'aboutIntro': T.ui.aboutIntro
+        'aboutIntro': T.ui.aboutIntro,
+        btnAddElement: T.ui.builder.addItem,
+        btnRefreshBuilder: T.ui.builder.refresh,
+        btnClearBuilderSheet: T.ui.builder.clear
     };
 
     for (const [id, text] of Object.entries(ids)) {
         const el = document.getElementById(id);
         if (el) el.innerHTML = text;
     }
+
+    // Builder Print Button (if id differs or for specific handling)
+    const btnPrintBuilder = document.getElementById('btnPrintBuilder');
+    if (btnPrintBuilder) btnPrintBuilder.innerHTML = T.ui.btnPrint;
+
+    const btnCopyBuilderLink = document.getElementById('btnCopyBuilderLink');
+    if (btnCopyBuilderLink) btnCopyBuilderLink.innerHTML = '🔗 ' + T.ui.builder.copyLink;
 
     const gradeSelector = document.getElementById('gradeSelector');
     if (gradeSelector) {
@@ -338,68 +349,89 @@ function saveWorksheetState() {
     sessionStorage.setItem('worksheetState', JSON.stringify(state));
 }
 
-function updateURLState() {
+export function updateURLState() {
     const params = new URLSearchParams();
+
+    // Determine current section to filter parameters
+    let currentHash = window.location.hash.replace(/^#/, '');
+    const section = currentHash.split('&')[0] || (hasBuilderContent() ? 'builder' : 'generator');
+    const isGenerator = (section === 'generator');
 
     // Lang (always include)
     if (lang) {
         params.set('lang', lang);
     }
 
-    // Grade
-    const grade = document.getElementById('gradeSelector').value;
-    params.set('grade', grade);
+    // Generator-specific parameters
+    if (isGenerator) {
+        // Grade
+        const grade = document.getElementById('gradeSelector').value;
+        params.set('grade', grade);
 
-    // Topic
-    const topic = document.getElementById('topicSelector').value;
-    params.set('topic', topic);
+        // Topic
+        const topic = document.getElementById('topicSelector').value;
+        params.set('topic', topic);
 
-    // Page Count
-    const count = document.getElementById('pageCount').value;
-    params.set('count', count);
+        // Page Count
+        const count = document.getElementById('pageCount').value;
+        params.set('count', count);
 
-    // Options
-    const showSolutions = document.getElementById('solutionToggle').checked;
-    if (showSolutions) params.set('solutions', '1');
+        // Options
+        const showSolutions = document.getElementById('solutionToggle').checked;
+        if (showSolutions) params.set('solutions', '1');
 
-    const isCustom = (topic === 'custom');
+        const isCustom = (topic === 'custom');
 
-    // Only set these parameters if they are relevant to the selected topic or custom mode
-    if (topic === 'married_100' || isCustom) {
-        const marriedMultiples = document.getElementById('marriedMultiplesOf10').checked;
-        if (marriedMultiples) params.set('marriedM', '1');
+        // Only set these parameters if they are relevant to the selected topic or custom mode
+        if (topic === 'married_100' || isCustom) {
+            const marriedMultiples = document.getElementById('marriedMultiplesOf10').checked;
+            if (marriedMultiples) params.set('marriedM', '1');
+        }
+
+        if (topic === 'time_reading' || isCustom) {
+            const showHours = document.getElementById('showHours').checked;
+            if (showHours) params.set('showH', '1');
+
+            const showMinutes = document.getElementById('showMinutes').checked;
+            if (showMinutes) params.set('showM', '1');
+        }
+
+        const isMoney = topic === 'money_10' || topic === 'money_100';
+        if (isMoney || isCustom) {
+            const currencies = [];
+            if (document.getElementById('currencyCHF').checked) currencies.push('CHF');
+            if (document.getElementById('currencyEUR').checked) currencies.push('EUR');
+            if (currencies.length > 0) params.set('currencies', currencies.join(','));
+        }
+
+        // Custom params
+        if (topic === 'custom') {
+            const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
+            const values = Array.from(checkboxes).map(cb => cb.value);
+            if (values.length > 0) {
+                params.set('custom', values.join(','));
+            }
+        }
     }
 
-    if (topic === 'time_reading' || isCustom) {
-        const showHours = document.getElementById('showHours').checked;
-        if (showHours) params.set('showH', '1');
-
-        const showMinutes = document.getElementById('showMinutes').checked;
-        if (showMinutes) params.set('showM', '1');
-    }
-
-    const isMoney = topic === 'money_10' || topic === 'money_100';
-    if (isMoney || isCustom) {
-        const currencies = [];
-        if (document.getElementById('currencyCHF').checked) currencies.push('CHF');
-        if (document.getElementById('currencyEUR').checked) currencies.push('EUR');
-        if (currencies.length > 0) params.set('currencies', currencies.join(','));
-    }
-
+    // Global UI Settings
     if (document.getElementById('hideQR').checked) params.set('hideQR', '1');
     if (document.getElementById('hideLogo').checked) params.set('hideLogo', '1');
     if (globalSeed) params.set('seed', globalSeed.toString());
 
-    // Custom params
-    if (topic === 'custom') {
-        const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
-        const values = Array.from(checkboxes).map(cb => cb.value);
-        if (values.length > 0) {
-            params.set('custom', values.join(','));
-        }
+    // Builder State (Hash)
+    // We preserve the current section and append build state
+    let newHash = '#' + section;
+
+    // Only include build state if we are in builder section (or if it's implicitly there)
+    // Actually, usually we'd want build state kept if we are in builder, or if we want to preserve it.
+    // The user's goal is "I want the builder specific variables in the url".
+    if (hasBuilderContent()) {
+        const buildState = getBuilderState();
+        newHash += `&build=${encodeURIComponent(buildState)}`;
     }
 
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    const newUrl = `${window.location.pathname}?${params.toString()}${newHash}`;
     window.history.replaceState({}, '', newUrl);
 
     // Also update QR Code on existing sheets
@@ -445,6 +477,14 @@ function renderWrittenMultiplicationSolution(a, b) {
 function createProblemElement(problemData, isSolution) {
     const problemDiv = document.createElement('div');
     problemDiv.className = 'problem';
+
+    // Width handling based on weight (4-column grid)
+    const span = problemData.span || 4;
+    problemDiv.style.gridColumn = `span ${span}`;
+
+    // Height handling based on weight
+    const rowSpan = Math.max(1, Math.round(problemData.weight / (span || 1)));
+    problemDiv.style.gridRow = `span ${rowSpan}`;
 
     if (problemData.type === 'text') {
         problemDiv.style.flexDirection = 'column';
@@ -530,17 +570,19 @@ function createProblemElement(problemData, isSolution) {
 
         // Use more compact layout for "Verliebte Zahlen"
         problemDiv.style.justifyContent = 'center'; // Center the equation
-        problemDiv.style.gap = '15px'; // Consistent spacing
+        problemDiv.style.gap = span === 1 ? '8px' : '15px'; // Consistent spacing
+
+        const inputWidth = span === 1 ? '50px' : '60px';
 
         problemDiv.innerHTML = `
-                <span class="number" style="text-align:right;">${a}</span>
-                <span class="operator">${op || '+'}</span>
-                <input type="number" class="answer-input" style="width:60px; text-align:center; ${style}" 
+                <span class="number" style="text-align:right; width:auto;">${a}</span>
+                <span class="operator" style="width:auto;">${op || '+'}</span>
+                <input type="number" class="answer-input" style="width:${inputWidth}; text-align:center; ${style}" 
                        data-expected="${expected}" 
                        value="${val}"
                        oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
-                <span class="equals">=</span>
-                <span class="number" style="text-align:left;">${sum}</span>
+                <span class="equals" style="width:auto;">=</span>
+                <span class="number" style="text-align:left; width:auto;">${sum}</span>
             `;
 
     } else if (problemData.type === 'married_numbers') {
@@ -593,11 +635,11 @@ function createProblemElement(problemData, isSolution) {
         const style = isSolution ? 'color:var(--primary-color); font-weight:bold;' : '';
 
         problemDiv.innerHTML = `
-                <div style="flex:1; display:flex; align-items:center; gap:10px;">
-                    <span style="font-weight:bold; min-width:80px;">${label}</span>
-                    <span class="number" style="text-align:center; font-size:1.2em;">${val}</span>
+                <div style="flex:1; display:flex; align-items:center; gap:5px;">
+                    <span style="font-weight:bold; min-width:60px;">${label}</span>
+                    <span class="number" style="text-align:center; font-size:1.1em;">${val}</span>
                 </div>
-                <span style="margin:0 10px;">➜</span>
+                <span style="margin:0 5px;">➜</span>
                 <input type="number" class="answer-input" style="${style}" 
                        data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
             `;
@@ -772,8 +814,8 @@ function createProblemElement(problemData, isSolution) {
         problemDiv.classList.add('triangle-problem');
         problemDiv.innerHTML = `
             <div class="triangle-container">
-                <svg viewBox="0 0 200 180" class="triangle-svg">
-                    <polygon points="100,20 180,150 20,150" fill="none" stroke="#ddd" stroke-width="2"/>
+                <svg viewBox="0 0 200 175" class="triangle-svg">
+                    <polygon points="100,15 180,145 20,145" fill="none" stroke="#ddd" stroke-width="2"/>
                 </svg>
                 <div class="triangle-pos corner-top">${renderField(inner[0], inner[0], isInnerHidden)}</div>
                 <div class="triangle-pos side-left">${renderField(outer[2], outer[2], !isInnerHidden)}</div>
@@ -872,7 +914,6 @@ function createProblemElement(problemData, isSolution) {
                        value="${isSolution ? answer.split(':')[1] : ''}" 
                        oninput="validateInput(this)" 
                        ${isSolution ? 'readonly' : ''}>
-                  <span style="margin-left:5px;">${T.ui.timeLabel}</span>
             </div>
         `;
 
@@ -1151,56 +1192,64 @@ function createProblemElement(problemData, isSolution) {
         // For solutions, show correct hands. For problems, show empty clock in print.
         // In interactive mode (screen), we'll show hands at 12:00.
         const clockHtml = renderClock(hours, minutes, false, false, isSolution);
-        const displayHtml = `<div style="font-size: 1.4rem; font-weight: bold; margin-bottom: 5px;">${digital} Uhr</div>`;
+        const displayHtml = `<div style="font-size: 1.4rem; font-weight: bold; margin-bottom: 5px;">${digital}</div>`;
 
         if (!isSolution) {
             const interactiveClock = renderClock(12, 0, false, false, true);
-            const controlsHtml = `
-                <div class="time-controls no-print">
-                    <div class="time-control-group">
-                        <span class="time-label">Std</span>
-                        <div class="arrow-stack">
-                            <button class="btn-arrow" 
-                                onmousedown="startTimeAdjustment(this, 'h', 1)" 
-                                onmouseup="stopTimeAdjustment()" 
-                                onmouseleave="stopTimeAdjustment()"
-                                ontouchstart="startTimeAdjustment(this, 'h', 1)"
-                                ontouchend="stopTimeAdjustment()">▲</button>
-                            <button class="btn-arrow" 
-                                onmousedown="startTimeAdjustment(this, 'h', -1)" 
-                                onmouseup="stopTimeAdjustment()" 
-                                onmouseleave="stopTimeAdjustment()"
-                                ontouchstart="startTimeAdjustment(this, 'h', -1)"
-                                ontouchend="stopTimeAdjustment()">▼</button>
-                        </div>
-                    </div>
-                    <div class="time-control-group">
-                        <span class="time-label">Min</span>
-                        <div class="arrow-stack">
-                            <button class="btn-arrow" 
-                                onmousedown="startTimeAdjustment(this, 'm', ${problemData.isComplex ? 1 : 5})" 
-                                onmouseup="stopTimeAdjustment()" 
-                                onmouseleave="stopTimeAdjustment()"
-                                ontouchstart="startTimeAdjustment(this, 'm', ${problemData.isComplex ? 1 : 5})"
-                                ontouchend="stopTimeAdjustment()">▲</button>
-                            <button class="btn-arrow" 
-                                onmousedown="startTimeAdjustment(this, 'm', ${problemData.isComplex ? -1 : -5})" 
-                                onmouseup="stopTimeAdjustment()" 
-                                onmouseleave="stopTimeAdjustment()"
-                                ontouchstart="startTimeAdjustment(this, 'm', ${problemData.isComplex ? -1 : -5})"
-                                ontouchend="stopTimeAdjustment()">▼</button>
-                        </div>
+            const hourControls = `
+                <div class="time-control-group no-print">
+                    <span class="time-label">Std</span>
+                    <div class="arrow-stack">
+                        <button class="btn-arrow" 
+                            onmousedown="startTimeAdjustment(this, 'h', 1)" 
+                            onmouseup="stopTimeAdjustment()" 
+                            onmouseleave="stopTimeAdjustment()"
+                            ontouchstart="startTimeAdjustment(this, 'h', 1)"
+                            ontouchend="stopTimeAdjustment()">▲</button>
+                        <button class="btn-arrow" 
+                            onmousedown="startTimeAdjustment(this, 'h', -1)" 
+                            onmouseup="stopTimeAdjustment()" 
+                            onmouseleave="stopTimeAdjustment()"
+                            ontouchstart="startTimeAdjustment(this, 'h', -1)"
+                            ontouchend="stopTimeAdjustment()">▼</button>
                     </div>
                 </div>
             `;
-            problemDiv.innerHTML = displayHtml + interactiveClock + controlsHtml;
+            const minuteControls = `
+                <div class="time-control-group no-print">
+                    <span class="time-label">Min</span>
+                    <div class="arrow-stack">
+                        <button class="btn-arrow" 
+                            onmousedown="startTimeAdjustment(this, 'm', ${problemData.isComplex ? 1 : 5})" 
+                            onmouseup="stopTimeAdjustment()" 
+                            onmouseleave="stopTimeAdjustment()"
+                            ontouchstart="startTimeAdjustment(this, 'm', ${problemData.isComplex ? 1 : 5})"
+                            ontouchend="stopTimeAdjustment()">▲</button>
+                        <button class="btn-arrow" 
+                            onmousedown="startTimeAdjustment(this, 'm', ${problemData.isComplex ? -1 : -5})" 
+                            onmouseup="stopTimeAdjustment()" 
+                            onmouseleave="stopTimeAdjustment()"
+                            ontouchstart="startTimeAdjustment(this, 'm', ${problemData.isComplex ? -1 : -5})"
+                            ontouchend="stopTimeAdjustment()">▼</button>
+                    </div>
+                </div>
+            `;
+
+            problemDiv.innerHTML = `
+                ${interactiveClock}
+                <div class="clock-bottom-controls">
+                    ${hourControls}
+                    ${displayHtml}
+                    ${minuteControls}
+                </div>
+            `;
             problemDiv.dataset.type = 'time_analog_set';
             problemDiv.dataset.targetH = hours % 12;
             problemDiv.dataset.targetM = minutes;
             problemDiv.dataset.currH = 12;
             problemDiv.dataset.currM = 0;
         } else {
-            problemDiv.innerHTML = displayHtml + clockHtml;
+            problemDiv.innerHTML = clockHtml + displayHtml;
         }
 
     } else if (problemData.type === 'word_types') {
@@ -1246,13 +1295,17 @@ function createProblemElement(problemData, isSolution) {
         const { a, b, op, answer } = problemData;
         const valAns = isSolution ? answer : '';
 
+        problemDiv.style.justifyContent = 'center';
+        problemDiv.style.gap = span === 1 ? '8px' : '15px';
+        const inputWidth = span === 1 ? '50px' : '65px';
+
         problemDiv.innerHTML = `
-                                                                            <span class="number" style="width:auto;">${a}</span>
-                                                                            <span class="operator">${op}</span>
-                                                                            <span class="number" style="width:auto;">${b}</span>
-                                                                            <span class="equals">=</span>
-                                                                            <input type="number" class="answer-input" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
-                                                                                `;
+            <span class="number" style="width:auto;">${a}</span>
+            <span class="operator" style="width:auto;">${op}</span>
+            <span class="number" style="width:auto;">${b}</span>
+            <span class="equals" style="width:auto;">=</span>
+            <input type="number" class="answer-input" style="width:${inputWidth}; text-align:center;" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+        `;
 
     } else {
         // Legacy Fallback (for Grade 1-3 types not migrated to specific 'type' yet)
@@ -1266,18 +1319,22 @@ function createProblemElement(problemData, isSolution) {
         const val = isSolution ? expected : '';
         const style = isSolution ? 'color:var(--primary-color); font-weight:bold;' : '';
 
+        problemDiv.style.justifyContent = 'center';
+        problemDiv.style.gap = span === 1 ? '8px' : '15px';
+        const inputWidth = span === 1 ? '50px' : '65px';
+
         problemDiv.innerHTML = `
-                                                                                <span class="number">${a}</span>
-                                                                                <span class="operator">${op}</span>
-                                                                                <span class="number">${b}</span>
-                                                                                <span class="equals">=</span>
-                                                                                <input type="number" class="answer-input" style="${style}" data-expected="${expected}" value="${val}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
-                                                                                    `;
+            <span class="number" style="width:auto;">${a}</span>
+            <span class="operator" style="width:auto;">${op}</span>
+            <span class="number" style="width:auto;">${b}</span>
+            <span class="equals" style="width:auto;">=</span>
+            <input type="number" class="answer-input" style="width:${inputWidth}; ${style}" data-expected="${expected}" value="${val}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+        `;
     }
     return problemDiv;
 }
 
-function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
+export function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     // Create Sheet
     const sheetDiv = document.createElement('div');
     sheetDiv.className = 'sheet';
@@ -1331,18 +1388,6 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     const isPyramid = problemDataList.length > 0 && problemDataList[0].type === 'pyramid';
     const isGeo = false;
 
-    if (isPyramid) {
-        const levels = problemDataList[0].levels || 3;
-
-        grid.style.gridTemplateColumns = '1fr 1fr';
-        grid.style.columnGap = '20px';
-        // grid.style.rowGap = '25px'; // Removed to allow CSS control
-    } else {
-        grid.style.gridTemplateColumns = '1fr 1fr';
-        grid.style.columnGap = '40px';
-        // grid.style.rowGap = '25px'; // Removed to allow CSS control
-    }
-
     problemDataList.forEach(p => {
         grid.appendChild(createProblemElement(p, isSolution));
     });
@@ -1386,7 +1431,7 @@ let currentTitle = "";
 
 
 
-function renderCurrentState() {
+export function renderCurrentState() {
     const wrapper = document.getElementById('sheetsWrapper');
     const showSolutions = document.getElementById('solutionToggle').checked;
 
@@ -1401,10 +1446,10 @@ function renderCurrentState() {
 
         // Render Solution Sheet immediately after, if requested
         if (showSolutions) {
-            const solutionSheet = createSheetElement(currentTitle, sheetProblems, true, pageInfo);
             wrapper.appendChild(solutionSheet);
         }
     });
+    updateURLState();
 }
 
 function validateInput(input) {
@@ -1592,6 +1637,9 @@ function init() {
 
         // 8. Setup Section Navigation
         setupSectionNavigation();
+
+        // 9. Init Builder
+        initBuilder();
     } catch (e) {
         console.error("Initialization Error:", e);
         alert("Fehler beim Starten: " + e.message);
@@ -1752,14 +1800,19 @@ function renderQRCode(url) {
     const containers = document.querySelectorAll('.qr-code-container');
     containers.forEach(container => {
         container.innerHTML = '';
-        new QRCode(container, {
-            text: url,
-            width: 100,
-            height: 100,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.L
-        });
+        try {
+            new QRCode(container, {
+                text: url,
+                width: 100,
+                height: 100,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.L
+            });
+        } catch (e) {
+            console.warn('QR code generation failed (likely URL too long):', e);
+            container.innerHTML = '<div style="font-size: 10px; color: #999; text-align: center; border: 1px dashed #ccc; padding: 4px; height: 100%; display: flex; align-items: center; justify-content: center; line-height: 1.2;">QR Link<br>zu lang</div>';
+        }
     });
 }
 
@@ -2066,25 +2119,35 @@ function setupSectionNavigation() {
     const sections = document.querySelectorAll('section');
 
     function showSection(hash) {
-        const targetId = hash.replace('#', '') || 'generator';
+        // Handle params in hash (e.g. #builder&build=...)
+        const cleanHash = (hash || '#generator').replace('#', '').split('&')[0];
+        const targetId = cleanHash || 'generator';
+
         sections.forEach(s => {
             s.classList.remove('active-section');
             if (s.id === targetId) s.classList.add('active-section');
         });
         links.forEach(l => {
             l.classList.remove('active');
-            if (l.getAttribute('href') === hash || (hash === '' && l.getAttribute('href') === '#generator')) {
-                l.classList.add('active');
+            // Check if link href matches the target section ID
+            const rawHref = l.getAttribute('href');
+            if (rawHref) {
+                const href = rawHref.replace('#', '');
+                if (href === targetId) {
+                    l.classList.add('active');
+                }
             }
         });
     }
 
     links.forEach(link => {
         link.addEventListener('click', (e) => {
-            // No preventDefault to allow hash change
-            const hash = link.getAttribute('href');
-            showSection(hash);
+            // Hash will change, triggering the listener below
         });
+    });
+
+    window.addEventListener('hashchange', () => {
+        showSection(window.location.hash);
     });
 
     // Handle initial load
@@ -2194,3 +2257,19 @@ function switchLanguage(newLang) {
     updateLanguageButtons();
     updateNavigationLinks();
 }
+
+// --- BUILDER SYNC ---
+function checkURLForBuilderState() {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const buildState = hashParams.get('build');
+    if (buildState) {
+        // Switch to builder tab
+        setTimeout(() => {
+            const navBuilder = document.getElementById('navBuilder');
+            if (navBuilder) navBuilder.click();
+            loadBuilderState(buildState);
+        }, 100);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', checkURLForBuilderState);

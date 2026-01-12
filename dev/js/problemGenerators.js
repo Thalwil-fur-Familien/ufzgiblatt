@@ -1,5 +1,8 @@
 import { getRandomInt, seededRandom, gcd } from './mathUtils.js';
 import { TRANSLATIONS } from './translations.js';
+import { LAYOUT_CONFIG } from './problemConfig.js';
+
+export const PAGE_CAPACITY = 80;
 
 export function generateProblemsData(type, count, availableTopics = [], allowedCurrencies = ['CHF'], options = {}, lang = 'de') {
     const data = [];
@@ -12,37 +15,6 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
     if (type === 'custom') {
         if (availableTopics.length === 0) return [];
 
-        const WEIGHTS = {
-            'default': 1,
-            'rechenmauer_10': 1.8,
-            'rechenmauer_100': 2.0,
-            'rechenmauer': 2.0,
-            'rechenmauer_4': 2.8,
-            'time_reading': 2.0,
-            'word_problems': 2.5,
-            'visual_add_100': 3.0,
-            'add_written': 1.8,
-            'sub_written': 1.8,
-            'mult_large': 2.5,
-            'div_long': 2.0,
-            'rounding': 1.2,
-            'dec_add': 1.8,
-            'dec_sub': 1.8,
-            'units': 1.5,
-            'frac_add': 2.0,
-            'frac_simplify': 1.8,
-            'percent_basic': 1.5,
-            'rechendreiecke': 1.5,
-            'zahlenhaus_10': 3.0,
-            'zahlenhaus_20': 3.0,
-            'zahlenhaus_100': 3.0,
-            'married_100': 1.0,
-            'rechenstrich': 2.2,
-            'money_10': 2.5,
-            'money_100': 3.0
-        };
-
-        const PAGE_CAPACITY = 16;
         let currentLoad = 0;
 
         const shuffledTopics = [...availableTopics].sort(() => seededRandom() - 0.5);
@@ -55,7 +27,8 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
 
         shuffledTopics.forEach(topic => {
             if (currentLoad < PAGE_CAPACITY) {
-                let w = WEIGHTS[topic] || 1;
+                let config = LAYOUT_CONFIG[topic] || LAYOUT_CONFIG['default'];
+                let w = config.weight;
                 // For money topics, pick a currency
                 const currency = getCurrencyForProblem();
                 data.push(generateProblem(topic, currency, options, topic === 'word_types' ? wordTypeIndices[wordTypeCount++ % currentWordTypes.length] : -1, lang));
@@ -66,7 +39,8 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
         let retries = 0;
         while (currentLoad < PAGE_CAPACITY && retries < 15) {
             const topic = availableTopics[getRandomInt(0, availableTopics.length - 1)];
-            let w = WEIGHTS[topic] || 1;
+            let config = LAYOUT_CONFIG[topic] || LAYOUT_CONFIG['default'];
+            let w = config.weight;
 
             if (currentLoad + w <= PAGE_CAPACITY) {
                 const currency = getCurrencyForProblem();
@@ -106,6 +80,15 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
 }
 
 export function generateProblem(type, currency = 'CHF', options = {}, index = -1, lang = 'de') {
+    const problem = _generateProblemInternal(type, currency, options, index, lang);
+    const config = LAYOUT_CONFIG[type] || LAYOUT_CONFIG['default'];
+    problem.weight = config.weight;
+    problem.span = config.span;
+    problem.moduleType = type;
+    return problem;
+}
+
+function _generateProblemInternal(type, currency = 'CHF', options = {}, index = -1, lang = 'de') {
     let a, b, op;
 
     switch (type) {
@@ -608,7 +591,7 @@ export function generateTriangle(maxSum) {
 }
 
 export function generateHouse(roofNum) {
-    const floorsCount = getRandomInt(3, 5);
+    const floorsCount = 3;
     const floors = [];
     const usedValues = new Set();
     for (let i = 0; i < floorsCount; i++) {
