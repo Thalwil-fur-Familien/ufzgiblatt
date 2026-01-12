@@ -3,13 +3,13 @@ export { globalSeed, setSeed };
 import { generateProblemsData as genData } from './js/problemGenerators.js?v=4';
 import { TRANSLATIONS, getPreferredLanguage, setPreferredLanguage } from './js/translations.js';
 import { loadBuilderState, initBuilder, getBuilderState, hasBuilderContent } from './js/worksheet-builder.js';
+import { getURLParams, getPageFromHash } from './js/urlUtils.js';
 
 // Expose to window for inline HTML handlers
 window.updateTopicSelector = updateTopicSelector;
 window.generateSheet = generateSheet;
 window.renderCurrentState = renderCurrentState;
 window.updateURLState = updateURLState;
-window.toggleLogoVisibility = toggleLogoVisibility;
 window.toggleQRVisibility = toggleQRVisibility;
 window.validateInput = validateInput;
 window.switchLanguage = switchLanguage;
@@ -84,8 +84,7 @@ function applyTranslations() {
         'btnSaved': T.ui.btnSaved,
         'btnPrint': T.ui.btnPrint,
         'btnPlay': T.ui.btnPlay,
-        'labelHideLogo': T.ui.hideLogo,
-        'labelHideQR': T.ui.hideQR,
+        'labelShowQR': T.ui.labelShowQR,
         'customTitle': T.ui.customTitle,
         'labelMultiplesOf10': T.ui.multiplesOf10,
         'labelCurrency': T.ui.currency,
@@ -94,6 +93,7 @@ function applyTranslations() {
         'modalTitle': T.ui.modalTitle,
         'btnModalClose': T.ui.modalClose,
         'labelFeedback': T.ui.feedback,
+        'labelDensity': T.ui.labelDensity,
         'navGenerator': T.ui.navGenerator,
         'navGames': T.ui.navGames,
         'navGameGeo': T.ui.navGameGeo,
@@ -287,26 +287,6 @@ function generateSheet(keepSeed = false) {
     const type = selector.value;
     currentTitle = selector.options[selector.selectedIndex].text;
 
-    // 1. Determine Count per Sheet
-    let numProblems = (type === 'custom') ? 12 : 20;
-
-    // Heuristic for count
-
-    // Specific types...
-    if (type === 'word_problems') numProblems = 8;
-    else if (type === 'rechenmauer_4') numProblems = 8;
-    else if (type.includes('rechenmauer')) numProblems = 10;
-    else if (['mult_large', 'div_long'].includes(type)) numProblems = 8;
-    else if (type === 'time_reading' || type === 'time_analog_set' || type === 'time_analog_set_complex') numProblems = 8; // Clocks need space
-    else if (type === 'visual_add_100') numProblems = 6; // 10x10 grids are large
-    else if (type === 'rounding') numProblems = 16;
-    else if (type.includes('rechendreiecke')) numProblems = 8;
-    else if (['add_written', 'sub_written'].includes(type)) numProblems = 12;
-    else if (type === 'rechenstrich') numProblems = 6;
-    else if (type.includes('money')) numProblems = (type === 'money_10' ? 6 : 4);
-    else if (type.includes('zahlenhaus')) numProblems = 4;
-    else if (type === 'word_types') numProblems = 16;
-
     // 2. Determine Page Count
     const pageCountInput = document.getElementById('pageCount');
     const pageCount = parseInt(document.getElementById('pageCount').value) || 1;
@@ -328,7 +308,11 @@ function generateSheet(keepSeed = false) {
         const options = {
             marriedMultiplesOf10: document.getElementById('marriedMultiplesOf10').checked
         };
-        currentSheetsData.push(genData(type, numProblems, availableTopics, allowedCurrencies, options, lang));
+
+        const density = parseInt(document.getElementById('densitySlider').value) || 100;
+        const capacity = Math.round(80 * (density / 100)); // 80 is PAGE_CAPACITY in problemGenerators
+
+        currentSheetsData.push(genData(type, availableTopics, allowedCurrencies, options, lang, capacity));
     }
     // 4. Render
     renderCurrentState();
@@ -353,8 +337,7 @@ export function updateURLState() {
     const params = new URLSearchParams();
 
     // Determine current section to filter parameters
-    let currentHash = window.location.hash.replace(/^#/, '');
-    const section = currentHash.split('&')[0] || (hasBuilderContent() ? 'builder' : 'generator');
+    const section = getPageFromHash();
     const isGenerator = (section === 'generator');
 
     // Lang (always include)
@@ -415,23 +398,30 @@ export function updateURLState() {
     }
 
     // Global UI Settings
-    if (document.getElementById('hideQR').checked) params.set('hideQR', '1');
-    if (document.getElementById('hideLogo').checked) params.set('hideLogo', '1');
-    if (globalSeed) params.set('seed', globalSeed.toString());
+    if (document.getElementById('solutionToggle').checked) params.set('solutions', '1');
+    if (document.getElementById('densitySlider').value !== '100') params.set('density', document.getElementById('densitySlider').value);
+    if (document.getElementById('marriedMultiplesOf10').checked) params.set('marriedM', '1');
 
-    // Builder State (Hash)
-    // We preserve the current section and append build state
-    let newHash = '#' + section;
-
-    // Only include build state if we are in builder section (or if it's implicitly there)
-    // Actually, usually we'd want build state kept if we are in builder, or if we want to preserve it.
-    // The user's goal is "I want the builder specific variables in the url".
-    if (hasBuilderContent()) {
-        const buildState = getBuilderState();
-        newHash += `&build=${encodeURIComponent(buildState)}`;
+    // QR Code defaults to true now. If unchecked, we might track it, or just if checked.
+    // If we want showQR to be default YES, we only need to track if it's NO? Or just track state.
+    // Let's track expected state.
+    if (document.getElementById('showQR').checked) {
+        // Default is true? If we want a clean URL, we can omit if default.
+        // Let's clear param if true (default), set to 0 if false.
+        params.delete('showQR');
+    } else {
+        params.set('showQR', '0');
     }
 
-    const newUrl = `${window.location.pathname}?${params.toString()}${newHash}`;
+    if (globalSeed) params.set('seed', globalSeed.toString());
+
+    // Builder State
+    if (hasBuilderContent()) {
+        const buildState = getBuilderState();
+        params.set('build', buildState);
+    }
+
+    const newUrl = `${window.location.pathname}#${section}?${params.toString()}`;
     window.history.replaceState({}, '', newUrl);
 
     // Also update QR Code on existing sheets
@@ -1340,20 +1330,20 @@ export function createSheetElement(titleText, problemDataList, isSolution, pageI
     sheetDiv.className = 'sheet';
 
     // QR Code Container
+    // QR Code Container
     const qrContainer = document.createElement('div');
     qrContainer.className = 'qr-code-container';
-    if (document.getElementById('hideQR').checked) {
+    if (!document.getElementById('showQR').checked) {
         qrContainer.classList.add('qr-hidden');
     }
     sheetDiv.appendChild(qrContainer);
 
     // Sheet Logo (Top Left)
+    // Sheet Logo (Top Left)
     const sheetLogo = document.createElement('img');
     sheetLogo.src = basePath + 'images/logo/logo_ufzgiblatt1_text_below_centered.png';
     sheetLogo.className = 'sheet-logo';
-    if (document.getElementById('hideLogo').checked) {
-        sheetLogo.classList.add('logo-hidden');
-    }
+    // Logo is always visible now
     sheetDiv.appendChild(sheetLogo);
 
     // Header
@@ -1674,7 +1664,7 @@ function loadStateFromURL() {
         return;
     }
 
-    const params = new URLSearchParams(window.location.search);
+    const params = getURLParams();
 
     // IMPORTANT: Load seed FIRST before any handlers that might call generateSheet()
     // 1. Seed
@@ -1739,14 +1729,17 @@ function loadStateFromURL() {
     if (params.has('solutions')) {
         document.getElementById('solutionToggle').checked = params.get('solutions') === '1';
     }
+    if (params.has('density')) {
+        document.getElementById('densitySlider').value = params.get('density');
+    }
     if (params.has('marriedM')) {
         document.getElementById('marriedMultiplesOf10').checked = params.get('marriedM') === '1';
     }
     if (params.has('hideQR')) {
         document.getElementById('hideQR').checked = params.get('hideQR') === '1';
     }
-    if (params.has('hideLogo')) {
-        document.getElementById('hideLogo').checked = params.get('hideLogo') === '1';
+    if (params.has('showQR')) {
+        document.getElementById('showQR').checked = params.get('showQR') !== '0';
     }
     if (params.has('showH')) {
         document.getElementById('showHours').checked = params.get('showH') === '1';
@@ -1771,26 +1764,13 @@ function loadStateFromURL() {
 }
 
 function toggleQRVisibility() {
-    const hide = document.getElementById('hideQR').checked;
+    const show = document.getElementById('showQR').checked;
     const qrContainers = document.querySelectorAll('.qr-code-container');
     qrContainers.forEach(container => {
-        if (hide) {
+        if (!show) {
             container.classList.add('qr-hidden');
         } else {
             container.classList.remove('qr-hidden');
-        }
-    });
-    updateURLState();
-}
-
-function toggleLogoVisibility() {
-    const hide = document.getElementById('hideLogo').checked;
-    const logos = document.querySelectorAll('.sheet-logo');
-    logos.forEach(logo => {
-        if (hide) {
-            logo.classList.add('logo-hidden');
-        } else {
-            logo.classList.remove('logo-hidden');
         }
     });
     updateURLState();
@@ -2119,9 +2099,8 @@ function setupSectionNavigation() {
     const sections = document.querySelectorAll('section');
 
     function showSection(hash) {
-        // Handle params in hash (e.g. #builder&build=...)
-        const cleanHash = (hash || '#generator').replace('#', '').split('&')[0];
-        const targetId = cleanHash || 'generator';
+        // Handle params in hash (e.g. #builder?lang=de)
+        const targetId = getPageFromHash();
 
         sections.forEach(s => {
             s.classList.remove('active-section');
@@ -2148,6 +2127,7 @@ function setupSectionNavigation() {
 
     window.addEventListener('hashchange', () => {
         showSection(window.location.hash);
+        updateURLState();
     });
 
     // Handle initial load
@@ -2159,13 +2139,12 @@ function updateNavigationLinks() {
     const geoLinks = document.querySelectorAll('a[href*="geography-game"]');
 
     geoLinks.forEach(link => {
-        const params = new URLSearchParams();
-        params.set('lang', lang);
-        if (globalSeed) {
-            params.set('seed', globalSeed.toString());
-        }
+        const params = getURLParams();
+        const simplifiedParams = new URLSearchParams();
+        if (params.has('lang')) simplifiedParams.set('lang', params.get('lang'));
+        if (params.has('seed')) simplifiedParams.set('seed', params.get('seed'));
 
-        link.href = `geography-game?${params.toString()}`;
+        link.href = `geography-game?${simplifiedParams.toString()}`;
 
         // Save worksheet state before navigating
         link.onclick = (e) => {
@@ -2196,8 +2175,7 @@ function updateLanguageButtons() {
         { de: 'lang-de-header', en: 'lang-en-header' }
     ];
 
-    const url = new URL(window.location.href);
-    const params = new URLSearchParams(url.search);
+    const params = getURLParams();
 
     pairs.forEach(pair => {
         const deEl = document.getElementById(pair.de);
@@ -2210,14 +2188,14 @@ function updateLanguageButtons() {
                 enEl.classList.remove('active');
 
                 params.set('lang', 'en');
-                enEl.href = '?' + params.toString();
+                enEl.href = '#' + getPageFromHash() + '?' + params.toString();
             } else {
                 enEl.classList.add('active');
                 enEl.href = 'javascript:void(0)';
                 deEl.classList.remove('active');
 
                 params.set('lang', 'de');
-                deEl.href = '?' + params.toString();
+                deEl.href = '#' + getPageFromHash() + '?' + params.toString();
             }
         }
     });
@@ -2250,9 +2228,10 @@ function switchLanguage(newLang) {
     generateSheet(true);
 
     // Update URL without reload
-    const url = new URL(window.location);
-    url.searchParams.set('lang', lang);
-    window.history.pushState({}, '', url);
+    const params = getURLParams();
+    params.set('lang', lang);
+    const newUrl = `${window.location.pathname}#${getPageFromHash()}?${params.toString()}`;
+    window.history.pushState({}, '', newUrl);
 
     updateLanguageButtons();
     updateNavigationLinks();
@@ -2260,8 +2239,8 @@ function switchLanguage(newLang) {
 
 // --- BUILDER SYNC ---
 function checkURLForBuilderState() {
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const buildState = hashParams.get('build');
+    const params = getURLParams();
+    const buildState = params.get('build');
     if (buildState) {
         // Switch to builder tab
         setTimeout(() => {

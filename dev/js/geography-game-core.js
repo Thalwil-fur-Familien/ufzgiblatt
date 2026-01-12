@@ -1,5 +1,6 @@
 import { TRANSLATIONS, getPreferredLanguage, setPreferredLanguage } from './translations.js';
 import { globalSeed, setSeed, seededRandom } from './mathUtils.js';
+import { getURLParams, getPageFromHash } from './urlUtils.js';
 
 let T;
 let lang;
@@ -75,7 +76,7 @@ export async function initGeoGame(config) {
     }
 
     // Load state from URL if present
-    const params = new URLSearchParams(window.location.search);
+    const params = getURLParams();
     if (params.has('seed')) {
         const seedValue = parseInt(params.get('seed'));
         if (!isNaN(seedValue)) {
@@ -101,8 +102,7 @@ export async function initGeoGame(config) {
     const enLink = document.getElementById('lang-en');
 
     if (deLink && enLink) {
-        const url = new URL(window.location.href);
-        const params = new URLSearchParams(url.search);
+        const params = getURLParams();
 
         if (lang === 'de') {
             deLink.classList.add('active');
@@ -127,9 +127,9 @@ export async function initGeoGame(config) {
 
 function updateNavigationLinks() {
     // Update links back to the main page
-    const currentParams = new URLSearchParams(window.location.search);
-    const lang = currentParams.get('lang') || 'de';
-    const seed = currentParams.get('seed') || '';
+    const params = getURLParams();
+    const lang = params.get('lang') || 'de';
+    const seed = params.get('seed') || '';
 
     const logoLink = document.querySelector('.site-logo a');
     const generatorLink = document.getElementById('navGenerator');
@@ -156,18 +156,16 @@ function updateNavigationLinks() {
 
     if (logoLink) {
         const href = logoLink.getAttribute('href');
-        const [baseHref, hash] = href.split('#');
-        const base = baseHref.split('?')[0];
-
-        logoLink.href = hash ? `${base}?${backParams.toString()}#${hash}` : `${base}?${backParams.toString()}`;
+        const base = href.split(/[?#]/)[0];
+        const hash = getPageFromHash() || 'generator';
+        logoLink.href = `${base}#${hash}?${backParams.toString()}`;
     }
 
     if (generatorLink) {
         const href = generatorLink.getAttribute('href');
-        const [baseHref, hash] = href.split('#');
-        const base = baseHref.split('?')[0];
-
-        generatorLink.href = hash ? `${base}?${backParams.toString()}#${hash}` : `${base}?${backParams.toString()}`;
+        const base = href.split(/[?#]/)[0];
+        const hash = 'generator';
+        generatorLink.href = `${base}#${hash}?${backParams.toString()}`;
     }
 }
 
