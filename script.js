@@ -6,7 +6,7 @@ import { loadBuilderState, initBuilder, getBuilderState, hasBuilderContent } fro
 import { getURLParams, getPageFromHash } from './js/urlUtils.js';
 
 // Expose to window for inline HTML handlers
-window.updateTopicSelector = updateTopicSelector;
+
 window.generateSheet = generateSheet;
 window.renderCurrentState = renderCurrentState;
 window.updateURLState = updateURLState;
@@ -23,6 +23,11 @@ window.T = T;
 if (document.getElementById('htmlRoot')) {
     document.getElementById('htmlRoot').lang = lang;
 }
+
+// State for Modern UI
+let currentGeneratorGrade = '1';
+let selectedGeneratorTopics = new Set();
+// Note: We might want to persist these to URL/Storage
 
 export const GRADE_TOPICS_STRUCTURE = {
     '1': ['add_10', 'sub_10', 'add_20_simple', 'sub_20_simple', 'bonds_10', 'rechenmauer_10', 'money_10'],
@@ -53,9 +58,21 @@ function trackEvent(name, props = {}) {
 
 function printSheet() {
     try {
-        const topic = document.getElementById('topicSelector').value;
+        const topics = Array.from(selectedGeneratorTopics);
+        let topic;
+        let customModules = '';
+
+        if (topics.length > 1) {
+            topic = 'custom';
+            customModules = topics.join(',');
+        } else if (topics.length === 1) {
+            topic = topics[0];
+        } else {
+            topic = 'unknown';
+        }
+
         const props = {
-            grade: document.getElementById('gradeSelector').value,
+            grade: currentGeneratorGrade,
             topic: topic,
             count: document.getElementById('pageCount').value,
             solutions: document.getElementById('solutionToggle').checked,
@@ -63,8 +80,7 @@ function printSheet() {
         };
 
         if (topic === 'custom') {
-            const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
-            props.custom_modules = Array.from(checkboxes).map(cb => cb.value).join(',');
+            props.custom_modules = customModules;
         }
 
         trackEvent('print_sheet', props);
@@ -130,116 +146,105 @@ function applyTranslations() {
     }
 }
 
-function updateTopicSelectorNodes(topics) {
-    const topicSelector = document.getElementById('topicSelector');
-    topicSelector.innerHTML = '';
-    topics.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t.value;
-        opt.textContent = t.text;
-        topicSelector.appendChild(opt);
-    });
+// --- TABS & CHIPS RENDERING (Modern UI) ---
 
-    // Add Custom Option
-    const customOpt = document.createElement('option');
-    customOpt.value = 'custom';
-    customOpt.textContent = T.ui.individuelleAufgaben;
-    topicSelector.appendChild(customOpt);
-}
-
-function updateCustomCheckboxes(topics) {
-    const container = document.getElementById('checkboxContainer');
+function renderGeneratorTabs() {
+    const container = document.getElementById('gradeTabs');
+    if (!container) return;
     container.innerHTML = '';
 
-    // Use all topics except custom itself (which shouldn't be in topics anyway)
-    topics.forEach(t => {
-        const div = document.createElement('div');
-        div.style.display = 'flex';
-        div.style.alignItems = 'center';
-
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.value = t.value;
-        cb.id = 'cb_' + t.value;
-        cb.checked = true; // Default all checked? Or none? Let's say all checked so it works immediately.
-        cb.style.marginRight = '8px';
-        cb.style.width = '18px';
-        cb.style.height = '18px';
-        cb.onchange = () => generateSheet(true);
-
-        const label = document.createElement('label');
-        label.htmlFor = 'cb_' + t.value;
-        label.textContent = t.text;
-        label.style.cursor = 'pointer';
-
-        div.appendChild(cb);
-        div.appendChild(label);
-        container.appendChild(div);
+    Object.keys(GRADE_TOPICS_STRUCTURE).forEach(g => {
+        const tab = document.createElement('div');
+        tab.className = `grade-tab ${g === currentGeneratorGrade ? 'active' : ''}`;
+        tab.textContent = T.ui.grades[g];
+        tab.onclick = () => handleGeneratorGradeSelect(g);
+        container.appendChild(tab);
     });
 }
 
-function updateTopicSelector(targetTopic = null) {
-    const grade = document.getElementById('gradeSelector').value;
-    const topicSelector = document.getElementById('topicSelector');
-    // Save current selection before wiping options (unless targetTopic is provided)
-    const currentTopic = targetTopic || topicSelector.value;
+function handleGeneratorGradeSelect(grade) {
+    if (currentGeneratorGrade === grade) return;
+    currentGeneratorGrade = grade;
 
-    const topics = GRADE_TOPICS[grade] || [];
+    // Default behavior on grade switch: Select first topic? Or clear?
+    // Let's select the first topic by default to match old behavior
+    const topics = GRADE_TOPICS_STRUCTURE[grade] || [];
+    selectedGeneratorTopics.clear();
+    if (topics.length > 0) {
+        selectedGeneratorTopics.add(topics[0]);
+    }
 
-    updateTopicSelectorNodes(topics);
-    updateCustomCheckboxes(topics);
+    renderGeneratorTabs();
+    renderGeneratorChips();
+    generateSheet(); // Auto-generate
+}
 
-    // Try to restore previous selection if valid for this grade
-    let restored = false;
-    if (currentTopic) {
-        // Check if currentTopic exists in new options
-        const exists = Array.from(topicSelector.options).some(opt => opt.value === currentTopic);
-        if (exists) {
-            topicSelector.value = currentTopic;
-            restored = true;
+function renderGeneratorChips() {
+    const container = document.getElementById('topicChips');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const topics = GRADE_TOPICS_STRUCTURE[currentGeneratorGrade] || [];
+
+    topics.forEach(topicKey => {
+        const chip = document.createElement('div');
+        const isActive = selectedGeneratorTopics.has(topicKey);
+        chip.className = `topic-chip ${isActive ? 'active' : ''}`;
+        chip.textContent = T.topics[topicKey];
+        chip.onclick = () => handleGeneratorTopicClick(topicKey);
+        container.appendChild(chip);
+    });
+
+    // Update Visibility of Side Panels (Money, Time, Married) based on Active Selection
+    updateSidePanelsVisibility();
+}
+
+function handleGeneratorTopicClick(topic) {
+    // If clicking an unselected chip, add it.
+    // If clicking a selected chip, remove it UNLESS it's the last one (prevent empty state).
+
+    if (selectedGeneratorTopics.has(topic)) {
+        if (selectedGeneratorTopics.size > 1) {
+            selectedGeneratorTopics.delete(topic);
         }
+    } else {
+        selectedGeneratorTopics.add(topic);
     }
 
-    // Set default if not restored
-    if (!restored && topics.length > 0) {
-        topicSelector.value = topics[0].value;
-    }
+    renderGeneratorChips();
+    generateSheet();
+}
 
-    // Toggle Custom Options Visibility based on selection change
-    topicSelector.onchange = function () {
-        const customDiv = document.getElementById('customOptions');
-        const marriedDiv = document.getElementById('marriedOptions');
-        const timeDiv = document.getElementById('timeOptions');
+function updateSidePanelsVisibility() {
+    // Check if ANY selected topic needs a panel
+    let showCustom = selectedGeneratorTopics.size > 1; // Actually custom logic is intrinsic now
+    let showMarried = false;
+    let showTime = false;
+    let showMoney = false;
 
-        customDiv.style.display = (topicSelector.value === 'custom') ? 'flex' : 'none';
-        marriedDiv.style.display = (topicSelector.value === 'married_100') ? 'flex' : 'none';
-        timeDiv.style.display = (topicSelector.value === 'time_reading') ? 'flex' : 'none';
+    selectedGeneratorTopics.forEach(t => {
+        if (t === 'married_100') showMarried = true;
+        if (t === 'time_reading') showTime = true;
+        if (t === 'money_10' || t === 'money_100') showMoney = true;
+    });
 
-        const isMoney = topicSelector.value === 'money_10' || topicSelector.value === 'money_100';
-        const moneyDiv = document.getElementById('moneyOptions');
-        if (moneyDiv) moneyDiv.style.display = isMoney ? 'flex' : 'none';
-
-        generateSheet(true);
-    };
-
-    // Initial selection visibility sync
-    const customDiv = document.getElementById('customOptions');
     const marriedDiv = document.getElementById('marriedOptions');
     const timeDiv = document.getElementById('timeOptions');
     const moneyDiv = document.getElementById('moneyOptions');
 
-    customDiv.style.display = (topicSelector.value === 'custom') ? 'flex' : 'none';
-    marriedDiv.style.display = (topicSelector.value === 'married_100') ? 'flex' : 'none';
-    timeDiv.style.display = (topicSelector.value === 'time_reading') ? 'flex' : 'none';
+    if (marriedDiv) marriedDiv.style.display = showMarried ? 'flex' : 'none';
+    if (timeDiv) timeDiv.style.display = showTime ? 'flex' : 'none';
+    if (moneyDiv) moneyDiv.style.display = showMoney ? 'flex' : 'none';
 
-    if (moneyDiv) {
-        const isMoney = topicSelector.value === 'money_10' || topicSelector.value === 'money_100';
-        moneyDiv.style.display = isMoney ? 'flex' : 'none';
-    }
-    if (customDiv) customDiv.style.display = (topicSelector.value === 'custom') ? 'flex' : 'none';
-    if (marriedDiv) marriedDiv.style.display = (topicSelector.value === 'married_100') ? 'flex' : 'none';
-    if (timeDiv) timeDiv.style.display = (topicSelector.value === 'time_reading') ? 'flex' : 'none';
+    // We don't need 'customOptions' div anymore as chips handle it.
 }
+
+// Replaces updateTopicSelector and related helpers
+function updateTopicSelector() {
+    renderGeneratorTabs();
+    renderGeneratorChips();
+}
+window.updateTopicSelector = updateTopicSelector;
 
 
 // --- GENERATION & RENDERING ---
@@ -277,15 +282,37 @@ function generateSheet(keepSeed = false) {
     // Track generation (only if new seed/sheet)
     if (!keepSeed) {
         trackEvent('generate_sheet', {
-            grade: document.getElementById('gradeSelector').value,
-            topic: document.getElementById('topicSelector').value,
+            grade: currentGeneratorGrade,
+            topic: Array.from(selectedGeneratorTopics).join(','),
             count: document.getElementById('pageCount').value
         });
     }
 
-    const selector = document.getElementById('topicSelector');
-    const type = selector.value;
-    currentTitle = selector.options[selector.selectedIndex].text;
+    // New Logic: Determine Type based on Selected Topics
+    let type;
+    const availableTopics = Array.from(selectedGeneratorTopics);
+
+    if (availableTopics.length === 1) {
+        type = availableTopics[0];
+    } else if (availableTopics.length > 1) {
+        type = 'custom';
+    } else {
+        // Fallback if empty (shouldn't happen)
+        type = 'add_10';
+    }
+
+    // Title is complicated now. Use Generic or Specific?
+    // Let's rely on sheet generation to add titles per problem or a generic one.
+    // Usually titleText passed to createSheetElement. 
+    // We can join titles? Or just "Mathe-Mix"?
+    // The previous code grabbed text from selector.
+    // Let's approximate:
+    let currentTitle;
+    if (type === 'custom') {
+        currentTitle = T.ui.individuelleAufgaben || "Mix";
+    } else {
+        currentTitle = T.topics[type] || "Aufgaben";
+    }
 
     // 2. Determine Page Count
     const pageCountInput = document.getElementById('pageCount');
@@ -293,11 +320,7 @@ function generateSheet(keepSeed = false) {
 
     // 3. Generate Data for ALL pages
     currentSheetsData = [];
-    const availableTopics = [];
-    if (type === 'custom') {
-        const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
-        checkboxes.forEach(cb => availableTopics.push(cb.value));
-    }
+    // availableTopics is already populated from Set above
 
     for (let i = 0; i < pageCount; i++) {
         const allowedCurrencies = [];
@@ -324,8 +347,8 @@ function generateSheet(keepSeed = false) {
 // Save current worksheet state to sessionStorage before navigating to geography game
 function saveWorksheetState() {
     const state = {
-        grade: document.getElementById('gradeSelector').value,
-        topic: document.getElementById('topicSelector').value,
+        grade: currentGeneratorGrade,
+        topic: Array.from(selectedGeneratorTopics).join(','),
         count: document.getElementById('pageCount').value,
         seed: globalSeed,
         lang: lang
@@ -348,12 +371,20 @@ export function updateURLState() {
     // Generator-specific parameters
     if (isGenerator) {
         // Grade
-        const grade = document.getElementById('gradeSelector').value;
-        params.set('grade', grade);
+        params.set('grade', currentGeneratorGrade);
 
-        // Topic
-        const topic = document.getElementById('topicSelector').value;
-        params.set('topic', topic);
+        const topics = Array.from(selectedGeneratorTopics);
+        let topicStr = '';
+
+        // Topic & Custom
+        if (topics.length > 1) {
+            params.set('topic', 'custom');
+            params.set('custom', topics.join(','));
+            topicStr = 'custom';
+        } else if (topics.length === 1) {
+            params.set('topic', topics[0]);
+            topicStr = topics[0];
+        }
 
         // Page Count
         const count = document.getElementById('pageCount').value;
@@ -363,15 +394,15 @@ export function updateURLState() {
         const showSolutions = document.getElementById('solutionToggle').checked;
         if (showSolutions) params.set('solutions', '1');
 
-        const isCustom = (topic === 'custom');
+        const isCustom = (topicStr === 'custom');
 
         // Only set these parameters if they are relevant to the selected topic or custom mode
-        if (topic === 'married_100' || isCustom) {
+        if (topicStr === 'married_100' || isCustom) {
             const marriedMultiples = document.getElementById('marriedMultiplesOf10').checked;
             if (marriedMultiples) params.set('marriedM', '1');
         }
 
-        if (topic === 'time_reading' || isCustom) {
+        if (topicStr === 'time_reading' || isCustom) {
             const showHours = document.getElementById('showHours').checked;
             if (showHours) params.set('showH', '1');
 
@@ -379,21 +410,12 @@ export function updateURLState() {
             if (showMinutes) params.set('showM', '1');
         }
 
-        const isMoney = topic === 'money_10' || topic === 'money_100';
+        const isMoney = topicStr === 'money_10' || topicStr === 'money_100';
         if (isMoney || isCustom) {
             const currencies = [];
             if (document.getElementById('currencyCHF').checked) currencies.push('CHF');
             if (document.getElementById('currencyEUR').checked) currencies.push('EUR');
             if (currencies.length > 0) params.set('currencies', currencies.join(','));
-        }
-
-        // Custom params
-        if (topic === 'custom') {
-            const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
-            const values = Array.from(checkboxes).map(cb => cb.value);
-            if (values.length > 0) {
-                params.set('custom', values.join(','));
-            }
         }
     }
 
@@ -1324,7 +1346,7 @@ function createProblemElement(problemData, isSolution) {
     return problemDiv;
 }
 
-export function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
+export function createSheetElement(titleText, problemDataList, isSolution, pageInfo, isEditable = false) {
     // Create Sheet
     const sheetDiv = document.createElement('div');
     sheetDiv.className = 'sheet';
@@ -1363,6 +1385,26 @@ export function createSheetElement(titleText, problemDataList, isSolution, pageI
     const h1 = document.createElement('h1');
     h1.textContent = titleText + (isSolution ? T.ui.solutionsSuffix : '');
     if (isSolution) h1.style.color = '#27ae60';
+
+    if (isEditable && !isSolution) {
+        h1.contentEditable = "true";
+        h1.style.outline = "1px dashed #ccc"; // visual cue
+        h1.style.minWidth = "200px";
+        h1.oninput = function () {
+            if (window.updateBuilderTitle) {
+                window.updateBuilderTitle(this.textContent);
+            }
+        };
+        h1.onkeydown = function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.blur();
+            }
+        };
+        // Remove visual cue on blur? Or keep it? Perhaps hidden in print.
+        // Let's rely on CSS for print hiding cues.
+    }
+
     sheetDiv.appendChild(h1);
 
     // Grid
@@ -1562,15 +1604,28 @@ window.setupFocusNavigation = function () {
     wrapper.addEventListener('input', (e) => {
         if (!workStarted && e.target.tagName === 'INPUT') {
             workStarted = true;
+
+            const topics = Array.from(selectedGeneratorTopics);
+            let topicStr = '';
+            let customStr = '';
+
+            if (topics.length > 1) {
+                topicStr = 'custom';
+                customStr = topics.join(',');
+            } else if (topics.length === 1) {
+                topicStr = topics[0];
+            } else {
+                topicStr = 'unknown';
+            }
+
             const props = {
-                grade: document.getElementById('gradeSelector').value,
-                topic: document.getElementById('topicSelector').value,
+                grade: currentGeneratorGrade,
+                topic: topicStr,
                 count: document.getElementById('pageCount').value,
                 lang: lang
             };
-            if (props.topic === 'custom') {
-                const checkboxes = document.querySelectorAll('#checkboxContainer input[type="checkbox"]:checked');
-                props.custom_modules = Array.from(checkboxes).map(cb => cb.value).join(',');
+            if (topicStr === 'custom') {
+                props.custom_modules = customStr;
             }
             trackEvent('work_started', props);
         }
@@ -1607,9 +1662,14 @@ function init() {
         const isShared = params.has('seed') || params.has('topic');
 
         // Track Page View
+        // Track Page View
+        // Derive props safely
+        const topics = Array.from(selectedGeneratorTopics);
+        const topicStr = topics.length > 1 ? 'custom' : (topics[0] || 'unknown');
+
         trackEvent('page_view', {
-            grade: document.getElementById('gradeSelector').value,
-            topic: document.getElementById('topicSelector').value,
+            grade: currentGeneratorGrade,
+            topic: topicStr,
             is_shared_url: isShared,
             hostname: window.location.hostname,
             path: window.location.pathname,
@@ -1643,13 +1703,21 @@ function loadStateFromURL() {
         const state = JSON.parse(savedState);
 
         // Restore state
-        const gradeSelector = document.getElementById('gradeSelector');
-        if (gradeSelector) gradeSelector.value = state.grade;
+        // Restore state
+        if (state.grade) currentGeneratorGrade = state.grade;
 
-        updateTopicSelector(state.topic);
+        selectedGeneratorTopics.clear();
+        if (state.topic) {
+            if (state.topic.includes(',')) {
+                state.topic.split(',').forEach(t => selectedGeneratorTopics.add(t));
+            } else {
+                selectedGeneratorTopics.add(state.topic);
+            }
+        }
 
-        const topicSelector = document.getElementById('topicSelector');
-        if (topicSelector) topicSelector.value = state.topic;
+        // Re-render
+        renderGeneratorTabs();
+        renderGeneratorChips();
 
         const pageCount = document.getElementById('pageCount');
         if (pageCount) pageCount.value = state.count;
@@ -1675,46 +1743,27 @@ function loadStateFromURL() {
 
     // 2. Grade
     if (params.has('grade')) {
-        const grade = params.get('grade');
-        const sel = document.getElementById('gradeSelector');
-        if (sel) {
-            sel.value = grade;
-        }
+        currentGeneratorGrade = params.get('grade');
     }
 
-    // Get topic from URL before calling updateTopicSelector
-    const topicFromURL = params.has('topic') ? params.get('topic') : null;
+    // 3. Topic & Custom
+    selectedGeneratorTopics.clear();
+    const topicParam = params.get('topic');
+    const customParam = params.get('custom');
 
-    // Trigger topic update for this grade, passing the desired topic
-    updateTopicSelector(topicFromURL);
-
-    // 3. Topic - additional handling for custom topics
-    if (params.has('topic')) {
-        const topic = params.get('topic');
-        const topicSel = document.getElementById('topicSelector');
-        if (topicSel) {
-            // If Custom, handle visibility
-            if (topic === 'custom') {
-                const customContainer = document.getElementById('customOptions');
-                if (customContainer) customContainer.style.display = 'flex'; // show it
-
-                if (params.has('custom')) {
-                    const customVal = params.get('custom').split(',');
-                    const allCbs = document.querySelectorAll('#checkboxContainer input[type="checkbox"]');
-                    allCbs.forEach(cb => {
-                        cb.checked = customVal.includes(cb.value);
-                    });
-                }
-            } else {
-                // Trigger visibility updates (married, time options etc)
-                // Since updateTopicSelector attached the handler, we can call it.
-                // This ensures options like "timeOptions" become visible.
-                if (typeof topicSel.onchange === 'function') {
-                    topicSel.onchange();
-                }
-            }
-        }
+    if (topicParam === 'custom' && customParam) {
+        customParam.split(',').forEach(t => selectedGeneratorTopics.add(t));
+    } else if (topicParam && topicParam !== 'custom') {
+        selectedGeneratorTopics.add(topicParam);
+    } else {
+        // Fallback default
+        const topics = GRADE_TOPICS_STRUCTURE[currentGeneratorGrade] || [];
+        if (topics.length > 0) selectedGeneratorTopics.add(topics[0]);
     }
+
+    // Render UI
+    renderGeneratorTabs();
+    renderGeneratorChips();
 
     // 4. Count
     if (params.has('count')) {
@@ -1899,7 +1948,16 @@ window.saveCurrentState = function () {
         return;
     }
 
-    const topicName = document.getElementById('topicSelector').options[document.getElementById('topicSelector').selectedIndex].text;
+    const topics = Array.from(selectedGeneratorTopics);
+    let topicName;
+    if (topics.length > 1) {
+        topicName = T.ui.individuelleAufgaben || "Mix";
+    } else if (topics.length === 1) {
+        topicName = T.topics[topics[0]] || topics[0];
+    } else {
+        topicName = "Arbeitsblatt";
+    }
+
     const defaultName = `${topicName} (${new Date().toLocaleDateString(lang === 'de' ? 'de-CH' : 'en-US')})`;
     const name = prompt(T.ui.savePrompt, defaultName);
     if (name === null) return; // Cancelled

@@ -37,17 +37,20 @@
 <main>
     <section id="generator" class="active-section">
         <div class="controls">
-            <select id="gradeSelector" onchange="updateTopicSelector(); generateSheet(true);">
-                <option value="1">1. Klasse</option>
-                <option value="2">2. Klasse</option>
-                <option value="3">3. Klasse</option>
-                <option value="4">4. Klasse</option>
-                <option value="5">5. Klasse</option>
-                <option value="6">6. Klasse</option>
-            </select>
-            <select id="topicSelector" onchange="generateSheet(true)">
-                <!-- Options populated by JS -->
-            </select>
+            <!-- New Tabs & Chips Layout for Generator -->
+            <div class="nav-section-title" id="labelGrade">Klasse:</div>
+            <div id="gradeTabs" class="grade-tabs-container">
+                <!-- Grade Tabs Injected JS -->
+            </div>
+
+            <div class="nav-section-title" id="labelTopic">Aufgaben:</div>
+            <div id="topicChips" class="topic-chips-container" style="margin-bottom: 20px;">
+                <!-- Topic Chips Injected JS -->
+            </div>
+
+            <!-- Removed old Selectors -->
+            <select id="gradeSelector" style="display:none"></select>
+            <select id="topicSelector" style="display:none"></select>
             <div style="display:flex; align-items:center;">
                 <label for="pageCount" id="labelCount"
                     style="font-weight:bold; margin-right:5px; font-family:'Nunito',sans-serif;">Anzahl:</label>
@@ -78,13 +81,9 @@
             </div>
         </div>
 
-        <div class="controls" id="customOptions"
-            style="display:none; flex-direction:column; align-items:flex-start; margin-top:-1rem; font-family:'Nunito',sans-serif;">
-            <div id="customTitle" style="margin-bottom:10px; font-weight:bold;">Wähle die Aufgabentypen:</div>
-            <div id="checkboxContainer" style="display:flex; flex-wrap:wrap; gap:15px;">
-                <!-- Checkboxes populated by JS -->
-            </div>
-        </div>
+        <!-- Custom Options Block Removed (Replaced by Chips) -->
+        <div id="customOptions" style="display:none;"></div>
+        <div id="checkboxContainer" style="display:none;"></div>
 
         <div class="controls" id="marriedOptions"
             style="display:none; align-items:center; margin-top:-1rem; font-family:'Nunito',sans-serif; gap:10px;">
@@ -121,42 +120,43 @@
 
     <section id="builder">
         <div class="controls no-print">
-            <h2 id="builderTitle" style="font-family:'Nunito',sans-serif; margin-bottom: 20px;">Individueller Baukasten
-            </h2>
+
             <div class="builder-top-controls"
                 style="display:flex; flex-wrap:wrap; gap:15px; align-items:center; width:100%;">
-                <div class="control-group">
-                    <label for="builderTitleInput">Titel:</label>
-                    <input type="text" id="builderTitleInput" placeholder="Eigener Titel"
-                        style="padding: 8px; border-radius: 8px; border: 1px solid #ccc; font-family:'Nunito',sans-serif;">
-                </div>
-                <div class="control-group">
-                    <label for="builderGradeSelector" id="labelBuilderGrade">Klasse:</label>
-                    <select id="builderGradeSelector" onchange="window.updateBuilderTopics()"></select>
-                </div>
-                <div class="control-group">
-                    <label for="builderTopicSelector" id="labelBuilderTopic">Aufgabe:</label>
-                    <select id="builderTopicSelector" onchange="window.updateBuilderTopicOptions()"></select>
-                </div>
-                <div id="builderTopicOptions" class="builder-topic-options"
-                    style="display:flex; gap:15px; align-items:center;">
-                    <!-- Dynamic options will be inserted here -->
-                </div>
 
-                <div style="display:flex; gap:10px; margin-left:auto;">
-                    <button class="btn-generate" id="btnAddElement" onclick="window.addProblemToBuilder()"
-                        style="background: var(--secondary-color);">➕ Aufgabe hinzufügen</button>
-                    <button class="btn-print" id="btnPrintBuilder" onclick="window.printSheet()">🖨️ Drucken</button>
-                </div>
             </div>
-            <div class="builder-actions-secondary" style="display:flex; gap:10px; margin-top:15px;">
-                <button class="btn-generate" id="btnRefreshBuilder" onclick="window.refreshBuilderSeed()"
-                    style="background: #3498db; padding: 8px 16px; font-size: 0.9rem;">🔄 Neu würfeln</button>
-                <button class="btn-save" id="btnCopyBuilderLink" onclick="window.copyBuilderLink()"
-                    style="background: #27ae60; padding: 8px 16px; font-size: 0.9rem;">🔗 Link kopieren</button>
-                <button class="btn-saved" id="btnClearBuilderSheet" onclick="window.clearBuilder()"
-                    style="background: #e74c3c; padding: 8px 16px; font-size: 0.9rem;">🗑️ Leeren</button>
+
+            <!-- Builder Navigation -->
+            <div style="width: 100%; margin-top: 15px;">
+
+                <div id="builderGradeTabs" class="grade-tabs-container"></div>
+
+
+                <div id="builderTopicChips" class="topic-chips-container"></div>
             </div>
+
+            <!-- Hidden Selectors for compatibility if needed (but we will refactor logic) -->
+            <select id="builderGradeSelector" style="display:none"></select>
+            <select id="builderTopicSelector" style="display:none"></select>
+            <div id="builderTopicOptions" class="builder-topic-options"
+                style="display:flex; gap:15px; align-items:center;">
+                <!-- Dynamic options will be inserted here -->
+            </div>
+
+            <div style="display:flex; gap:10px; margin-left:auto;">
+                <button class="btn-generate" id="btnAddElement" onclick="window.addProblemToBuilder()"
+                    style="background: var(--secondary-color);">➕ Aufgabe hinzufügen</button>
+                <button class="btn-print" id="btnPrintBuilder" onclick="window.printSheet()">🖨️ Drucken</button>
+            </div>
+        </div>
+        <div class="builder-actions-secondary" style="display:flex; gap:10px; margin-top:15px;">
+            <button class="btn-generate" id="btnRefreshBuilder" onclick="window.refreshBuilderSeed()"
+                style="background: #3498db; padding: 8px 16px; font-size: 0.9rem;">🔄 Neu würfeln</button>
+            <button class="btn-save" id="btnCopyBuilderLink" onclick="window.copyBuilderLink()"
+                style="background: #27ae60; padding: 8px 16px; font-size: 0.9rem;">🔗 Link kopieren</button>
+            <button class="btn-saved" id="btnClearBuilderSheet" onclick="window.clearBuilder()"
+                style="background: #e74c3c; padding: 8px 16px; font-size: 0.9rem;">🗑️ Leeren</button>
+        </div>
         </div>
         <div id="builderSheetContainer" class="builder-sheet-container">
             <div id="builderSheetsWrapper">
