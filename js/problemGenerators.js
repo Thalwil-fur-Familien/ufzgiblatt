@@ -2,7 +2,7 @@ import { getRandomInt, seededRandom, gcd } from './mathUtils.js';
 import { TRANSLATIONS } from './translations.js';
 import { LAYOUT_CONFIG } from './problemConfig.js';
 
-export const PAGE_CAPACITY = 80;
+export const PAGE_CAPACITY = 60; // 15 rows × 4 columns
 
 export function generateProblemsData(type, availableTopics = [], allowedCurrencies = ['CHF'], options = {}, lang = 'de', customCapacity = PAGE_CAPACITY) {
     const data = [];

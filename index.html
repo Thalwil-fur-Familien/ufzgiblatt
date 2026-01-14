@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ufzgiblatt.ch</title>
-    <link rel="stylesheet" href="style.css?v=final">
+    <link rel="stylesheet" href="style.css?v=spacing">
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script src="js/analytics.js"></script>
 </head>
@@ -53,7 +53,7 @@
                 <label for="pageCount" id="labelCount"
                     style="font-weight:bold; margin-right:5px; font-family:'Nunito',sans-serif;">Anzahl:</label>
                 <input type="number" id="pageCount" value="1" min="1" max="50" oninput="generateSheet(true)"
-                    style="width:50px; padding:12px; border-radius:12px; border:2px solid #ddd; font-family:'Nunito',sans-serif; font-size:1rem; outline:none; text-align:center;">
+                    style="width:70px; padding:8px; border-radius:12px; border:2px solid #ddd; font-family:'Nunito',sans-serif; font-size:1rem; outline:none; text-align:center;">
             </div>
             <div style="display:flex; align-items:center; gap: 5px;">
                 <label for="densitySlider" id="labelDensity"
@@ -67,16 +67,23 @@
                     onchange="renderCurrentState(); updateURLState();">
                 <label for="solutionToggle" id="labelSolutions">Lösungsblatt</label>
             </div>
-            <button class="btn-generate" id="btnGenerate" onclick="generateSheet()">✨ Neu erstellen</button>
-            <button class="btn-save" id="btnSave" onclick="saveCurrentState()">💾 Speichern</button>
-            <button class="btn-saved" id="btnSaved" onclick="toggleSavedModal()">📂 Gespeichert</button>
-            <!-- Check button removed in favor of real-time validation -->
-            <button class="btn-print" id="btnPrint" onclick="printSheet()">🖨️ Drucken</button>
             <div style="display:flex; align-items:center;">
                 <input type="checkbox" id="showQR" checked style="width:20px; height:20px; margin-right:5px;"
                     onchange="toggleQRVisibility()">
                 <label for="showQR" id="labelShowQR">QR-Code anzeigen</label>
             </div>
+            <div class="creator-actions-secondary"
+                style="display:flex; flex-direction:column; gap:10px; width:100%; margin-top:15px;">
+                <button class="btn-generate" id="btnGenerate" onclick="generateSheet()" style="background: #3498db;">🔄
+                    Neu würfeln</button>
+                <button class="btn-save" id="btnSave" onclick="saveCurrentState()">💾 Speichern</button>
+                <button class="btn-saved" id="btnSaved" onclick="toggleSavedModal()">📂 Laden</button>
+                <button class="btn-save" id="btnCopyLink" onclick="window.copyLink()" style="background: #27ae60;">🔗
+                    Link kopieren</button>
+                <!-- Check button removed in favor of real-time validation -->
+                <button class="btn-print" id="btnPrint" onclick="printSheet()">🖨️ Drucken</button>
+            </div>
+
             <div class="controls-group" id="marriedOptions"
                 style="display:none; align-items:center; font-family:'Nunito',sans-serif; gap:10px; margin-top: 10px; width: 100%;">
                 <input type="checkbox" id="marriedMultiplesOf10" style="width:20px; height:20px;"
@@ -114,18 +121,13 @@
     <section id="builder">
         <div class="controls no-print">
 
-            <div class="builder-top-controls"
-                style="display:flex; flex-wrap:wrap; gap:15px; align-items:center; width:100%;">
 
-            </div>
 
             <!-- Builder Navigation -->
-            <div style="width: 100%; margin-top: 15px;">
-                <div class="nav-section-title" id="builderLabelGrade">Klasse:</div>
+            <div style="width: 100%;">
                 <div id="builderGradeTabs" class="grade-tabs-container"></div>
 
 
-                <div class="nav-section-title" id="builderLabelTopic">Aufgaben:</div>
                 <div id="builderTopicChips" class="topic-chips-container"></div>
             </div>
 
@@ -137,18 +139,33 @@
                 <!-- Dynamic options will be inserted here -->
             </div>
 
-            <div style="display:flex; gap:10px; margin-left:auto;">
+            <div style="display:flex; flex-direction:column; gap:10px; margin-left:auto;">
                 <button class="btn-generate" id="btnAddElement" onclick="window.addProblemToBuilder()"
                     style="background: var(--secondary-color);">➕ Aufgabe hinzufügen</button>
-                <button class="btn-print" id="btnPrintBuilder" onclick="window.printSheet()">🖨️ Drucken</button>
+                <button class="btn-saved" id="btnClearBuilderSheet" onclick="window.clearBuilder()"
+                    style="background: #e74c3c; padding: 8px 16px; font-size: 0.9rem;">🗑️ Leeren</button>
+
+                <div style="display:flex; align-items:center; margin-top: 5px;">
+                    <input type="checkbox" id="builderSolutionToggle" style="width:20px; height:20px; margin-right:5px;"
+                        onchange="renderBuilderSheet(); updateURLState();">
+                    <label for="builderSolutionToggle"
+                        style="font-family:'Nunito',sans-serif; cursor:pointer;">Lösungsblatt</label>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    <input type="checkbox" id="builderShowQR" checked style="width:20px; height:20px; margin-right:5px;"
+                        onchange="renderBuilderSheet(); updateURLState();">
+                    <label for="builderShowQR" style="font-family:'Nunito',sans-serif; cursor:pointer;">QR-Code
+                        anzeigen</label>
+                </div>
             </div>
             <div class="builder-actions-secondary" style="display:flex; gap:10px; margin-top:15px;">
                 <button class="btn-generate" id="btnRefreshBuilder" onclick="window.refreshBuilderSeed()"
                     style="background: #3498db; padding: 8px 16px; font-size: 0.9rem;">🔄 Neu würfeln</button>
+                <button class="btn-save" id="btnSaveBuilder" onclick="saveCurrentState()">💾 Speichern</button>
+                <button class="btn-saved" id="btnLoadBuilder" onclick="toggleSavedModal()">📂 Laden</button>
                 <button class="btn-save" id="btnCopyBuilderLink" onclick="window.copyBuilderLink()"
                     style="background: #27ae60; padding: 8px 16px; font-size: 0.9rem;">🔗 Link kopieren</button>
-                <button class="btn-saved" id="btnClearBuilderSheet" onclick="window.clearBuilder()"
-                    style="background: #e74c3c; padding: 8px 16px; font-size: 0.9rem;">🗑️ Leeren</button>
+                <button class="btn-print" id="btnPrintBuilder" onclick="window.printSheet()">🖨️ Drucken</button>
             </div>
         </div>
         <div id="builderSheetContainer" class="builder-sheet-container">
