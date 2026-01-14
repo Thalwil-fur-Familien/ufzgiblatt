@@ -11,11 +11,12 @@
     --sheet-padding-top: 18mm;
     --sheet-logo-top: 5mm;
     --sheet-qr-top: 5mm;
-    --header-field-shift: 30px;
+    --header-field-shift: 40px;
+    /* Vertical position of Name/Date fields */
     --logo-blue: #1b3b5a;
     --logo-green: #91c13d;
-    --unit-height: 12.8mm;
-    /* Standard height for 1 problem unit (1/20th of worksheet) */
+    --unit-height: 12mm;
+    /* Standard height for 1 problem unit (18 rows + extra bottom padding) */
 }
 
 * {
@@ -278,19 +279,28 @@ body {
 }
 
 /* Worksheet Grid Visualization in Builder Mode */
+/* Standardize Builder Grid */
 .builder-sheet-container .problem-grid {
     position: relative;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    grid-auto-flow: initial;
+    /* Disable for explicit placement */
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
     border-radius: 4px;
     padding: 0;
-    gap: 0;
-    /* Remove gaps for Excel-like grid alignment */
     transition: background-color 0.4s ease, border-color 0.4s ease;
     height: auto;
-    min-height: 100%;
     background-color: transparent;
-    /* improved hit testing */
-    grid-template-rows: repeat(20, var(--unit-height));
+}
+
+/* Ensure title doesn't show outline on focus */
+.sheet h1[contenteditable]:focus {
+    outline: none !important;
+    border-bottom: 1px dashed #ccc;
+    /* Optional: keep a subtle underline or remove total? User said "frame". */
+    /* Let's try removing it all or just keeping cursor */
+    border: none !important;
 }
 
 
@@ -621,6 +631,15 @@ section.active-section {
 
 
 
+/* Enforce vertical stacking for sheets on all screens */
+#sheetsWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+
 /* Control Panel (Screen Only) */
 .controls {
     text-align: center;
@@ -631,14 +650,17 @@ section.active-section {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
     display: flex;
-    gap: 1rem;
+    gap: 10px;
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     width: 100%;
-    max-width: 800px;
+    max-width: 900px;
+    /* SLightly wider to fit buttons */
     border: 1px solid rgba(255, 255, 255, 0.5);
 }
+
+
 
 .word-type-btn {
     padding: 8px 16px;
@@ -728,6 +750,18 @@ button {
     color: white;
 }
 
+/* Force Control Buttons to match Builder Dimensions */
+.controls button {
+    padding: 8px 16px !important;
+    font-size: 0.9rem !important;
+    min-width: 240px !important;
+    height: 38px !important;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 !important;
+}
+
 .btn-secondary {
     background: #6c757d;
     color: white;
@@ -796,7 +830,10 @@ button:hover {
 .sheet {
     background: var(--sheet-bg);
     width: 210mm;
+    height: 287mm;
+    /* Fixed height for consistency */
     min-height: 287mm;
+    max-height: 287mm;
     padding: var(--sheet-padding-top) 10mm 10mm;
     box-sizing: border-box;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -808,6 +845,8 @@ button:hover {
     /* Center on screen */
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    /* Prevent content from overflowing */
 }
 
 .sheet-header {
@@ -840,31 +879,46 @@ button:hover {
 h1 {
     text-align: center;
     color: var(--primary-color);
-    margin-bottom: 5px;
+    margin-bottom: 10px;
     font-size: 22pt;
-    margin-top: 0;
+    margin-top: 5px;
+    height: 60px;
+    /* Fixed height so wrapping doesn't push grid */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.1;
 }
 
 .problem-grid {
     display: grid;
+    width: 100%;
+    box-sizing: border-box;
     grid-template-columns: repeat(4, 1fr);
-    column-gap: 20px;
+    column-gap: 12px;
     row-gap: 0;
     /* Unit-based rows handle spacing */
-    grid-auto-rows: var(--unit-height);
+    grid-template-rows: repeat(15, var(--unit-height));
     grid-auto-flow: dense;
-    flex: 1;
-    align-content: space-evenly;
+    align-content: start;
+    /* Changed from space-evenly for consistent layout */
+    margin-top: 5px;
+    /* Consistent vertical start position */
 }
 
 .problem {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    width: 100%;
+    grid-template-columns: 1fr 15px 1fr 15px 50px;
+    /* 1 Op 2 Eq Input */
     align-items: center;
-    padding: 2px 8px;
-    min-height: var(--unit-height);
+    padding: 2px;
+    /* Compact padding to prevent overflow */
+    height: 100%;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;
+    /* Allow text to show if tight */
+    gap: 2px;
 }
 
 /* --- Builder Specific Styles --- */
@@ -977,7 +1031,8 @@ h1 {
 }
 
 /* Secondary Actions Stack */
-.builder-actions-secondary {
+.builder-actions-secondary,
+.creator-actions-secondary {
     flex-direction: column;
     width: 100%;
     gap: 10px;
@@ -1017,7 +1072,8 @@ h1 {
         /* Revert to auto width on mobile/top */
     }
 
-    .builder-actions-secondary {
+    .builder-actions-secondary,
+    .creator-actions-secondary {
         flex-direction: row;
         flex-wrap: wrap;
     }
@@ -1028,10 +1084,12 @@ h1 {
     }
 }
 
-.builder-sheet-container .problem-grid {
+/* Builder Wrapper spacing */
+
+.solution-problem-wrapper {
     position: relative;
-    grid-auto-flow: initial;
-    /* Disable auto-flow for absolute positioning in builder */
+    user-select: none;
+    z-index: 5;
 }
 
 .builder-problem-wrapper {
@@ -1108,6 +1166,7 @@ h1 {
     border-color: #ef4444;
 }
 
+/* Grid removed per user request
 .builder-sheet-container .problem-grid::before {
     content: "";
     position: absolute;
@@ -1124,27 +1183,37 @@ h1 {
     border-right: 1px solid rgba(0, 0, 0, 0.05);
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
+*/
 
 .number {
-    width: 50px;
-    /* Adjusted width */
+    width: 100%;
+    /* Fill Grid Cell (1fr) */
+    font-family: 'Courier New', Courier, monospace;
+    /* Monospace for alignment */
     text-align: right;
+    margin-right: 4px;
+    /* Slight spacing from operator */
 }
 
 .operator {
-    width: 25px;
+    width: 100%;
+    /* Fill Grid Cell (15px) */
+    font-family: 'Courier New', Courier, monospace;
     text-align: center;
 }
 
 .equals {
-    width: 25px;
+    width: 100%;
+    /* Fill Grid Cell (15px) */
     text-align: center;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .answer-box {
     width: 70px;
     height: 35px;
     border: 2px solid #ccc;
+    /* Grey for screen */
     border-radius: 8px;
     background-color: #fafafa;
     display: inline-block;
@@ -1268,10 +1337,9 @@ input.answer-input.incorrect {
 .sheet-footer {
     position: absolute;
     /* Fix footer to bottom */
-    bottom: 15mm;
-    left: 0;
-    width: 100%;
-    text-align: center;
+    bottom: 10mm;
+    right: 10mm;
+    text-align: right;
     color: #888;
     font-size: 10pt;
 }
@@ -1363,6 +1431,9 @@ input.brick-input {
         width: 100% !important;
         display: block !important;
         transform: none !important;
+        padding: 0 !important;
+        /* Remove padding that causes extra page */
+        margin: 0 !important;
     }
 
     /* Ensure pyramids don't break across pages awkwardly */
@@ -1381,6 +1452,17 @@ input.brick-input {
         display: none !important;
     }
 
+    @page {
+        margin: 0;
+        size: A4 portrait;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        background: white;
+    }
+
     main,
     section,
     .section-container {
@@ -1392,10 +1474,20 @@ input.brick-input {
     }
 
     /* Print friendly inputs */
+    /* Print friendly inputs */
     input.answer-input {
-        border: 2px solid #ccc;
-        background: none;
+        border: 1px solid #ccc;
+        /* Grey to match screen */
+        /* Standard thin black line */
+        box-shadow: none;
+        background: transparent;
         color: #000;
+        border-radius: 4px;
+        /* Rounded corners for print */
+        font-family: 'Courier New', Courier, monospace;
+        width: 50px;
+        /* Fixed width matching numbers */
+        text-align: center;
     }
 
     /* Pyramid inputs are inside a bordered div, so they don't need a border */
@@ -1412,7 +1504,7 @@ input.brick-input {
     .sheet {
         box-shadow: none;
         margin: 0 auto !important;
-        width: 100% !important;
+        width: 210mm !important;
         max-width: 210mm;
         height: auto;
         min-height: 286mm;
@@ -1469,6 +1561,65 @@ input.brick-input {
 
     .marked-adj {
         border-bottom: 3px solid green !important;
+    }
+
+    .sheet-footer {
+        color: #000 !important;
+        display: block !important;
+        z-index: 2000 !important;
+        background: transparent !important;
+        /* Safer margins for print */
+        bottom: 5mm !important;
+        right: 5mm !important;
+    }
+
+    .builder-sheet-container .problem-grid {
+        border: none !important;
+        background: none !important;
+        background-image: none !important;
+    }
+
+    .problem,
+    .builder-problem-wrapper {
+        border: none !important;
+        box-shadow: none !important;
+        background: none !important;
+        background-image: none !important;
+    }
+
+    /* Aggressive Grid Artifact Removal */
+    .sheet,
+    .sheet * {
+        background-image: none !important;
+    }
+
+    /* Ensure no extra page */
+    .sheet {
+        /* Consolidated sheet styles */
+        box-shadow: none !important;
+        margin: 0 !important;
+        width: 210mm !important;
+        max-width: 210mm !important;
+        height: 287mm !important;
+        /* Match screen min-height exactly */
+        min-height: 287mm !important;
+        max-height: 287mm !important;
+        page-break-after: auto !important;
+        /* Changed from always */
+        break-after: auto !important;
+        border: none !important;
+        overflow: hidden !important;
+        page-break-inside: avoid !important;
+        /* Padding handled inside */
+        padding: 18mm 10mm 10mm !important;
+        /* Match screen padding-top */
+        position: relative !important;
+    }
+
+    /* Only add page break between multiple sheets, not after last one */
+    .sheet:not(:last-child) {
+        page-break-after: always !important;
+        break-after: page !important;
     }
 }
 

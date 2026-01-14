@@ -16,10 +16,10 @@ const TOPIC_OPTIONS = {
         { key: 'marriedMultiplesOf10', type: 'checkbox', labelKey: 'marriedMultiplesOf10' }
     ],
     'money_10': [
-        { key: 'currency', type: 'select', options: ['CHF', 'EUR', 'USD', 'GBP'], labelKey: 'currency' }
+        { key: 'currency', type: 'select', options: ['CHF', 'EUR'], labelKey: 'currency' }
     ],
     'money_100': [
-        { key: 'currency', type: 'select', options: ['CHF', 'EUR', 'USD', 'GBP'], labelKey: 'currency' }
+        { key: 'currency', type: 'select', options: ['CHF', 'EUR'], labelKey: 'currency' }
     ]
 };
 
@@ -188,10 +188,14 @@ function renderBuilderTopicOptions() {
     if (!optionsContainer) return;
     optionsContainer.innerHTML = '';
 
-    if (!builderCurrentTopic) return;
+    if (!builderCurrentTopic) {
+        optionsContainer.style.display = 'none';
+        return;
+    }
 
     const optionsDef = TOPIC_OPTIONS[builderCurrentTopic];
-    if (optionsDef) {
+    if (optionsDef && optionsDef.length > 0) {
+        optionsContainer.style.display = 'flex';
         optionsDef.forEach(opt => {
             const group = document.createElement('div');
             group.className = 'option-group';
@@ -222,6 +226,8 @@ function renderBuilderTopicOptions() {
             }
             optionsContainer.appendChild(group);
         });
+    } else {
+        optionsContainer.style.display = 'none';
     }
 }
 
@@ -287,7 +293,9 @@ function serializeBuilderState() {
         delete cleanData.weight;
         delete cleanData.span;
         delete cleanData.moduleType;
-        delete cleanData.type; // Usually 'standard', but redundant if we have p.type
+        if (cleanData.type === 'standard') {
+            delete cleanData.type;
+        }
 
         return {
             t: p.type,
@@ -306,7 +314,9 @@ function serializeBuilderState() {
         t: builderTitleText,
         g: builderCurrentGrade,
         tp: builderCurrentTopic,
-        o: collectBuilderOptions()
+        o: collectBuilderOptions(),
+        s: document.getElementById('builderSolutionToggle')?.checked ? 1 : 0,
+        q: document.getElementById('builderShowQR')?.checked ? 1 : 0
     };
 
     const json = JSON.stringify(stateObj);
@@ -358,6 +368,16 @@ export function loadBuilderState(hash) {
                 // Render controls to ensure options exist in DOM
                 renderBuilderTabs();
                 renderBuilderChips();
+
+                // Restore Global Builder Settings
+                if (loaded.s !== undefined) {
+                    const sol = document.getElementById('builderSolutionToggle');
+                    if (sol) sol.checked = !!loaded.s;
+                }
+                if (loaded.q !== undefined) {
+                    const qr = document.getElementById('builderShowQR');
+                    if (qr) qr.checked = !!loaded.q;
+                }
 
                 // Restore options
                 if (loaded.o) {
@@ -459,7 +479,8 @@ window.removeProblem = function (id) {
 
 
 
-function renderBuilderSheet() {
+export function renderBuilderSheet() {
+    window.renderBuilderSheet = renderBuilderSheet;
     try {
         const wrapper = document.getElementById('builderSheetsWrapper');
         if (!wrapper) return;
@@ -498,7 +519,10 @@ function renderBuilderSheet() {
             currentLoad += p.weight;
         });
 
-        pages.forEach((pageItems, pageIdx) => {
+        const showSolutions = document.getElementById('builderSolutionToggle')?.checked || false;
+        const showQR = document.getElementById('builderShowQR')?.checked ?? true;
+
+        const renderSingleSheet = (pageItems, pageIdx, isSolution) => {
             const problems = pageItems.map(p => p.problemData);
             const pageInfo = { current: pageIdx + 1, total: pages.length };
 
@@ -508,14 +532,22 @@ function renderBuilderSheet() {
                 title = builderTitleText;
             }
 
-            // Use the existing createSheetElement but we'll wrap the problems to make them draggable
-            const sheet = createSheetElement(title, problems, false, pageInfo, true);
+            // Create the base sheet
+            const sheet = createSheetElement(title, problems, isSolution, pageInfo, !isSolution);
+
+            // Sync QR Code visibility
+            const qr = sheet.querySelector('.qr-code-container');
+            if (qr) {
+                if (showQR) qr.classList.remove('qr-hidden');
+                else qr.classList.add('qr-hidden');
+            }
+
             const gridEl = sheet.querySelector('.problem-grid');
 
-            // Auto-Packer State
-            const gridMap = Array(20).fill().map(() => Array(4).fill(false));
+            // Auto-Packer State (needed for auto-placement during task pass)
+            const gridMap = Array(15).fill().map(() => Array(4).fill(false));
             const checkFit = (r, c, w, h) => {
-                if (r < 1 || c < 1 || r + h - 1 > 20 || c + w - 1 > 4) return false;
+                if (r < 1 || c < 1 || r + h - 1 > 15 || c + w - 1 > 4) return false;
                 for (let i = 0; i < h; i++) {
                     for (let j = 0; j < w; j++) {
                         if (gridMap[r + i - 1][c + j - 1]) return false;
@@ -526,12 +558,12 @@ function renderBuilderSheet() {
             const markGrid = (r, c, w, h) => {
                 for (let i = 0; i < h; i++) {
                     for (let j = 0; j < w; j++) {
-                        if (r + i - 1 < 20 && c + j - 1 < 4) gridMap[r + i - 1][c + j - 1] = true;
+                        if (r + i - 1 < 15 && c + j - 1 < 4) gridMap[r + i - 1][c + j - 1] = true;
                     }
                 }
             };
 
-            // 1. Mark explicit items first
+            // Pre-mark explicit items
             pageItems.forEach(p => {
                 if (p.gridX !== undefined && p.gridY !== undefined) {
                     const w = p.problemData.span || 4;
@@ -540,32 +572,27 @@ function renderBuilderSheet() {
                 }
             });
 
-            // Find all .problem elements and wrap/enhance them
+            // Process problems
             const problemElements = sheet.querySelectorAll('.problem');
             problemElements.forEach((el, idx) => {
                 const pData = pageItems[idx];
                 const w = pData.problemData.span || 4;
                 const h = Math.max(1, Math.round(pData.weight / (w || 1)));
 
-                // Resolve Position
                 let gridX = pData.gridX;
                 let gridY = pData.gridY;
 
                 if (gridX === undefined || gridY === undefined) {
-                    // Auto-Place: Find first available spot
                     let placed = false;
-                    for (let r = 1; r <= 20; r++) {
+                    for (let r = 1; r <= 15; r++) {
                         for (let c = 1; c <= 4; c++) {
                             if (checkFit(r, c, w, h)) {
                                 gridX = c;
                                 gridY = r;
                                 markGrid(r, c, w, h);
                                 placed = true;
-
-                                // PERSIST: Save these coordinates to the item state immediately
                                 pData.gridX = gridX;
                                 pData.gridY = gridY;
-
                                 break;
                             }
                         }
@@ -573,76 +600,80 @@ function renderBuilderSheet() {
                     }
                 }
 
-                // Wrap in a draggable container
-                const dragContainer = document.createElement('div');
-                dragContainer.className = 'builder-problem-wrapper';
-                dragContainer.draggable = true;
-                dragContainer.dataset.id = pData.id;
-
-                // Transfer span/row from problem to wrapper (backup)
-                dragContainer.style.gridColumn = el.style.gridColumn;
-                dragContainer.style.gridRow = el.style.gridRow;
-
-                // Set explicit grid area (ALWAYS, if we found a spot)
-                if (gridX !== undefined && gridY !== undefined) {
-                    dragContainer.style.gridArea = `${gridY} / ${gridX} / span ${h} / span ${w}`;
-                    // Important: Store transient position on DOM for freezePlacement to find if needed?
-                    // actually freezePlacement uses getBoundingClientRect so it respects this style.
+                // Wrap in a container to enforce grid position
+                const wrapper = document.createElement('div');
+                wrapper.className = isSolution ? 'solution-problem-wrapper' : 'builder-problem-wrapper';
+                if (!isSolution) {
+                    wrapper.draggable = true;
+                    wrapper.dataset.id = pData.id;
                 }
 
-                // Add Remove Button
-                const remBtn = document.createElement('button');
-                remBtn.className = 'btn-remove-problem';
-                remBtn.innerHTML = '✖';
-                remBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    window.removeProblem(pData.id);
-                };
-                dragContainer.appendChild(remBtn);
+                if (gridX !== undefined && gridY !== undefined) {
+                    wrapper.style.gridArea = `${gridY} / ${gridX} / span ${h} / span ${w}`;
+                }
 
-                // Add Duplicate Button
-                const dupBtn = document.createElement('button');
-                dupBtn.className = 'btn-duplicate-problem';
-                dupBtn.innerHTML = '📑'; // Icon for copy/duplicate
-                dupBtn.title = 'Duplizieren';
-                dupBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    window.duplicateProblem(pData.id);
-                };
-                dragContainer.appendChild(dupBtn);
+                if (!isSolution) {
+                    // Add Control Buttons for Task Sheet
+                    const remBtn = document.createElement('button');
+                    remBtn.className = 'btn-remove-problem';
+                    remBtn.innerHTML = '✖';
+                    remBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        window.removeProblem(pData.id);
+                    };
+                    wrapper.appendChild(remBtn);
 
-                // Move problem element into drag container
-                el.parentNode.insertBefore(dragContainer, el);
-                dragContainer.appendChild(el);
+                    const dupBtn = document.createElement('button');
+                    dupBtn.className = 'btn-duplicate-problem';
+                    dupBtn.innerHTML = '📑';
+                    dupBtn.title = 'Duplizieren';
+                    dupBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        window.duplicateProblem(pData.id);
+                    };
+                    wrapper.appendChild(dupBtn);
 
-                // Drag Events
-                dragContainer.addEventListener('dragstart', handleDragStart);
-                dragContainer.addEventListener('dragenter', handleDragEnter);
-                dragContainer.addEventListener('dragover', handleDragOver);
-                dragContainer.addEventListener('dragleave', handleDragLeave);
-                dragContainer.addEventListener('drop', handleDrop);
-                dragContainer.addEventListener('dragend', handleDragEnd);
+                    // Add Events
+                    wrapper.addEventListener('dragstart', handleDragStart);
+                    wrapper.addEventListener('dragenter', handleDragEnter);
+                    wrapper.addEventListener('dragover', handleDragOver);
+                    wrapper.addEventListener('dragleave', handleDragLeave);
+                    wrapper.addEventListener('drop', handleDrop);
+                    wrapper.addEventListener('dragend', handleDragEnd);
+                }
+
+                el.parentNode.insertBefore(wrapper, el);
+                wrapper.appendChild(el);
             });
 
-
-
-            if (gridEl) {
+            if (gridEl && !isSolution) {
                 gridEl.dataset.pageIdx = pageIdx;
                 gridEl.addEventListener('dragover', handleDragOver);
                 gridEl.addEventListener('drop', handleDrop);
                 gridEl.addEventListener('dragleave', handleDragLeaveGrid);
 
-                // Add drop indicator
                 if (!gridEl.querySelector('.drop-indicator')) {
                     const indicator = document.createElement('div');
                     indicator.className = 'drop-indicator';
-                    // Important: ignore pointer events so we can drop "through" it onto the grid
                     indicator.style.pointerEvents = 'none';
                     gridEl.appendChild(indicator);
                 }
             }
-            wrapper.appendChild(sheet);
+
+            return sheet;
+        };
+
+        // Pass 1: Task Sheets (Interactive)
+        pages.forEach((pageItems, pageIdx) => {
+            wrapper.appendChild(renderSingleSheet(pageItems, pageIdx, false));
         });
+
+        // Pass 2: Solution Sheets (Static)
+        if (showSolutions) {
+            pages.forEach((pageItems, pageIdx) => {
+                wrapper.appendChild(renderSingleSheet(pageItems, pageIdx, true));
+            });
+        }
         updateURLState();
     } catch (err) {
         console.error('Render Error:', err);

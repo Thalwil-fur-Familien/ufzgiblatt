@@ -2,7 +2,7 @@ import { globalSeed, setSeed } from './js/mathUtils.js';
 export { globalSeed, setSeed };
 import { generateProblemsData as genData } from './js/problemGenerators.js?v=4';
 import { TRANSLATIONS, getPreferredLanguage, setPreferredLanguage } from './js/translations.js';
-import { loadBuilderState, initBuilder, getBuilderState, hasBuilderContent } from './js/worksheet-builder.js?v=final';
+import { loadBuilderState, initBuilder, getBuilderState, hasBuilderContent, renderBuilderSheet } from './js/worksheet-builder.js?v=final';
 import { getURLParams, getPageFromHash } from './js/urlUtils.js';
 
 // Expose to window for inline HTML handlers
@@ -13,6 +13,7 @@ window.updateURLState = updateURLState;
 window.toggleQRVisibility = toggleQRVisibility;
 window.validateInput = validateInput;
 window.switchLanguage = switchLanguage;
+window.renderBuilderSheet = renderBuilderSheet;
 
 export let lang = getPreferredLanguage();
 window.lang = lang; // Expose for easy access in other modules
@@ -91,16 +92,33 @@ function printSheet() {
     window.print();
 }
 window.printSheet = printSheet;
+
+window.copyLink = function () {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById('btnCopyLink');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✅ Kopiert!';
+        setTimeout(() => {
+            // We restore from Translation if available, or just keeping simpler for now
+            // Actually let's use the T.ui.builder.copyLink to be safe or originalText
+            btn.innerHTML = originalText;
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+    });
+};
+
 function applyTranslations() {
     document.title = T.ui.title;
     const ids = {
-        'labelSolutions': T.ui.solutionsLabel,
+        'labelSolutions': T.ui.labelSolutions,
         'btnGenerate': T.ui.btnGenerate,
         'btnSave': T.ui.btnSave,
         'btnSaved': T.ui.btnSaved,
         'btnPrint': T.ui.btnPrint,
         'btnPlay': T.ui.btnPlay,
-        'labelShowQR': T.ui.labelShowQR,
+        'labelShowQR': T.ui.labelShowQR || 'QR-Code anzeigen',
         'customTitle': T.ui.customTitle,
         'labelMultiplesOf10': T.ui.multiplesOf10,
         'labelCurrency': T.ui.currency,
@@ -307,11 +325,17 @@ function generateSheet(keepSeed = false) {
     // We can join titles? Or just "Mathe-Mix"?
     // The previous code grabbed text from selector.
     // Let's approximate:
-    let currentTitle;
+    // Use global currentTitle variable (not local)
+
+    // Helper function to remove emojis from text
+    const removeEmojis = (text) => {
+        return text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]|[\u{1F100}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F910}-\u{1F96B}]|[\u{1F980}-\u{1F9E0}]/gu, '').trim();
+    };
+
     if (type === 'custom') {
-        currentTitle = T.ui.individuelleAufgaben || "Mix";
+        currentTitle = removeEmojis(T.ui.individuelleAufgaben || "Mix");
     } else {
-        currentTitle = T.topics[type] || "Aufgaben";
+        currentTitle = removeEmojis(T.topics[type] || "Aufgaben");
     }
 
     // 2. Determine Page Count
@@ -333,7 +357,7 @@ function generateSheet(keepSeed = false) {
         };
 
         const density = parseInt(document.getElementById('densitySlider').value) || 100;
-        const capacity = Math.round(80 * (density / 100)); // 80 is PAGE_CAPACITY in problemGenerators
+        const capacity = Math.round(60 * (density / 100)); // 60 is PAGE_CAPACITY in problemGenerators
 
         currentSheetsData.push(genData(type, availableTopics, allowedCurrencies, options, lang, capacity));
     }
@@ -1395,7 +1419,7 @@ export function createSheetElement(titleText, problemDataList, isSolution, pageI
     const header = document.createElement('div');
     header.className = 'sheet-header';
     header.innerHTML = `
-                                                                                    <div style="width:200px;"></div> <!-- Spacer for Logo -->
+                                                                                    <div style="width:190px;"></div> <!-- Spacer for Logo (reduced from 200px) -->
                                                                                     <div style="display:flex; gap: 40px;">
                                                                                          <div class="header-field">${T.ui.headerName} <span class="line"></span></div>
                                                                                          <div class="header-field">${T.ui.headerDate} <span class="line"></span></div>
@@ -1411,11 +1435,14 @@ export function createSheetElement(titleText, problemDataList, isSolution, pageI
 
     if (isEditable && !isSolution) {
         h1.contentEditable = "true";
-        h1.style.outline = "1px dashed #ccc"; // visual cue
+        // h1.style.outline = "1px dashed #ccc"; // Removed per user request
         h1.style.minWidth = "200px";
         h1.oninput = function () {
+            // Support both builder and generator title updates
             if (window.updateBuilderTitle) {
                 window.updateBuilderTitle(this.textContent);
+            } else if (window.updateGeneratorTitle) {
+                window.updateGeneratorTitle(this.textContent);
             }
         };
         h1.onkeydown = function (e) {
@@ -1463,7 +1490,7 @@ export function createSheetElement(titleText, problemDataList, isSolution, pageI
         sheetDiv.insertBefore(legend, grid);
     }
 
-    // Layout adjustments: Removed Mascot and Footer per user request NO WAIT - User wants Page Numbers now.
+    // Footer with Page Number
     const footer = document.createElement('div');
     footer.className = 'sheet-footer';
 
@@ -1494,18 +1521,25 @@ export function renderCurrentState() {
 
     // Loop through all generated sheets
     currentSheetsData.forEach((sheetProblems, index) => {
-        // Render Worksheet
+        // Render Worksheet (editable title)
         const pageInfo = { current: index + 1, total: currentSheetsData.length };
-        const worksheet = createSheetElement(currentTitle, sheetProblems, false, pageInfo);
+        const worksheet = createSheetElement(currentTitle, sheetProblems, false, pageInfo, true); // Added isEditable
         wrapper.appendChild(worksheet);
 
         // Render Solution Sheet immediately after, if requested
         if (showSolutions) {
+            const solutionSheet = createSheetElement(currentTitle, sheetProblems, true, pageInfo);
             wrapper.appendChild(solutionSheet);
         }
     });
     updateURLState();
 }
+
+// Function to update generator title when edited
+window.updateGeneratorTitle = function (newTitle) {
+    currentTitle = newTitle;
+    updateURLState();
+};
 
 function validateInput(input) {
     const expectedStr = input.dataset.expected.trim();
@@ -1659,6 +1693,23 @@ window.setupFocusNavigation = function () {
 function init() {
     applyTranslations();
     updateLanguageButtons();
+
+    // Add explicit event listeners for language switching
+    const deBtn = document.getElementById('lang-de-header');
+    if (deBtn) {
+        deBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchLanguage('de');
+        });
+    }
+
+    const enBtn = document.getElementById('lang-en-header');
+    if (enBtn) {
+        enBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchLanguage('en');
+        });
+    }
     try {
         // 1. Initial UI Setup (Defaults)
         // Grade 2 is default in HTML
@@ -1977,7 +2028,13 @@ window.saveCurrentState = function () {
 
     const topics = Array.from(selectedGeneratorTopics);
     let topicName;
-    if (topics.length > 1) {
+
+    // Check if we are in Builder mode (roughly)
+    const isBuilder = window.location.hash.includes('builder') || document.getElementById('builder').classList.contains('active-section');
+
+    if (isBuilder) {
+        topicName = T.ui.builder.title || "Baukasten";
+    } else if (topics.length > 1) {
         topicName = T.ui.individuelleAufgaben || "Mix";
     } else if (topics.length === 1) {
         topicName = T.topics[topics[0]] || topics[0];
