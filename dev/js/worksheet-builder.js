@@ -1,8 +1,10 @@
-import { globalSeed, setSeed, T, GRADE_TOPICS_STRUCTURE, createSheetElement, updateURLState } from '../script.js';
+import { globalSeed, setSeed, T, GRADE_TOPICS_STRUCTURE, createSheetElement, updateURLState } from '../script.js?v=final';
 import { generateProblem, PAGE_CAPACITY } from './problemGenerators.js';
 import { LAYOUT_CONFIG } from './problemConfig.js';
+import LZString from './vendor/lz-string.js';
 
-let builderProblems = []; // Array of { id, type, problemData, weight, gridX, gridY, page }
+var builderProblems = []; // Array of { id, type, problemData, weight, gridX, gridY, page }
+
 let dragSrcEl = null;
 let builderTitleText = '';
 
@@ -83,10 +85,13 @@ function renderBuilderTabs() {
     if (!container) return;
     container.innerHTML = '';
 
+    const uiT = (window.T && window.T.ui && window.T.ui.grades) ? window.T : (typeof T !== 'undefined' ? T : null);
+    if (!uiT) return; // Wait for initialization
+
     Object.keys(GRADE_TOPICS_STRUCTURE).forEach(g => {
         const tab = document.createElement('div');
         tab.className = `grade-tab ${g === builderCurrentGrade ? 'active' : ''}`;
-        tab.textContent = T.ui.grades[g];
+        tab.textContent = uiT.ui.grades[g];
         tab.onclick = () => handleBuilderGradeSelect(g);
         container.appendChild(tab);
     });
@@ -111,11 +116,18 @@ function renderBuilderChips() {
     container.innerHTML = '';
 
     const topics = GRADE_TOPICS_STRUCTURE[builderCurrentGrade] || [];
+    const uiT = (window.T && window.T.topics) ? window.T : (typeof T !== 'undefined' ? T : null);
+
+    if (!uiT) {
+        // Retry logic or safe fallback could go here, but usually T is ready.
+        // If not ready, we just don't render labels effectively or defer.
+        return;
+    }
 
     topics.forEach(topicKey => {
         const chip = document.createElement('div');
         chip.className = `topic-chip ${topicKey === builderCurrentTopic ? 'active' : ''}`;
-        chip.textContent = T.topics[topicKey];
+        chip.textContent = uiT.topics[topicKey] || topicKey;
         chip.dataset.topic = topicKey; // Store key for soft updates
         chip.draggable = true;
         chip.ondragstart = (e) => {
@@ -136,6 +148,10 @@ function renderBuilderChips() {
             document.querySelectorAll('.drop-indicator').forEach(el => el.style.display = 'none');
         };
         chip.onclick = () => handleBuilderTopicClick(topicKey);
+        chip.ondblclick = () => {
+            handleBuilderTopicClick(topicKey);
+            window.addProblemToBuilder();
+        };
         container.appendChild(chip);
     });
 
@@ -181,7 +197,8 @@ function renderBuilderTopicOptions() {
             group.className = 'option-group';
 
             const label = document.createElement('label');
-            label.textContent = T.ui.builder.options?.[opt.labelKey] || opt.labelKey;
+            const uiT = window.T || T;
+            label.textContent = uiT.ui.builder.options?.[opt.labelKey] || opt.labelKey;
 
             if (opt.type === 'checkbox') {
                 const cb = document.createElement('input');
@@ -258,7 +275,8 @@ window.copyBuilderLink = function () {
     const url = new URL(window.location.href);
     url.hash = `build=${state}`;
     navigator.clipboard.writeText(url.toString()).then(() => {
-        alert(T.ui.builder.linkCopied || 'Link kopiert!');
+        const uiT = window.T || T;
+        alert(uiT.ui.builder.linkCopied || 'Link kopiert!');
     });
 };
 
@@ -290,7 +308,9 @@ function serializeBuilderState() {
         tp: builderCurrentTopic,
         o: collectBuilderOptions()
     };
-    return btoa(unescape(encodeURIComponent(JSON.stringify(stateObj))));
+
+    const json = JSON.stringify(stateObj);
+    return LZString.compressToEncodedURIComponent(json);
 }
 
 export function getBuilderState() {
@@ -298,12 +318,25 @@ export function getBuilderState() {
 }
 
 export function hasBuilderContent() {
+    if (!builderProblems) return false;
     return builderProblems.length > 0 || (builderTitleText && builderTitleText.trim() !== '');
 }
-
-export function loadBuilderState(base64) {
+export function loadBuilderState(hash) {
     try {
-        const json = decodeURIComponent(escape(atob(base64)));
+        let json = LZString.decompressFromEncodedURIComponent(hash);
+
+        // Fallback for legacy Base64 links
+        if (!json || (!json.startsWith('{') && !json.startsWith('['))) {
+            try {
+                json = decodeURIComponent(escape(atob(hash)));
+            } catch (e) {
+                // If secondary decode fails, it's likely just invalid
+                console.warn('Failed to decode legacy hash, and not valid compressed data.');
+            }
+        }
+
+        if (!json) return;
+
         const loaded = JSON.parse(json);
 
         let problems = [];
@@ -393,7 +426,8 @@ window.duplicateProblem = function (id) {
 };
 
 window.clearBuilder = function () {
-    if (confirm(T.ui.confirmDelete || 'Are you sure?')) {
+    const uiT = window.T || T;
+    if (confirm(uiT.ui.confirmDelete || 'Are you sure?')) {
         builderProblems = [];
         builderTitleText = ''; // Optional: clear title too? Yes, usually clear means clear everything.
         saveToStorage();

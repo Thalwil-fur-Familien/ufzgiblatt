@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ufzgiblatt.ch</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="style.css?v=final">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script src="js/analytics.js"></script>
 </head>
 
@@ -38,12 +38,10 @@
     <section id="generator" class="active-section">
         <div class="controls">
             <!-- New Tabs & Chips Layout for Generator -->
-            <div class="nav-section-title" id="labelGrade">Klasse:</div>
             <div id="gradeTabs" class="grade-tabs-container">
                 <!-- Grade Tabs Injected JS -->
             </div>
 
-            <div class="nav-section-title" id="labelTopic">Aufgaben:</div>
             <div id="topicChips" class="topic-chips-container" style="margin-bottom: 20px;">
                 <!-- Topic Chips Injected JS -->
             </div>
@@ -79,37 +77,32 @@
                     onchange="toggleQRVisibility()">
                 <label for="showQR" id="labelShowQR">QR-Code anzeigen</label>
             </div>
-        </div>
+            <div class="controls-group" id="marriedOptions"
+                style="display:none; align-items:center; font-family:'Nunito',sans-serif; gap:10px; margin-top: 10px; width: 100%;">
+                <input type="checkbox" id="marriedMultiplesOf10" style="width:20px; height:20px;"
+                    onchange="generateSheet(true)">
+                <label for="marriedMultiplesOf10" id="labelMultiplesOf10">Nur Zehnerzahlen</label>
+            </div>
 
-        <!-- Custom Options Block Removed (Replaced by Chips) -->
-        <div id="customOptions" style="display:none;"></div>
-        <div id="checkboxContainer" style="display:none;"></div>
+            <div class="controls-group" id="moneyOptions"
+                style="display:none; align-items:center; font-family:'Nunito',sans-serif; gap:10px; margin-top: 10px; width: 100%;">
+                <span style="font-weight:bold;" id="labelCurrency">Währung:</span>
 
-        <div class="controls" id="marriedOptions"
-            style="display:none; align-items:center; margin-top:-1rem; font-family:'Nunito',sans-serif; gap:10px;">
-            <input type="checkbox" id="marriedMultiplesOf10" style="width:20px; height:20px;"
-                onchange="generateSheet(true)">
-            <label for="marriedMultiplesOf10" id="labelMultiplesOf10">Nur Zehnerzahlen (z.B. 30 + 70)</label>
-        </div>
+                <input type="checkbox" id="currencyCHF" value="CHF" checked onchange="generateSheet(true)">
+                <label for="currencyCHF">CHF</label>
 
-        <div class="controls" id="moneyOptions"
-            style="display:none; align-items:center; margin-top:-1rem; font-family:'Nunito',sans-serif; gap:10px;">
-            <span style="font-weight:bold;" id="labelCurrency">Währung:</span>
+                <input type="checkbox" id="currencyEUR" value="EUR" onchange="generateSheet(true)">
+                <label for="currencyEUR">EUR</label>
+            </div>
 
-            <input type="checkbox" id="currencyCHF" value="CHF" checked onchange="generateSheet(true)">
-            <label for="currencyCHF">CHF</label>
+            <div class="controls-group" id="timeOptions"
+                style="display:none; align-items:center; font-family:'Nunito',sans-serif; gap:10px; margin-top: 10px; width: 100%;">
+                <input type="checkbox" id="showHours" style="width:20px; height:20px;" onchange="generateSheet(true)">
+                <label for="showHours" id="labelHours" style="color:green; font-weight:bold;">Stunden</label>
 
-            <input type="checkbox" id="currencyEUR" value="EUR" onchange="generateSheet(true)">
-            <label for="currencyEUR">EUR</label>
-        </div>
-
-        <div class="controls" id="timeOptions"
-            style="display:none; align-items:center; margin-top:-1rem; font-family:'Nunito',sans-serif; gap:10px;">
-            <input type="checkbox" id="showHours" style="width:20px; height:20px;" onchange="generateSheet(true)">
-            <label for="showHours" id="labelHours" style="color:green; font-weight:bold;">Stunden</label>
-
-            <input type="checkbox" id="showMinutes" style="width:20px; height:20px;" onchange="generateSheet(true)">
-            <label for="showMinutes" id="labelMinutes" style="color:blueviolet; font-weight:bold;">Minuten</label>
+                <input type="checkbox" id="showMinutes" style="width:20px; height:20px;" onchange="generateSheet(true)">
+                <label for="showMinutes" id="labelMinutes" style="color:blueviolet; font-weight:bold;">Minuten</label>
+            </div>
         </div>
 
 
@@ -128,10 +121,11 @@
 
             <!-- Builder Navigation -->
             <div style="width: 100%; margin-top: 15px;">
-
+                <div class="nav-section-title" id="builderLabelGrade">Klasse:</div>
                 <div id="builderGradeTabs" class="grade-tabs-container"></div>
 
 
+                <div class="nav-section-title" id="builderLabelTopic">Aufgaben:</div>
                 <div id="builderTopicChips" class="topic-chips-container"></div>
             </div>
 
@@ -148,15 +142,14 @@
                     style="background: var(--secondary-color);">➕ Aufgabe hinzufügen</button>
                 <button class="btn-print" id="btnPrintBuilder" onclick="window.printSheet()">🖨️ Drucken</button>
             </div>
-        </div>
-        <div class="builder-actions-secondary" style="display:flex; gap:10px; margin-top:15px;">
-            <button class="btn-generate" id="btnRefreshBuilder" onclick="window.refreshBuilderSeed()"
-                style="background: #3498db; padding: 8px 16px; font-size: 0.9rem;">🔄 Neu würfeln</button>
-            <button class="btn-save" id="btnCopyBuilderLink" onclick="window.copyBuilderLink()"
-                style="background: #27ae60; padding: 8px 16px; font-size: 0.9rem;">🔗 Link kopieren</button>
-            <button class="btn-saved" id="btnClearBuilderSheet" onclick="window.clearBuilder()"
-                style="background: #e74c3c; padding: 8px 16px; font-size: 0.9rem;">🗑️ Leeren</button>
-        </div>
+            <div class="builder-actions-secondary" style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn-generate" id="btnRefreshBuilder" onclick="window.refreshBuilderSeed()"
+                    style="background: #3498db; padding: 8px 16px; font-size: 0.9rem;">🔄 Neu würfeln</button>
+                <button class="btn-save" id="btnCopyBuilderLink" onclick="window.copyBuilderLink()"
+                    style="background: #27ae60; padding: 8px 16px; font-size: 0.9rem;">🔗 Link kopieren</button>
+                <button class="btn-saved" id="btnClearBuilderSheet" onclick="window.clearBuilder()"
+                    style="background: #e74c3c; padding: 8px 16px; font-size: 0.9rem;">🗑️ Leeren</button>
+            </div>
         </div>
         <div id="builderSheetContainer" class="builder-sheet-container">
             <div id="builderSheetsWrapper">
@@ -200,7 +193,7 @@
     </div>
 </div>
 
-<script type="module" src="script.js"></script>
+<script type="module" src="script.js?v=final"></script>
 
 
 <footer style="display:flex; flex-direction:column; align-items:center; gap:5px; margin-top:40px; padding-bottom:20px;">
@@ -212,7 +205,7 @@
         </svg>
         <span id="labelFeedback">Feedback & Fehler melden</span>
     </a>
-    <div id="build-info" style="margin-top:10px; font-size:0.8rem; color:#888;">Build: eacc6e3 (2026-01-13 14:22 CET) - DEV</div>
+    <div id="build-info" style="margin-top:10px; font-size:0.8rem; color:#888;">Build: de84c9b (2026-01-14 07:49 CET) - DEV</div>
 </footer>
 </body>
 

@@ -2,7 +2,7 @@ import { globalSeed, setSeed } from './js/mathUtils.js';
 export { globalSeed, setSeed };
 import { generateProblemsData as genData } from './js/problemGenerators.js?v=4';
 import { TRANSLATIONS, getPreferredLanguage, setPreferredLanguage } from './js/translations.js';
-import { loadBuilderState, initBuilder, getBuilderState, hasBuilderContent } from './js/worksheet-builder.js';
+import { loadBuilderState, initBuilder, getBuilderState, hasBuilderContent } from './js/worksheet-builder.js?v=final';
 import { getURLParams, getPageFromHash } from './js/urlUtils.js';
 
 // Expose to window for inline HTML handlers
@@ -1319,29 +1319,52 @@ function createProblemElement(problemData, isSolution) {
             <input type="number" class="answer-input" style="width:${inputWidth}; text-align:center;" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
         `;
 
-    } else {
-        // Legacy Fallback (for Grade 1-3 types not migrated to specific 'type' yet)
-        const { a, b, op } = problemData;
-        let expected;
-        if (op === '+') expected = a + b;
-        else if (op === '-') expected = a - b;
-        else if (op === '×') expected = a * b;
-        else if (op === ':') expected = a / b;
-
-        const val = isSolution ? expected : '';
-        const style = isSolution ? 'color:var(--primary-color); font-weight:bold;' : '';
+    } else if (problemData.type === 'unit_conv') {
+        const { val, from, to, answer } = problemData;
+        const valAns = isSolution ? answer : '';
+        const readonlyAttr = isSolution ? 'readonly' : '';
+        const style = isSolution ? 'style="color:var(--primary-color); font-weight:bold;"' : '';
 
         problemDiv.style.justifyContent = 'center';
-        problemDiv.style.gap = span === 1 ? '8px' : '15px';
-        const inputWidth = span === 1 ? '50px' : '65px';
+        problemDiv.style.gap = '10px';
 
         problemDiv.innerHTML = `
-            <span class="number" style="width:auto;">${a}</span>
-            <span class="operator" style="width:auto;">${op}</span>
-            <span class="number" style="width:auto;">${b}</span>
+            <span class="number" style="width:auto;">${val} ${from}</span>
             <span class="equals" style="width:auto;">=</span>
-            <input type="number" class="answer-input" style="width:${inputWidth}; ${style}" data-expected="${expected}" value="${val}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+            <input type="number" class="answer-input" style="width:80px; text-align:center;" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${readonlyAttr} ${style}>
+            <span class="unit" style="width:auto;">${to}</span>
         `;
+
+    } else {
+        // Legacy Fallback (for Grade 1 types)
+        // Check if we have standard arithmetic props
+        if (problemData.a !== undefined && problemData.op) {
+            const { a, b, op } = problemData;
+            let expected;
+            if (op === '+') expected = a + b;
+            else if (op === '-') expected = a - b;
+            else if (op === '×') expected = a * b;
+            else if (op === ':') expected = a / b;
+
+            const val = isSolution ? expected : '';
+            const style = isSolution ? 'color:var(--primary-color); font-weight:bold;' : '';
+
+            problemDiv.style.justifyContent = 'center';
+            problemDiv.style.gap = span === 1 ? '8px' : '15px';
+            const inputWidth = span === 1 ? '50px' : '65px';
+
+            problemDiv.innerHTML = `
+                <span class="number" style="width:auto;">${a}</span>
+                <span class="operator" style="width:auto;">${op}</span>
+                <span class="number" style="width:auto;">${b}</span>
+                <span class="equals" style="width:auto;">=</span>
+                <input type="number" class="answer-input" style="width:${inputWidth}; ${style}" data-expected="${expected}" value="${val}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
+            `;
+        } else {
+            // Generic Error Fallback for missing types
+            console.warn('Unknown problem type:', problemData.type, problemData);
+            problemDiv.innerHTML = `<div style="color:#aaa; font-size:10px; padding:5px; text-align:center;">Type: ${problemData.type}<br>(Not rendered)</div>`;
+        }
     }
     return problemDiv;
 }
@@ -1829,19 +1852,23 @@ function renderQRCode(url) {
     const containers = document.querySelectorAll('.qr-code-container');
     containers.forEach(container => {
         container.innerHTML = '';
-        try {
-            new QRCode(container, {
-                text: url,
-                width: 100,
-                height: 100,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.L
-            });
-        } catch (e) {
-            console.warn('QR code generation failed (likely URL too long):', e);
-            container.innerHTML = '<div style="font-size: 10px; color: #999; text-align: center; border: 1px dashed #ccc; padding: 4px; height: 100%; display: flex; align-items: center; justify-content: center; line-height: 1.2;">QR Link<br>zu lang</div>';
-        }
+        const canvas = document.createElement('canvas');
+        container.appendChild(canvas);
+
+        QRCode.toCanvas(canvas, url, {
+            width: 100,
+            margin: 0,
+            color: {
+                dark: "#000000",
+                light: "#ffffff"
+            },
+            errorCorrectionLevel: 'L'
+        }, function (error) {
+            if (error) {
+                console.warn('QR code generation failed:', error);
+                container.innerHTML = '<div style="font-size: 10px; color: #999; text-align: center; border: 1px dashed #ccc; padding: 4px; height: 100%; display: flex; align-items: center; justify-content: center; line-height: 1.2;">QR Error</div>';
+            }
+        });
     });
 }
 

@@ -384,6 +384,8 @@ function _generateProblemInternal(type, currency = 'CHF', options = {}, index = 
             }
         case 'married_100':
             return generateMarriedNumbers(options.marriedMultiplesOf10 || false);
+        default:
+            return { type: 'text', q: "Error: Unknown Type (" + type + ")", a: 0 };
     }
 
     const res = { a, b, op, type: 'standard' };

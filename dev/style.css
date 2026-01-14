@@ -221,6 +221,10 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     margin-bottom: 30px;
     border: 1px solid #edf2f7;
+    flex-wrap: nowrap;
+    /* Prevent wrapping into hidden columns */
+    height: auto;
+    max-height: none;
 }
 
 .builder-top-controls {
@@ -270,7 +274,7 @@ body {
 
 .builder-sheet-container {
     width: 100%;
-    margin-top: 20px;
+    margin-top: 0;
 }
 
 /* Worksheet Grid Visualization in Builder Mode */
@@ -864,6 +868,166 @@ h1 {
 }
 
 /* --- Builder Specific Styles --- */
+
+/* Builder Layout (Sidebar) */
+#builder.active-section,
+#generator.active-section {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 30px;
+    padding: 20px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.controls {
+    width: 320px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 20px;
+    background: #fff;
+    padding: 20px;
+    /* Reduced from 25px to give more width */
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    border: 1px solid #edf2f7;
+    z-index: 100;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Sidebar Sections */
+.builder-top-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+}
+
+.builder-sheet-container,
+#sheetsWrapper {
+    flex-grow: 1;
+    overflow-x: auto;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 50px;
+    /* Space for scrolling */
+}
+
+/* Specific Sidebar Tweaks */
+.grade-tabs-container {
+    display: flex;
+    /* Ensure flex context */
+    flex-wrap: nowrap;
+    /* Prevent wrapping */
+    justify-content: space-between;
+    gap: 2px;
+    /* Minimal gap */
+    padding: 2px;
+    /* Prevent container clipping */
+    border-bottom: none;
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.grade-tab {
+    flex: 1;
+    /* Stretch to fill space equally */
+    min-width: 0;
+    /* Allow shrinking below content size */
+    padding: 6px 0;
+    /* Vertical padding only */
+    text-align: center;
+    font-size: 0.85rem;
+    /* Compact font size */
+    border: 1px solid #cbd5e1;
+    /* Darker border for visibility */
+    border-radius: 8px;
+    margin-bottom: 5px;
+    white-space: nowrap;
+    /* Prevent text wrapping */
+}
+
+.grade-tab.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.topic-chips-container {
+    justify-content: flex-start;
+    gap: 8px;
+    max-height: 360px;
+    /* Limit to approx 8 items */
+    overflow-y: auto;
+    /* Enable scrolling */
+    padding-right: 2px;
+    /* Avoid scrollbar overlap */
+}
+
+.topic-chip {
+    width: 100%;
+    /* Full width chips in sidebar for readability */
+    justify-content: flex-start;
+    padding: 10px 15px;
+    box-sizing: border-box;
+}
+
+/* Secondary Actions Stack */
+.builder-actions-secondary {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+    margin-top: auto;
+    /* Push to bottom if height allows */
+}
+
+.builder-actions-secondary button {
+    width: 100%;
+}
+
+/* Responsive Fallback */
+@media screen and (max-width: 900px) {
+
+    #builder.active-section,
+    #generator.active-section {
+        flex-direction: column;
+        align-items: center;
+        padding: 10px;
+    }
+
+    .controls {
+        width: 100%;
+        max-width: 800px;
+        position: static;
+        max-height: none;
+        margin-bottom: 30px;
+    }
+
+    .grade-tabs-container,
+    .topic-chips-container {
+        justify-content: center;
+    }
+
+    .topic-chip {
+        width: auto;
+        /* Revert to auto width on mobile/top */
+    }
+
+    .builder-actions-secondary {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .builder-actions-secondary button {
+        width: auto;
+        flex: 1;
+    }
+}
+
 .builder-sheet-container .problem-grid {
     position: relative;
     grid-auto-flow: initial;
@@ -2526,24 +2690,30 @@ input.brick-input {
 .grade-tab.active {
     border-bottom-color: var(--primary-color);
     color: var(--primary-color);
+    background-color: transparent;
+    /* Ensure text is visible against background */
 }
 
 .topic-chips-container {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
+    gap: 8px;
+    justify-content: flex-start;
+    /* Left Align */
     width: 100%;
     margin-bottom: 25px;
 }
 
 .topic-chip {
-    padding: 8px 16px;
+    padding: 6px 12px;
+    /* Smaller padding */
     background-color: #f7fafc;
     border: 1px solid #edf2f7;
-    border-radius: 20px;
+    border-radius: 16px;
+    /* Slightly tighter radius */
     cursor: pointer;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    /* Smaller font */
     color: var(--text-color);
     transition: all 0.2s;
     user-select: none;
@@ -2551,6 +2721,8 @@ input.brick-input {
     align-items: center;
     gap: 6px;
     cursor: grab;
+    text-align: left;
+    /* Explicit left align */
 }
 
 .topic-chip:active {
@@ -2568,21 +2740,4 @@ input.brick-input {
     color: white;
     border-color: var(--primary-color);
     box-shadow: 0 4px 10px rgba(79, 172, 254, 0.3);
-}
-
-/* Animations */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(5px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.topic-chip {
-    animation: fadeIn 0.3s ease-out forwards;
 }
