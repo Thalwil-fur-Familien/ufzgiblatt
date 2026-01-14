@@ -382,8 +382,9 @@ function _generateProblemInternal(type, currency = 'CHF', options = {}, index = 
                 let numB = getRandomInt(1, den - numA);
                 return { type: 'fraction_op', numA, denA: den, numB, denB: den, op: '+', answer: `${numA + numB}/${den}` };
             }
-        case 'married_100':
             return generateMarriedNumbers(options.marriedMultiplesOf10 || false);
+        default:
+            return { type: 'text', q: "Error: Unknown Type (" + type + ")", a: 0 };
     }
 
     const res = { a, b, op, type: 'standard' };
