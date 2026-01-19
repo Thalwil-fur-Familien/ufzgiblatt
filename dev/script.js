@@ -418,6 +418,9 @@ export function updateURLState() {
         const showSolutions = document.getElementById('solutionToggle').checked;
         if (showSolutions) params.set('solutions', '1');
 
+        const showQR = document.getElementById('showQR').checked;
+        if (!showQR) params.set('showQR', '0');
+
         const isCustom = (topicStr === 'custom');
 
         // Only set these parameters if they are relevant to the selected topic or custom mode
@@ -1533,6 +1536,7 @@ export function renderCurrentState() {
         }
     });
     updateURLState();
+    autoScaleSheet();
 }
 
 // Function to update generator title when edited
@@ -1863,6 +1867,8 @@ function loadStateFromURL() {
     }
     if (params.has('showQR')) {
         document.getElementById('showQR').checked = params.get('showQR') !== '0';
+        // Apply visibility immediately
+        if (window.toggleQRVisibility) window.toggleQRVisibility();
     }
     if (params.has('showH')) {
         document.getElementById('showHours').checked = params.get('showH') === '1';
@@ -2116,46 +2122,46 @@ window.deleteSavedState = function (id) {
 };
 
 window.onresize = autoScaleSheet;
+window.autoScaleSheet = autoScaleSheet;
 
 function autoScaleSheet() {
     // Only scale if screen is smaller than sheet (approx 800px + margins)
-    // 210mm is approx 794px at 96dpi. Let's say 820px safety.
+    const wrappers = [
+        document.getElementById('sheetsWrapper'),
+        document.getElementById('builderSheetsWrapper')
+    ].filter(el => el !== null);
 
-    const wrapper = document.getElementById('sheetsWrapper');
-    // Reset first provided we aren't printing
-    if (window.matchMedia('print').matches) {
-        wrapper.style.transform = 'none';
-        wrapper.style.height = 'auto'; // Reset height
-        return;
-    }
+    wrappers.forEach(wrapper => {
+        // Reset first provided we aren't printing
+        if (window.matchMedia('print').matches) {
+            wrapper.style.transform = 'none';
+            wrapper.style.height = 'auto'; // Reset height
+            return;
+        }
 
-    const screenWidth = window.innerWidth;
-    const sheetWidth = 820; // Approx 210mm in px plus visual margin
+        const screenWidth = window.innerWidth;
+        const sheetWidth = 794; // Exactly 210mm at 96dpi
 
-    if (screenWidth < sheetWidth) {
-        // Calculate scale
-        // Leave 20px margin
-        const scale = (screenWidth - 20) / sheetWidth;
-        wrapper.style.transform = `scale(${scale})`;
-        wrapper.style.transformOrigin = 'top center';
+        if (screenWidth < sheetWidth) {
+            // Calculate scale
+            // Leave 20px margin
+            const scale = (screenWidth - 20) / sheetWidth;
+            wrapper.style.transform = `scale(${scale})`;
+            wrapper.style.transformOrigin = 'top center';
 
-        // Fix whitespace: container keeps original height, so we must reduce it manually
-        // We need to wait for DOM to be stable if we just rendered, but usually it is.
-        // The visual height is scrollHeight * scale.
-        // However, scrollHeight might be affected by the transform itself if we are not careful.
-        // Standard flow: element occupies 'scrollHeight'. Transform shrinks it visually but not in flow.
-        // So we set exact height to visual height.
+            // Fix whitespace: container keeps original height, so we must reduce it manually
+            // Important: Reset height to auto first to get true scrollHeight (if we are resizing)
+            wrapper.style.height = 'auto';
+            const originalHeight = wrapper.scrollHeight;
+            // Adding a 20px safety buffer to prevent clipping
+            const newHeight = (originalHeight * scale) + 20;
+            wrapper.style.height = `${newHeight}px`;
 
-        // Important: Reset height to auto first to get true scrollHeight (if we are resizing)
-        wrapper.style.height = 'auto';
-        const originalHeight = wrapper.scrollHeight;
-        const newHeight = originalHeight * scale;
-        wrapper.style.height = `${newHeight}px`;
-
-    } else {
-        wrapper.style.transform = 'none';
-        wrapper.style.height = 'auto';
-    }
+        } else {
+            wrapper.style.transform = 'none';
+            wrapper.style.height = 'auto';
+        }
+    });
 }
 
 // --- Interactive Word Types Logic ---
