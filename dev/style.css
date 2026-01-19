@@ -2897,6 +2897,7 @@ input.brick-input {
         font-size: 1.1rem;
     }
 
+    /* Mobile specific adjustments remain here */
     .header-content {
         flex-direction: column !important;
         gap: 15px !important;
@@ -2914,7 +2915,6 @@ input.brick-input {
         width: 100% !important;
         justify-content: center !important;
         flex-wrap: wrap;
-        /* Ensure links can wrap if still too wide */
     }
 
     .nav-link {
@@ -2931,29 +2931,31 @@ input.brick-input {
         width: 100%;
     }
 
-    /* Container to safely hold the transformed/scaled sheets */
-    .sheets-viewport {
-        width: 100% !important;
-        overflow-x: hidden !important;
-        display: flex !important;
-        justify-content: center !important;
-        padding: 10px 0 !important;
-    }
-
-    #sheetsWrapper,
-    #builderSheetsWrapper {
-        /* Will be scaled by JS, but standard CSS here */
-        width: 794px !important;
-        flex-shrink: 0 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        transform-origin: top center !important;
-    }
-
     .grade-tab {
         padding: 8px 12px;
         font-size: 0.9rem;
         min-width: 60px;
     }
+}
+
+/* Container to safely hold the transformed/scaled sheets - GLOBAL */
+.sheets-viewport {
+    width: 100%;
+    overflow-x: hidden;
+    /* Prevent horizontal scroll on body */
+    display: flex;
+    justify-content: center;
+    /* Center horizontally */
+    padding: 10px 0;
+}
+
+#sheetsWrapper,
+#builderSheetsWrapper {
+    width: 794px;
+    /* A4 width */
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform-origin: top center;
 }
