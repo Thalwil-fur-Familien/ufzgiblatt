@@ -675,6 +675,7 @@ export function renderBuilderSheet() {
             });
         }
         updateURLState();
+        if (typeof window.onresize === 'function') window.onresize();
     } catch (err) {
         console.error('Render Error:', err);
         alert('Render Error: ' + err.message);

@@ -49,7 +49,21 @@
             <!-- Removed old Selectors -->
             <select id="gradeSelector" style="display:none"></select>
             <select id="topicSelector" style="display:none"></select>
+            <div style="display:flex; align-items:center; margin-top: 5px;">
+                <input type="checkbox" id="solutionToggle"
+                    style="width:20px; height:20px; margin-right:5px; cursor:pointer;"
+                    onchange="renderCurrentState(); updateURLState();">
+                <label for="solutionToggle" id="labelSolutions"
+                    style="font-family:'Nunito',sans-serif; cursor:pointer;">Lösungsblatt</label>
+            </div>
             <div style="display:flex; align-items:center;">
+                <input type="checkbox" id="showQR" checked
+                    style="width:20px; height:20px; margin-right:5px; cursor:pointer;" onchange="toggleQRVisibility()">
+                <label for="showQR" id="labelShowQR" style="font-family:'Nunito',sans-serif; cursor:pointer;">QR-Code
+                    anzeigen</label>
+            </div>
+
+            <div style="display:flex; align-items:center; margin-top: 5px;">
                 <label for="pageCount" id="labelCount"
                     style="font-weight:bold; margin-right:5px; font-family:'Nunito',sans-serif;">Anzahl:</label>
                 <input type="number" id="pageCount" value="1" min="1" max="50" oninput="generateSheet(true)"
@@ -61,16 +75,6 @@
                 <input type="range" id="densitySlider" min="20" max="100" step="20" value="100"
                     oninput="generateSheet(true)"
                     style="width:80px; accent-color: var(--primary-color); cursor: pointer;">
-            </div>
-            <div style="display:flex; align-items:center;">
-                <input type="checkbox" id="solutionToggle" style="width:20px; height:20px; margin-right:5px;"
-                    onchange="renderCurrentState(); updateURLState();">
-                <label for="solutionToggle" id="labelSolutions">Lösungsblatt</label>
-            </div>
-            <div style="display:flex; align-items:center;">
-                <input type="checkbox" id="showQR" checked style="width:20px; height:20px; margin-right:5px;"
-                    onchange="toggleQRVisibility()">
-                <label for="showQR" id="labelShowQR">QR-Code anzeigen</label>
             </div>
             <div class="creator-actions-secondary"
                 style="display:flex; flex-direction:column; gap:10px; width:100%; margin-top:15px;">
@@ -113,8 +117,10 @@
         </div>
 
 
-        <div id="sheetsWrapper">
-            <!-- Sheets will be inserted here -->
+        <div class="sheets-viewport">
+            <div id="sheetsWrapper">
+                <!-- Sheets will be inserted here -->
+            </div>
         </div>
     </section>
 
@@ -169,8 +175,10 @@
             </div>
         </div>
         <div id="builderSheetContainer" class="builder-sheet-container">
-            <div id="builderSheetsWrapper">
-                <!-- Live worksheet rendering -->
+            <div class="sheets-viewport">
+                <div id="builderSheetsWrapper">
+                    <!-- Live worksheet rendering -->
+                </div>
             </div>
         </div>
     </section>
