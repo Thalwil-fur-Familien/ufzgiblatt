@@ -608,6 +608,8 @@ function createProblemElement(problemData, isSolution) {
         const style = isSolution ? 'color:var(--primary-color); font-weight:bold;' : '';
 
         // Use more compact layout for "Verliebte Zahlen"
+        problemDiv.style.display = 'flex';
+        problemDiv.style.alignItems = 'center';
         problemDiv.style.justifyContent = 'center'; // Center the equation
         problemDiv.style.gap = span === 1 ? '8px' : '15px'; // Consistent spacing
 
@@ -630,13 +632,19 @@ function createProblemElement(problemData, isSolution) {
         const val = isSolution ? expected : '';
         const style = isSolution ? 'color:var(--primary-color); font-weight:bold;' : '';
 
+        // Adaptive spacing for single-column fit
+        const gapSize = span === 1 ? '5px' : '15px';
+        const inputWidth = span === 1 ? '50px' : '70px';
+
+        problemDiv.style.display = 'flex';
+        problemDiv.style.alignItems = 'center';
         problemDiv.style.justifyContent = 'center';
-        problemDiv.style.gap = '15px';
+        problemDiv.style.gap = gapSize;
 
         problemDiv.innerHTML = `
                 <span class="number" style="text-align:right;">${a}</span>
                 <span class="operator">${op || '+'}</span>
-                <input type="number" class="answer-input" style="width:70px; text-align:center; ${style}" 
+                <input type="number" class="answer-input" style="width:${inputWidth}; text-align:center; ${style}" 
                        data-expected="${expected}" 
                        value="${val}"
                        oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
