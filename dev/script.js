@@ -681,13 +681,18 @@ function createProblemElement(problemData, isSolution) {
         const valAns = isSolution ? answer : '';
         const style = isSolution ? 'color:var(--primary-color); font-weight:bold;' : '';
 
+        problemDiv.style.display = 'flex';
+        problemDiv.style.alignItems = 'center';
+        problemDiv.style.justifyContent = 'center';
+        problemDiv.style.gap = '5px';
+
         problemDiv.innerHTML = `
-                <div style="flex:1; display:flex; align-items:center; gap:5px;">
-                    <span style="font-weight:bold; min-width:60px;">${label}</span>
-                    <span class="number" style="text-align:center; font-size:1.1em;">${val}</span>
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1; margin-right:4px;">
+                    <span style="font-weight:bold; font-size:0.75em; margin-bottom:2px;">${label}</span>
+                    <span class="number" style="text-align:center; font-size:1.1em; width:auto;">${val}</span>
                 </div>
-                <span style="margin:0 5px;">➜</span>
-                <input type="number" class="answer-input" style="${style}" 
+                <span style="margin-right:2px; font-size:0.9em;">➜</span>
+                <input type="number" class="answer-input" style="width:50px; ${style}" 
                        data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
             `;
 
