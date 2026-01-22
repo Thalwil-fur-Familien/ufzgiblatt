@@ -1,3 +1,5 @@
+import '../style.css';
+import '../geography-game.css';
 import { TRANSLATIONS, getPreferredLanguage, setPreferredLanguage } from './translations.js';
 import { globalSeed, setSeed, seededRandom } from './mathUtils.js';
 import { getURLParams, getPageFromHash } from './urlUtils.js';

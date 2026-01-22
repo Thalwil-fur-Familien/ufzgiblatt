@@ -1,3 +1,4 @@
+import './style.css';
 import { globalSeed, setSeed } from './js/mathUtils.js';
 export { globalSeed, setSeed };
 
