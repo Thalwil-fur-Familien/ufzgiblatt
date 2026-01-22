@@ -1,5 +1,5 @@
 import { setSeed } from './mathUtils.js';
-import { T, GRADE_TOPICS_STRUCTURE, lang } from './state.js';
+import { T, GRADE_TOPICS_STRUCTURE } from './state.js';
 import { createSheetElement } from './sheet-renderer.js';
 import { updateURLState } from '../script.js';
 import { generateProblem, PAGE_CAPACITY } from './problemGenerators.js';

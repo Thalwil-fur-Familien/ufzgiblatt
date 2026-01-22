@@ -1,11 +1,11 @@
 import { globalSeed, setSeed } from './js/mathUtils.js';
 export { globalSeed, setSeed };
-import { Translation } from './js/translations.js';
+
 import { generateProblemsData as genData, PAGE_CAPACITY } from './js/problemGenerators.js';
 import { TRANSLATIONS, getPreferredLanguage, setPreferredLanguage } from './js/translations.js';
 import { loadBuilderState, initBuilder, getBuilderState, hasBuilderContent, renderBuilderSheet } from './js/worksheet-builder.js';
 import { getURLParams, getPageFromHash } from './js/urlUtils.js';
-import { ProblemFactory, ProblemData } from './js/Problem.js';
+
 import { registerAllProblems } from './js/problemTypes/index.js';
 import { lang, T, setLang, setT, currentSheetsData, setCurrentSheetsData, currentTitle, setCurrentTitle, currentGeneratorGrade, setGrade, selectedGeneratorTopics, GRADE_TOPICS_STRUCTURE } from './js/state.js';
 import { createSheetElement } from './js/sheet-renderer.js';
@@ -25,7 +25,7 @@ setT((TRANSLATIONS as any)[lang]);
 (window as any).switchLanguage = switchLanguage;
 (window as any).renderBuilderSheet = renderBuilderSheet;
 
-let basePath = './';
+
 
 if (document.getElementById('htmlRoot')) {
     (document.getElementById('htmlRoot') as HTMLElement).lang = lang;
