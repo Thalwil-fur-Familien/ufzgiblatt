@@ -545,9 +545,9 @@ export function renderBuilderSheet() {
             const gridEl = sheet.querySelector('.problem-grid');
 
             // Auto-Packer State (needed for auto-placement during task pass)
-            const gridMap = Array(15).fill().map(() => Array(4).fill(false));
+            const gridMap = Array(45).fill().map(() => Array(12).fill(false));
             const checkFit = (r, c, w, h) => {
-                if (r < 1 || c < 1 || r + h - 1 > 15 || c + w - 1 > 4) return false;
+                if (r < 1 || c < 1 || r + h - 1 > 45 || c + w - 1 > 12) return false;
                 for (let i = 0; i < h; i++) {
                     for (let j = 0; j < w; j++) {
                         if (gridMap[r + i - 1][c + j - 1]) return false;
@@ -558,7 +558,7 @@ export function renderBuilderSheet() {
             const markGrid = (r, c, w, h) => {
                 for (let i = 0; i < h; i++) {
                     for (let j = 0; j < w; j++) {
-                        if (r + i - 1 < 15 && c + j - 1 < 4) gridMap[r + i - 1][c + j - 1] = true;
+                        if (r + i - 1 < 45 && c + j - 1 < 12) gridMap[r + i - 1][c + j - 1] = true;
                     }
                 }
             };
@@ -566,7 +566,7 @@ export function renderBuilderSheet() {
             // Pre-mark explicit items
             pageItems.forEach(p => {
                 if (p.gridX !== undefined && p.gridY !== undefined) {
-                    const w = p.problemData.span || 4;
+                    const w = p.problemData.span || 12;
                     const h = Math.max(1, Math.round(p.weight / (w || 1)));
                     markGrid(p.gridY, p.gridX, w, h);
                 }
@@ -576,7 +576,7 @@ export function renderBuilderSheet() {
             const problemElements = sheet.querySelectorAll('.problem');
             problemElements.forEach((el, idx) => {
                 const pData = pageItems[idx];
-                const w = pData.problemData.span || 4;
+                const w = pData.problemData.span || 12;
                 const h = Math.max(1, Math.round(pData.weight / (w || 1)));
 
                 let gridX = pData.gridX;
@@ -584,8 +584,8 @@ export function renderBuilderSheet() {
 
                 if (gridX === undefined || gridY === undefined) {
                     let placed = false;
-                    for (let r = 1; r <= 15; r++) {
-                        for (let c = 1; c <= 4; c++) {
+                    for (let r = 1; r <= 45; r++) {
+                        for (let c = 1; c <= 12; c++) {
                             if (checkFit(r, c, w, h)) {
                                 gridX = c;
                                 gridY = r;
@@ -632,6 +632,16 @@ export function renderBuilderSheet() {
                         window.duplicateProblem(pData.id);
                     };
                     wrapper.appendChild(dupBtn);
+
+                    // Resize Handle
+                    const handle = document.createElement('div');
+                    handle.className = 'resize-handle no-print';
+                    handle.onmousedown = (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        window.initResize(e, pData.id);
+                    };
+                    wrapper.appendChild(handle);
 
                     // Add Events
                     wrapper.addEventListener('dragstart', handleDragStart);
@@ -723,11 +733,11 @@ function handleDragOver(e) {
     }
 
     const rect = gridEl.getBoundingClientRect();
-    const cellWidth = rect.width / 4;
-    const cellHeight = rect.height / 20;
+    const cellWidth = rect.width / 12;
+    const cellHeight = rect.height / 45;
 
-    const x = Math.min(4, Math.max(1, Math.floor((e.clientX - rect.left) / cellWidth) + 1));
-    const y = Math.min(20, Math.max(1, Math.floor((e.clientY - rect.top) / cellHeight) + 1));
+    const x = Math.min(12, Math.max(1, Math.floor((e.clientX - rect.left) / cellWidth) + 1));
+    const y = Math.min(45, Math.max(1, Math.floor((e.clientY - rect.top) / cellHeight) + 1));
 
     const indicator = gridEl.querySelector('.drop-indicator');
     if (indicator) {
@@ -739,7 +749,7 @@ function handleDragOver(e) {
             const index = builderProblems.findIndex(p => p.id === srcId);
             const problem = builderProblems[index];
             if (problem) {
-                w = problem.problemData.span || 4;
+                w = problem.problemData.span || 12;
                 h = Math.max(1, Math.round(problem.weight / (w || 1)));
             }
         }
@@ -755,20 +765,20 @@ function handleDragOver(e) {
             // or just generate a lightweight dummy.
             // createProblemObject generates the full problem which is fine.
             const tempObj = createProblemObject(topic, options);
-            w = tempObj.problemData.span || 4;
+            w = tempObj.problemData.span || 12;
             h = Math.max(1, Math.round(tempObj.weight / (w || 1)));
         }
 
         if (w && h) {
 
             // Clamp x to prevent overflow
-            const clampedX = Math.min(x, 4 - w + 1);
-            const clampedY = Math.min(y, 20 - h + 1);
+            const clampedX = Math.min(x, 12 - w + 1);
+            const clampedY = Math.min(y, 45 - h + 1);
 
             indicator.style.display = 'flex';
-            indicator.style.left = `${(clampedX - 1) * 25}%`;
+            indicator.style.left = `${(clampedX - 1) * (100 / 12)}%`;
             indicator.style.top = `${(clampedY - 1) * cellHeight}px`;
-            indicator.style.width = `${w * 25}%`;
+            indicator.style.width = `${w * (100 / 12)}%`;
             indicator.style.height = `${h * cellHeight}px`;
 
             // Ghost Preview: Clone content if not already there for this item
@@ -818,7 +828,7 @@ function handleDragOver(e) {
                 if (dragSrcEl.dataset.isNewTopic === 'false' && p.id === dragSrcEl.dataset.id) return;
 
                 if (p.page === pageIdx && p.gridX !== undefined && p.gridY !== undefined) {
-                    const pW = p.problemData.span || 4;
+                    const pW = p.problemData.span || 12;
                     const pH = Math.max(1, Math.round(p.weight / (pW || 1)));
                     const r2 = { x: p.gridX, y: p.gridY, w: pW, h: pH };
 
@@ -865,8 +875,8 @@ function freezePlacement() {
         if (isNaN(pageIdx)) return;
 
         const rect = grid.getBoundingClientRect();
-        const cellWidth = rect.width / 4;
-        const cellHeight = rect.height / 20;
+        const cellWidth = rect.width / 12;
+        const cellHeight = rect.height / 45;
 
         const items = grid.querySelectorAll('.builder-problem-wrapper');
         items.forEach(item => {
@@ -887,8 +897,8 @@ function freezePlacement() {
             let row = Math.round(relY / cellHeight) + 1;
 
             // Constraint
-            col = Math.max(1, Math.min(4, col));
-            row = Math.max(1, Math.min(20, row));
+            col = Math.max(1, Math.min(12, col));
+            row = Math.max(1, Math.min(45, row));
 
             p.gridX = col;
             p.gridY = row;
@@ -923,12 +933,12 @@ function handleDrop(e) {
         const pageIdx = parseInt(gridEl.dataset.pageIdx);
         const rect = gridEl.getBoundingClientRect();
 
-        const cellWidth = rect.width / 4;
-        const cellHeight = rect.height / 20;
+        const cellWidth = rect.width / 12;
+        const cellHeight = rect.height / 45;
 
         // Calculate based on grid rect, even if we are outside (clamp will handle it)
-        const mouseX = Math.min(4, Math.max(1, Math.floor((e.clientX - rect.left) / cellWidth) + 1));
-        const mouseY = Math.min(20, Math.max(1, Math.floor((e.clientY - rect.top) / cellHeight) + 1));
+        const mouseX = Math.min(12, Math.max(1, Math.floor((e.clientX - rect.left) / cellWidth) + 1));
+        const mouseY = Math.min(45, Math.max(1, Math.floor((e.clientY - rect.top) / cellHeight) + 1));
 
         // CHECK 1: New Topic Drop
         let newTopic = e.dataTransfer.getData('application/x-ufzgiblatt-topic');
@@ -945,15 +955,14 @@ function handleDrop(e) {
 
             // Generate temp problem to check size
             // Note: We need to know size to clamp position.
-            // Ideally generateProblem returns span/weight. 
-            // We can assume standard size or generate fully.
+            // To avoid generating a heavy problem just for size, we can assume standard or use config
             const tempObj = createProblemObject(newTopic, options);
-            const w = tempObj.problemData.span || 4;
+            const w = tempObj.problemData.span || 12;
             const h = Math.max(1, Math.round(tempObj.weight / (w || 1)));
 
             // Clamp position
-            const gridX = Math.min(mouseX, 4 - w + 1);
-            const gridY = Math.min(mouseY, 20 - h + 1);
+            const gridX = Math.min(mouseX, 12 - w + 1);
+            const gridY = Math.min(mouseY, 45 - h + 1);
 
             // Assign coords and push
             tempObj.gridX = gridX;
@@ -972,12 +981,12 @@ function handleDrop(e) {
         const problem = builderProblems.find(p => p.id === srcId);
         if (!problem) return false;
 
-        const w = problem.problemData.span || 4;
+        const w = problem.problemData.span || 12;
         const h = Math.max(1, Math.round(problem.weight / (w || 1)));
 
         // Clamp values to grid bounds using the same logic as handleDragOver
-        problem.gridX = Math.min(mouseX, 4 - w + 1);
-        problem.gridY = Math.min(mouseY, 20 - h + 1);
+        problem.gridX = Math.min(mouseX, 12 - w + 1);
+        problem.gridY = Math.min(mouseY, 45 - h + 1);
         problem.page = pageIdx;
 
         saveToStorage();
@@ -1005,3 +1014,66 @@ function handleDragEnd(e) {
 }
 
 // Auto-init removed. Controlled by script.js to avoid circular dependency race conditions.
+
+window.initResize = function (e, id) {
+    const p = builderProblems.find(item => item.id === id);
+    if (!p) return;
+
+    const startX = e.clientX;
+    const startSpan = p.problemData.span || 12;
+    const startWeight = p.weight;
+    const ratio = startSpan / startWeight; // Aspect ratio (W/Area)
+
+    // Find the grid container
+    const gridEl = document.querySelector(`.problem-grid[data-page-idx="${p.page}"]`);
+    if (!gridEl) return;
+
+    const rect = gridEl.getBoundingClientRect();
+    const cellWidth = rect.width / 12;
+    const cellHeight = rect.height / 45;
+
+    const onMouseMove = (moveEvent) => {
+        const deltaX = moveEvent.clientX - startX;
+        const cellDeltaX = Math.round(deltaX / cellWidth);
+
+        // Proportional resize (driven by Width)
+        let newSpan = startSpan + cellDeltaX;
+        if (newSpan < 1) newSpan = 1;
+        if (newSpan > (12 - p.gridX + 1)) newSpan = 12 - p.gridX + 1;
+
+        // Visual feedback
+        const wrapper = document.querySelector(`.builder-problem-wrapper[data-id="${id}"]`);
+        if (wrapper) {
+            const newWeight = Math.round(newSpan / ratio);
+            const newRows = Math.max(1, Math.round(newWeight / newSpan));
+            wrapper.style.gridArea = `${p.gridY} / ${p.gridX} / span ${newRows} / span ${newSpan}`;
+        }
+    };
+
+    const onMouseUp = (upEvent) => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+
+        const deltaX = upEvent.clientX - startX;
+        const cellDeltaX = Math.round(deltaX / cellWidth);
+
+        let newSpan = startSpan + cellDeltaX;
+        if (newSpan < 1) newSpan = 1;
+        if (newSpan > (12 - p.gridX + 1)) newSpan = 12 - p.gridX + 1;
+
+        // Commit changes
+        p.problemData.span = newSpan;
+        p.weight = Math.round(newSpan / ratio);
+        if (p.problemData.weight !== undefined) p.problemData.weight = p.weight;
+
+        saveToStorage();
+        renderBuilderSheet();
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+};
+
+window.resizeProblem = function (id, type, dir) {
+    // Legacy support
+};

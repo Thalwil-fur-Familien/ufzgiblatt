@@ -15,8 +15,8 @@
     /* Vertical position of Name/Date fields */
     --logo-blue: #1b3b5a;
     --logo-green: #91c13d;
-    --unit-height: 15mm;
-    /* Standard height for 1 problem unit (15 rows) */
+    --unit-height: 5mm;
+    /* Standard height for 1 problem unit (now 45 rows) */
 }
 
 * {
@@ -815,7 +815,7 @@ button:hover {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     position: relative;
     font-family: 'Comic Neue', cursive;
-    font-size: 16pt;
+    font-size: 40pt;
     /* Slightly smaller font */
     margin: auto;
     /* Center on screen */
@@ -870,31 +870,35 @@ h1 {
     display: grid;
     width: 100%;
     box-sizing: border-box;
-    grid-template-columns: repeat(4, 1fr);
-    column-gap: 12px;
+    grid-template-columns: repeat(12, 1fr);
+    column-gap: 8px;
+    /* Slightly tighter gap for higher res */
     row-gap: 0;
     /* Unit-based rows handle spacing */
-    grid-template-rows: repeat(15, var(--unit-height));
+    grid-template-rows: repeat(45, var(--unit-height));
     grid-auto-flow: dense;
     align-content: start;
-    /* Changed from space-evenly for consistent layout */
     margin-top: 5px;
-    /* Consistent vertical start position */
 }
 
 .problem {
-    display: grid;
+    display: block;
+    /* Content handled by boundary and inner flex/grid */
     width: 100%;
-    grid-template-columns: 1fr 15px 1fr 15px 50px;
-    /* 1 Op 2 Eq Input */
-    align-items: center;
-    padding: 2px;
-    /* Compact padding to prevent overflow */
     height: 100%;
     box-sizing: border-box;
     overflow: visible;
-    /* Allow text to show if tight */
-    gap: 2px;
+    /* To allow control buttons to stick out slightly if needed */
+}
+
+.problem-boundary {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    /* Default to flex, specific types might override */
+    align-items: center;
+    justify-content: center;
 }
 
 /* --- Builder Specific Styles --- */
@@ -1098,17 +1102,23 @@ h1 {
     color: white;
     border: 2px solid white;
     font-size: 14px;
-    cursor: pointer;
-    display: none;
-    z-index: 20;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
+    z-index: 100;
 }
 
-.builder-problem-wrapper:hover .btn-remove-problem {
-    display: flex;
+.resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 16px;
+    height: 16px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, #cbd5e1 50%);
+    border-bottom-right-radius: 4px;
+    z-index: 101;
+}
+
+.resize-handle:hover {
+    background: linear-gradient(135deg, transparent 50%, #64748b 50%);
 }
 
 .drop-indicator {
@@ -1902,8 +1912,8 @@ input.brick-input {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 120px;
-    /* Fixed width for better look */
+    width: 100px;
+    /* Reduced width to prevent overflow */
     margin: 0 auto;
 }
 
