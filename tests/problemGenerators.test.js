@@ -1,8 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import { generateProblem, generateProblemsData } from '../js/problemGenerators.js';
 import { setSeed } from '../js/mathUtils.js';
+import { registerAllProblems } from '../js/problemTypes/index.js';
 
 describe('problemGenerators', () => {
+    beforeAll(() => {
+        registerAllProblems();
+    });
+
     beforeEach(() => {
         setSeed(123); // Consistent seed for tests
     });
