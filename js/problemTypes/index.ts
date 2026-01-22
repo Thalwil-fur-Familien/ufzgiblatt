@@ -9,7 +9,7 @@ import { MoneyProblem } from './MoneyProblem.js';
 import { WrittenCalculationProblem } from './WrittenCalculationProblem.js';
 import { FractionProblem, RoundingProblem } from './MiscProblems.js';
 
-export function registerAllProblems() {
+export function registerAllProblems(): void {
     // Arithmetic
     ['add_10', 'sub_10', 'add_20_simple', 'sub_20_simple', 'add_20', 'sub_20',
         'add_100_simple', 'add_100_carry', 'sub_100_simple', 'sub_100_carry',

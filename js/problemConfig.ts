@@ -1,8 +1,13 @@
-export const LAYOUT_CONFIG = {
+export interface LayoutConfig {
+    weight: number;
+    span: number;
+}
+
+export const LAYOUT_CONFIG: Record<string, LayoutConfig> = {
     'default': { weight: 36, span: 12 },
 
     // Grade 1/2 Essentials (Span 3, Height 3 -> Area 9)
-    'add_10': { weight: 3, span: 1 },
+    'add_10': { weight: 9, span: 3 },
     'sub_10': { weight: 9, span: 3 },
     'add_20_simple': { weight: 9, span: 3 },
     'sub_20_simple': { weight: 9, span: 3 },

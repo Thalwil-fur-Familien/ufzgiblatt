@@ -1,17 +1,25 @@
-import { Problem } from '../Problem.js';
+import { Problem, ProblemData } from '../Problem.js';
 import { getRandomInt } from '../mathUtils.js';
 
+export interface PyramidData extends ProblemData {
+    values: number[];
+    mask: boolean[];
+    levels: number;
+}
+
 export class PyramidProblem extends Problem {
-    constructor(data) {
+    declare data: PyramidData;
+
+    constructor(data: PyramidData) {
         super(data);
     }
 
-    render(target, isSolution, lang) {
+    render(target: HTMLElement, isSolution: boolean, _lang: string): void {
         const v = this.data.values;
         const m = this.data.mask;
         const levels = this.data.levels || 3;
 
-        const renderBrick = (idx) => {
+        const renderBrick = (idx: number) => {
             if (idx >= v.length) return '';
             const val = v[idx];
             const isHidden = m[idx];
@@ -32,7 +40,7 @@ export class PyramidProblem extends Problem {
         let html = '<div class="pyramid-container">';
 
         let currentStartIndex = 0;
-        let rowStarts = [];
+        let rowStarts: number[] = [];
         let currentRowLen = levels;
         for (let l = 0; l < levels; l++) {
             rowStarts.push(currentStartIndex);
@@ -61,7 +69,7 @@ export class PyramidProblem extends Problem {
         target.style.border = 'none';
     }
 
-    static generate(type, options, lang) {
+    static generate(type: string, _options: any, _lang: string): Partial<PyramidData> {
         let maxTop = 100;
         let levels = 3;
 
@@ -73,9 +81,9 @@ export class PyramidProblem extends Problem {
         return this.generatePyramid(maxTop, levels);
     }
 
-    static generatePyramid(maxTop, levels = 3) {
-        let values = [];
-        let top;
+    static generatePyramid(maxTop: number, levels: number = 3): Partial<PyramidData> {
+        let values: number[] = [];
+        let top: number;
         do {
             values = [];
             let baseCount = levels;
@@ -108,7 +116,7 @@ export class PyramidProblem extends Problem {
         if (levels === 3) targetHidden = 3;
         if (levels === 4) targetHidden = 6;
 
-        let mask;
+        let mask: boolean[] = [];
         let solvable = false;
         let attempts = 0;
 
@@ -142,8 +150,8 @@ export class PyramidProblem extends Problem {
         return { type: 'pyramid', values, mask, levels };
     }
 
-    static getPyramidRelations(levels) {
-        const relations = [];
+    static getPyramidRelations(levels: number): number[][] {
+        const relations: number[][] = [];
         let currentLayerStart = 0;
         let currentLayerLength = levels;
 
@@ -160,7 +168,7 @@ export class PyramidProblem extends Problem {
         return relations;
     }
 
-    static checkPyramidSolvable(relations, totalItems, mask) {
+    static checkPyramidSolvable(relations: number[][], _totalItems: number, mask: boolean[]): boolean {
         const known = mask.map(m => !m);
         let progress = true;
         while (progress) {

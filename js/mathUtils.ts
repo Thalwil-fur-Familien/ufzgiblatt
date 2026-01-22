@@ -1,5 +1,5 @@
 // Seeded Random Number Generator (Mulberry32)
-export function mulberry32(a) {
+export function mulberry32(a: number) {
     return function () {
         var t = a += 0x6D2B79F5;
         t = Math.imul(t ^ t >>> 15, t | 1);
@@ -11,16 +11,16 @@ export function mulberry32(a) {
 export let globalSeed = Math.floor(Math.random() * 0xFFFFFFFF);
 export let seededRandom = mulberry32(globalSeed);
 
-export function setSeed(seed) {
+export function setSeed(seed: number) {
     globalSeed = seed;
     seededRandom = mulberry32(globalSeed);
 }
 
-export function getRandomInt(min, max) {
+export function getRandomInt(min: number, max: number): number {
     return Math.floor(seededRandom() * (max - min + 1)) + min;
 }
 
-export function gcd(x, y) {
+export function gcd(x: number, y: number): number {
     x = Math.abs(x);
     y = Math.abs(y);
     while (y) {

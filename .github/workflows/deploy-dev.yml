@@ -39,18 +39,21 @@ jobs:
       #   run: npm run test:gui
 
       # --- 🚀 DEPLOY ---
+      - name: Build
+        run: npm run build
+
       - name: Inject Build Info
         env:
           TZ: 'Europe/Zurich'
         run: |
             HASH=$(git rev-parse --short HEAD)
             DATE=$(date +'%Y-%m-%d %H:%M %Z')
-            sed -i "s|Local Development Build|Build: $HASH ($DATE) - DEV|g" index.html
+            sed -i "s|Local Development Build|Build: $HASH ($DATE) - DEV|g" dist/index.html
 
       - name: Deploy to Dev Subfolder
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
+          publish_dir: dist
           destination_dir: dev
           keep_files: true

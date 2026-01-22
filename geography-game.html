@@ -7,7 +7,7 @@
     <title>Kanton Master - Schweizer Kantone lernen</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="geography-game.css">
-    <script src="js/analytics.js"></script>
+    <script type="module" src="js/analytics.ts"></script>
 </head>
 
 <body style="visibility: hidden; opacity: 0; transition: opacity 0.2s;">
@@ -77,7 +77,7 @@
     </footer>
 
     <script type="module">
-        import { initGeoGame } from './js/geography-game-core.js';
+        import { initGeoGame } from './js/geography-game-core.ts';
 
         // Initialize game with German configuration
         initGeoGame({

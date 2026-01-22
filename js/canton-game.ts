@@ -3,7 +3,7 @@ import { TRANSLATIONS } from './translations.js';
 // Detect language from URL path
 const lang = window.location.pathname.includes('/en/') ? 'en' : 'de';
 const basePath = lang === 'en' ? '../' : './';
-let T;
+let T: any;
 
 // Debug indicator
 const debugEl = document.getElementById('error-console');
@@ -14,7 +14,16 @@ if (debugEl) {
 }
 
 // Game state
-let geoState = {
+interface GeoState {
+    regionData: Array<{ id: string, name: string }>;
+    solvedRegions: string[];
+    currentRegion: { id: string, name: string } | null;
+    score: number;
+    totalRounds: number;
+    selectedItemId: string | null;
+}
+
+let geoState: GeoState = {
     regionData: [],
     solvedRegions: [],
     currentRegion: null,
@@ -29,20 +38,22 @@ async function initGame() {
     const instructionEl = document.getElementById('game-instruction');
     const scoreEl = document.getElementById('score-display');
 
+    if (!mapContainer || !instructionEl || !scoreEl) return;
+
     // OUTPUT DEBUG
     if (debugEl) debugEl.innerText += '\nInitGame started.';
 
     try {
-        T = TRANSLATIONS[lang].ui.geoGame;
+        T = (TRANSLATIONS as any)[lang].ui.geoGame;
         if (debugEl) debugEl.innerText += '\nTranslations loaded.';
-    } catch (e) {
+    } catch (e: any) {
         if (debugEl) debugEl.innerText += '\nTranslation Error: ' + e.message;
         console.error(e);
         return;
     }
 
     instructionEl.textContent = T.loading;
-    scoreEl.textContent = T.score.replace('{score}', 0).replace('{total}', 0);
+    scoreEl.textContent = T.score.replace('{score}', '0').replace('{total}', '0');
     mapContainer.innerHTML = '<p>' + T.loading + '</p>';
 
     try {
@@ -66,17 +77,17 @@ async function initGame() {
 
         // Setup restart button
         const restartBtn = document.getElementById('restart-game');
-        restartBtn.onclick = restartGame;
+        if (restartBtn) restartBtn.onclick = restartGame;
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error loading map:', error);
         mapContainer.innerHTML = `<p>${T.error}</p>`;
     }
 }
 
-function extractRegionsFromSVG(svg) {
+function extractRegionsFromSVG(svg: SVGSVGElement) {
     geoState.regionData = [];
-    const paths = svg.querySelectorAll('path');
+    const paths = svg.querySelectorAll<SVGPathElement>('path');
 
     paths.forEach(path => {
         const id = path.getAttribute('id');
@@ -91,7 +102,7 @@ function extractRegionsFromSVG(svg) {
     });
 
     // Handle labels if they exist in SVG
-    const labels = svg.querySelectorAll('text, g[id*="Abbr"], g[id*="Name"]');
+    const labels = svg.querySelectorAll<SVGElement>('text, g[id*="Abbr"], g[id*="Name"]');
     labels.forEach(l => {
         l.style.display = 'none';
         l.style.pointerEvents = 'none'; // Ensure they don't block clicks
@@ -135,13 +146,7 @@ function startNewGeoRound() {
     updateGeoScore();
 }
 
-function handleGeoRegionClick(regionId) {
-    // In this game mode (Find), click usually means checking if it's the currentRegion.
-    // However, if we wanted to support "select name then tap map", we'd need a names list here too.
-    // Since canton-game.js doesn't seem to have a draggable names list (it's "Find" mode only),
-    // we don't need tap-to-select logic here unless it has other modes.
-    // Based on the code, it's strictly a "Where is...?" game.
-
+function handleGeoRegionClick(regionId: string) {
     if (!geoState.currentRegion) return;
 
     const targetPath = document.getElementById(regionId);
@@ -173,14 +178,17 @@ function handleGeoRegionClick(regionId) {
     updateGeoScore();
 }
 
-function updateGeoInstruction(text) {
-    document.getElementById('game-instruction').textContent = text;
+function updateGeoInstruction(text: string) {
+    const el = document.getElementById('game-instruction');
+    if (el) el.textContent = text;
 }
 
 function updateGeoScore() {
     const currentTotal = geoState.solvedRegions.length + (geoState.currentRegion ? 1 : 0);
-    document.getElementById('score-display').textContent =
-        T.score.replace('{score}', geoState.score).replace('{total}', currentTotal);
+    const el = document.getElementById('score-display');
+    if (el) {
+        el.textContent = T.score.replace('{score}', geoState.score.toString()).replace('{total}', currentTotal.toString());
+    }
 }
 
 function endGeoGame() {

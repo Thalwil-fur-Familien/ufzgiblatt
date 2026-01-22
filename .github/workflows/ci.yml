@@ -18,6 +18,8 @@ jobs:
         run: npm ci
       # - name: Install Playwright Browsers
       #   run: npx playwright install --with-deps
+      - name: Run Build (Type Check & Bundle)
+        run: npm run build
       - name: Run Unit Tests
         run: npm test -- --run
       # - name: Run GUI Tests

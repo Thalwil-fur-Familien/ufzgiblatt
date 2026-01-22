@@ -4,6 +4,9 @@
   "description": "",
   "main": "script.js",
   "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
     "test": "vitest",
     "test:gui": "playwright test",
     "test:gui:ui": "playwright test --ui"
@@ -22,8 +25,10 @@
   "homepage": "https://github.com/Thalwil-fur-Familien/ufzgiblatt#readme",
   "devDependencies": {
     "@playwright/test": "^1.57.0",
-    "@types/node": "^25.0.3",
+    "@types/node": "^25.0.10",
     "serve": "^14.2.5",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
     "vitest": "^4.0.16"
   }
 }

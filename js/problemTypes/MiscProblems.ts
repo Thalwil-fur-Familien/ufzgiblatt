@@ -1,12 +1,31 @@
-import { Problem } from '../Problem.js';
+import { Problem, ProblemData } from '../Problem.js';
 import { getRandomInt, gcd } from '../mathUtils.js';
 
+export interface FractionData extends ProblemData {
+    num?: number;
+    den?: number;
+    numA?: number;
+    denA?: number;
+    numB?: number;
+    denB?: number;
+    op?: string;
+    answer: string;
+}
+
+export interface RoundingData extends ProblemData {
+    val: number;
+    place: number;
+    answer: number;
+}
+
 export class FractionProblem extends Problem {
-    constructor(data) {
+    declare data: FractionData;
+
+    constructor(data: FractionData) {
         super(data);
     }
 
-    render(target, isSolution, lang) {
+    render(target: HTMLElement, isSolution: boolean, _lang: string): void {
         const { answer } = this.data;
         const valAns = isSolution ? answer : '';
         const readonlyAttr = isSolution ? 'readonly' : '';
@@ -19,8 +38,7 @@ export class FractionProblem extends Problem {
                     <span class="fraction-bottom">${den}</span>
                 </div>
                 <span class="equals">=</span>
-                <input type="text" class="answer-input" style="width:60px;" placeholder="a/b" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${readonlyAttr}>
-            `;
+                <input type="text" class="answer-input" style="width:60px;" placeholder="a/b" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${readonlyAttr}>`;
         } else if (this.data.type === 'fraction_op') {
             const { numA, denA, numB, denB, op } = this.data;
             target.innerHTML = `
@@ -34,12 +52,11 @@ export class FractionProblem extends Problem {
                     <span class="fraction-bottom">${denB}</span>
                 </div>
                <span class="equals">=</span>
-               <input type="text" class="answer-input" style="width:60px;" placeholder="a/b" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${readonlyAttr}>
-            `;
+               <input type="text" class="answer-input" style="width:60px;" placeholder="a/b" data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${readonlyAttr}>`;
         }
     }
 
-    static generate(type, options, lang) {
+    static generate(type: string, _options: any, _lang: string): Partial<FractionData> | undefined {
         if (type === 'frac_simplify') {
             let num = getRandomInt(1, 10);
             let den = getRandomInt(num + 1, 20);
@@ -56,29 +73,32 @@ export class FractionProblem extends Problem {
             let numB = getRandomInt(1, den - numA);
             return { type: 'fraction_op', numA, denA: den, numB, denB: den, op: '+', answer: `${numA + numB}/${den}` };
         }
+        return undefined;
     }
 }
 
 export class RoundingProblem extends Problem {
-    constructor(data) {
+    declare data: RoundingData;
+
+    constructor(data: RoundingData) {
         super(data);
     }
 
-    render(target, isSolution, lang) {
+    render(target: HTMLElement, isSolution: boolean, _lang: string): void {
         const { val, place, answer } = this.data;
         const valAns = isSolution ? answer : '';
-        const uiT = (window.T || {});
-        const labelTemplate = uiT.ui?.roundingLabel || 'Runde {val} auf {place}:';
+        const uiT = ((window as any).TRANSLATIONS || {});
+        const currentLang = ((window as any).lang || 'de');
+        const labelTemplate = uiT[currentLang]?.ui?.roundingLabel || 'Round {val} to the nearest {place}:';
 
         target.style.flexDirection = 'column';
         target.innerHTML = `
-             <div style="margin-bottom:5px;">${labelTemplate.replace('{val}', val).replace('{place}', place)}</div>
+             <div style="margin-bottom:5px;">${labelTemplate.replace('{val}', val.toString()).replace('{place}', place.toString())}</div>
              <input type="number" class="answer-input" style="width:80px;" 
-                    data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
-        `;
+                    data-expected="${answer}" value="${valAns}" oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>`;
     }
 
-    static generate(type, options, lang) {
+    static generate(_type: string, _options: any, _lang: string): Partial<RoundingData> {
         let val = getRandomInt(1000, 99999);
         let place = [10, 100, 1000][getRandomInt(0, 2)];
         return { type: 'rounding', val, place, answer: Math.round(val / place) * place };

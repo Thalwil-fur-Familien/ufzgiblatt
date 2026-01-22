@@ -1,18 +1,18 @@
 import { getURLParams } from './urlUtils.js';
 
-export const TRANSLATIONS = {
+export interface Translation {
+    ui: any;
+    topics: any;
+    word_problems: any[];
+    word_types: any[][];
+}
+
+export const TRANSLATIONS: Record<string, Translation> = {
     de: {
         ui: {
             title: "ufzgiblatt.ch",
             gradeLabel: "Klasse",
-            grades: {
-                "1": "1.",
-                "2": "2.",
-                "3": "3.",
-                "4": "4.",
-                "5": "5.",
-                "6": "6.",
-            },
+            grades: { "1": "1.", "2": "2.", "3": "3.", "4": "4.", "5": "5.", "6": "6." },
             labelCount: "Anzahl:",
             labelDensity: "Dichte:",
             labelSolutions: "Lösungen",
@@ -266,14 +266,7 @@ export const TRANSLATIONS = {
         ui: {
             title: "ufzgiblatt.ch",
             gradeLabel: "Grade",
-            grades: {
-                "1": "1st",
-                "2": "2nd",
-                "3": "3rd",
-                "4": "4th",
-                "5": "5th",
-                "6": "6th",
-            },
+            grades: { "1": "1st", "2": "2nd", "3": "3rd", "4": "4th", "5": "5th", "6": "6th" },
             labelCount: "Count:",
             labelDensity: "Density:",
             labelSolutions: "Solutions",
@@ -413,7 +406,7 @@ export const TRANSLATIONS = {
             rechenmauer_100: "🧱 Large Number Pyramids (up to 100)",
             time_duration: "⏳ Time Intervals",
             time_analog_set_complex: "🕰️ Draw Time (Digital -> Analog)",
-            rechendreiecke_100: "🔺 Math    Triangles (up to 100)",
+            rechendreiecke_100: "🔺 Math Triangles (up to 100)",
             zahlenhaus_100: "🏠 Number House (up to 100)",
             add_written: "✍️ Column Addition (up to 1M)",
             sub_written: "✍️ Column Subtraction (up to 1M)",
@@ -452,38 +445,32 @@ export const TRANSLATIONS = {
             [{ text: "The", type: "artikel" }, { text: "friendly", type: "adj" }, { text: "teacher", type: "noun" }, { text: "explains", type: "verb" }, { text: "the", type: "artikel" }, { text: "interesting", type: "adj" }, { text: "material", type: "noun" }, { text: "very", type: "other" }, { text: "well", type: "adj" }, { text: ".", type: "other" }],
             [{ text: "The", type: "artikel" }, { text: "strong", type: "adj" }, { text: "lion", type: "noun" }, { text: "roars", type: "verb" }, { text: "loudly", type: "adj" }, { text: "in", type: "other" }, { text: "the", type: "artikel" }, { text: "wide", type: "adj" }, { text: "savannah", type: "noun" }, { text: ".", type: "other" }],
             [{ text: "A", type: "artikel" }, { text: "little", type: "adj" }, { text: "girl", type: "noun" }, { text: "reads", type: "verb" }, { text: "an", type: "artikel" }, { text: "exciting", type: "adj" }, { text: "book", type: "noun" }, { text: "under", type: "other" }, { text: "the", type: "artikel" }, { text: "old", type: "adj" }, { text: "tree", type: "noun" }, { text: ".", type: "other" }],
-            [{ text: "We", type: "other" }, { text: "eat", type: "verb" }, { text: "a", type: "artikel" }, { text: "juicy", type: "adj" }, { text: "cake", type: "noun" }, { text: "today", type: "other" }, { text: "and", type: "other" }, { text: "drink", type: "verb" }, { text: "cold", type: "adj" }, { text: "milk", type: "noun" }, { text: "with", type: "other" }, { text: "it", type: "other" }, { text: ".", type: "other" }]
+            [{ text: "We", type: "other" }, { text: "eat", type: "verb" }, { text: "a", type: "artikel" }, { text: "juicy", type: "adj" }, { text: "cake", type: "today", type: "other" }, { text: "and", type: "other" }, { text: "drink", type: "verb" }, { text: "cold", type: "adj" }, { text: "milk", type: "noun" }, { text: "with", type: "it", type: "other" }, { text: ".", type: "other" }]
         ]
     }
 };
 
-export function getPreferredLanguage() {
-    // 1. URL Param
+export function getPreferredLanguage(): string {
     const urlParams = getURLParams();
     if (urlParams.has('lang')) {
         const urlLang = urlParams.get('lang');
         if (urlLang === 'en' || urlLang === 'de') return urlLang;
     }
 
-    // 2. Local Storage
     try {
         const stored = localStorage.getItem('ufzgiblatt_lang');
         if (stored === 'en' || stored === 'de') return stored;
-    } catch (e) {
-        // Access denied
-    }
+    } catch (e) { }
 
-    // 3. Browser Language
-    const navLang = navigator.language || navigator.userLanguage;
+    const navLang = navigator.language;
     if (navLang && navLang.startsWith('en')) {
         return 'en';
     }
 
-    // 4. Default
     return 'de';
 }
 
-export function setPreferredLanguage(lang) {
+export function setPreferredLanguage(lang: string) {
     if (lang !== 'en' && lang !== 'de') return;
     try {
         localStorage.setItem('ufzgiblatt_lang', lang);

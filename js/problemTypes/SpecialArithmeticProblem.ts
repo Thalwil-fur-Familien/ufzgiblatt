@@ -1,12 +1,29 @@
-import { Problem } from '../Problem.js';
+import { Problem, ProblemData } from '../Problem.js';
 import { getRandomInt, seededRandom } from '../mathUtils.js';
 
+export interface SpecialArithmeticData extends ProblemData {
+    a?: number;
+    b?: number;
+    sum?: number;
+    op?: string;
+    answer?: number;
+    remainder?: number;
+    subtype?: 'double' | 'halve';
+    val?: number;
+    start?: number;
+    jump1?: number;
+    mid?: number;
+    jump2?: number;
+}
+
 export class SpecialArithmeticProblem extends Problem {
-    constructor(data) {
+    declare data: SpecialArithmeticData;
+
+    constructor(data: SpecialArithmeticData) {
         super(data);
     }
 
-    render(target, isSolution, lang) {
+    render(target: HTMLElement, isSolution: boolean, _lang: string): void {
         const span = this.span;
         const style = isSolution ? 'color:var(--primary-color); font-weight:bold;' : '';
         const readonlyAttr = isSolution ? 'readonly' : '';
@@ -23,14 +40,14 @@ export class SpecialArithmeticProblem extends Problem {
             target.style.gap = gapSize;
 
             target.innerHTML = `
-                <span class="number" style="text-align:right; width:auto;">${a}</span>
-                <span class="operator" style="width:auto;">${op || '+'}</span>
+                <span class="number">${a}</span>
+                <span class="operator">${op || '+'}</span>
                 <input type="number" class="answer-input" style="width:${inputWidth}; text-align:center; ${style}" 
                        data-expected="${answer}" 
                        value="${val}"
                        oninput="validateInput(this)" ${readonlyAttr}>
-                <span class="equals" style="width:auto;">=</span>
-                <span class="number" style="text-align:left; width:auto;">${sum}</span>
+                <span class="equals">=</span>
+                <span class="number" style="text-align:left;">${sum}</span>
             `;
         } else if (this.data.type === 'div_remainder') {
             const { a, b, op, answer, remainder } = this.data;
@@ -50,8 +67,10 @@ export class SpecialArithmeticProblem extends Problem {
             `;
         } else if (this.data.type === 'doubling_halving') {
             const { subtype, val, answer } = this.data;
-            const uiT = (window.T || {});
-            const label = subtype === 'double' ? (uiT.ui?.doubleLabel || 'Das Doppelte') : (uiT.ui?.halfLabel || 'Die Hälfte');
+            const uiT = ((window as any).TRANSLATIONS || {});
+            const currentLang = ((window as any).lang || 'de');
+            const langT = uiT[currentLang] || {};
+            const label = subtype === 'double' ? (langT.ui?.doubleLabel || 'Das Doppelte') : (langT.ui?.halfLabel || 'Die Hälfte');
 
             const valAns = isSolution ? answer : '';
 
@@ -81,7 +100,7 @@ export class SpecialArithmeticProblem extends Problem {
             target.style.padding = '20px 0';
 
             const equationHtml = `<div style="font-size: 1.2rem; margin-bottom: 20px;">
-                ${start} + ${jump1 + jump2} = <input type="number" class="answer-input" style="width:70px;" data-expected="${sum}" value="${sSum}" oninput="validateInput(this)" ${readonlyAttr} ${style}>
+                ${start} + ${(jump1 || 0) + (jump2 || 0)} = <input type="number" class="answer-input" style="width:70px;" data-expected="${sum}" value="${sSum}" oninput="validateInput(this)" ${readonlyAttr} ${style}>
             </div>`;
 
             const vizHtml = `
@@ -112,7 +131,7 @@ export class SpecialArithmeticProblem extends Problem {
         }
     }
 
-    static generate(type, options, lang) {
+    static generate(type: string, options: any, _lang: string): Partial<SpecialArithmeticData> | undefined {
         switch (type) {
             case 'bonds_10':
                 {
@@ -151,10 +170,11 @@ export class SpecialArithmeticProblem extends Problem {
             case 'married_100':
                 return this.generateMarriedNumbers(options.marriedMultiplesOf10 || false);
         }
+        return undefined;
     }
 
-    static generateMarriedNumbers(onlyMultiplesOf10) {
-        let a;
+    static generateMarriedNumbers(onlyMultiplesOf10: boolean): Partial<SpecialArithmeticData> {
+        let a: number;
         if (onlyMultiplesOf10) {
             a = getRandomInt(0, 10) * 10;
         } else {

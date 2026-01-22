@@ -3,7 +3,7 @@
  * Supports both standard query parameters (?lang=de) 
  * and hash-based parameters (/#generator?lang=de).
  */
-export function getURLParams() {
+export function getURLParams(): URLSearchParams {
     const params = new URLSearchParams(window.location.search);
     const hash = window.location.hash;
 
@@ -29,7 +29,7 @@ export function getURLParams() {
  * Gets the current page/section from the hash.
  * In /#generator?lang=de, the page is 'generator'.
  */
-export function getPageFromHash() {
+export function getPageFromHash(): string {
     const hash = window.location.hash.substring(1); // remove #
     if (!hash) return 'generator';
 

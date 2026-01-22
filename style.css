@@ -298,7 +298,7 @@ body {
     padding: 0;
     transition: background-color 0.4s ease, border-color 0.4s ease;
     height: auto;
-    background-color: transparent;
+    background-color: #f9f9f9;
 }
 
 /* Ensure title doesn't show outline on focus */
@@ -815,7 +815,7 @@ button:hover {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     position: relative;
     font-family: 'Comic Neue', cursive;
-    font-size: 40pt;
+    font-size: 10pt;
     /* Slightly smaller font */
     margin: auto;
     /* Center on screen */
@@ -870,15 +870,15 @@ h1 {
     display: grid;
     width: 100%;
     box-sizing: border-box;
-    grid-template-columns: repeat(12, 1fr);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
     column-gap: 8px;
-    /* Slightly tighter gap for higher res */
     row-gap: 0;
-    /* Unit-based rows handle spacing */
     grid-template-rows: repeat(45, var(--unit-height));
     grid-auto-flow: dense;
     align-content: start;
     margin-top: 5px;
+    background-color: #f9f9f9;
+    /* Visual aid for grid area */
 }
 
 .problem {
@@ -889,6 +889,8 @@ h1 {
     box-sizing: border-box;
     overflow: visible;
     /* To allow control buttons to stick out slightly if needed */
+    border: 1px dashed #ddd;
+    /* Debug frame */
 }
 
 .problem-boundary {
@@ -1173,25 +1175,23 @@ h1 {
 */
 
 .number {
-    width: 100%;
-    /* Fill Grid Cell (1fr) */
+    width: 45px;
+    display: inline-block;
     font-family: 'Courier New', Courier, monospace;
-    /* Monospace for alignment */
     text-align: right;
     margin-right: 4px;
-    /* Slight spacing from operator */
 }
 
 .operator {
-    width: 100%;
-    /* Fill Grid Cell (15px) */
+    width: 25px;
+    display: inline-block;
     font-family: 'Courier New', Courier, monospace;
     text-align: center;
 }
 
 .equals {
-    width: 100%;
-    /* Fill Grid Cell (15px) */
+    width: 25px;
+    display: inline-block;
     text-align: center;
     font-family: 'Courier New', Courier, monospace;
 }
@@ -1522,11 +1522,13 @@ input.brick-input {
         display: grid !important;
         grid-template-columns: repeat(4, 1fr) !important;
         break-inside: auto;
+        background-color: transparent !important;
     }
 
     .problem {
         break-inside: avoid;
         page-break-inside: avoid;
+        border: none !important;
     }
 
     /* Specific element tweaks for print */

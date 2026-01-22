@@ -1,12 +1,22 @@
-import { Problem } from '../Problem.js';
+import { Problem, ProblemData } from '../Problem.js';
 import { getRandomInt } from '../mathUtils.js';
 
+export interface ArithmeticData extends ProblemData {
+    a: number;
+    b: number;
+    op: string;
+    answer: number;
+    hasGrid?: boolean;
+}
+
 export class ArithmeticProblem extends Problem {
-    constructor(data) {
+    declare data: ArithmeticData;
+
+    constructor(data: ArithmeticData) {
         super(data);
     }
 
-    render(target, isSolution, lang) {
+    render(target: HTMLElement, isSolution: boolean, _lang: string): void {
         const { a, b, op, answer } = this.data;
         const valAns = isSolution ? answer : '';
         const span = this.span;
@@ -18,10 +28,10 @@ export class ArithmeticProblem extends Problem {
         const inputWidth = span <= 3 ? '50px' : '65px';
 
         target.innerHTML = `
-            <span class="number" style="width:auto;">${a}</span>
-            <span class="operator" style="width:auto;">${op}</span>
-            <span class="number" style="width:auto;">${b}</span>
-            <span class="equals" style="width:auto;">=</span>
+            <span class="number">${a}</span>
+            <span class="operator">${op}</span>
+            <span class="number">${b}</span>
+            <span class="equals">=</span>
             <input type="number" class="answer-input" style="width:${inputWidth}; text-align:center;" 
                 data-expected="${answer}" value="${valAns}" 
                 oninput="validateInput(this)" ${isSolution ? 'readonly' : ''}>
@@ -36,9 +46,11 @@ export class ArithmeticProblem extends Problem {
         }
     }
 
-    static generate(type, options, lang) {
-        let a, b, op;
-        let res = { type: 'standard' };
+    static generate(type: string, _options: any, _lang: string): Partial<ArithmeticData> {
+        let a: number = 0;
+        let b: number = 0;
+        let op: string = '';
+        let res: Partial<ArithmeticData> = { type: 'standard' };
 
         switch (type) {
             case 'add_10':

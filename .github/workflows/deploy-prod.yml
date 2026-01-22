@@ -16,7 +16,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+      # --- 🏗️ BUILD ---
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
       # --- 🚀 DEPLOY ---
       - name: Inject Build Info
         env:
@@ -24,12 +36,12 @@ jobs:
         run: |
             HASH=$(git rev-parse --short HEAD)
             DATE=$(date +'%Y-%m-%d %H:%M %Z')
-            sed -i "s|Local Development Build|Build: $HASH ($DATE)|g" index.html
+            sed -i "s|Local Development Build|Build: $HASH ($DATE)|g" dist/index.html
             
       - name: Deploy to Root
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
+          publish_dir: dist
           # destination_dir is empty, so it goes to root
           keep_files: true
