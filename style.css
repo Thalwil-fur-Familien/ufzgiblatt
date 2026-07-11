@@ -731,17 +731,6 @@ input.answer-input.incorrect {
     font-size: 10pt;
 }
 
-/* Motivational Emoji */
-.mascot {
-    position: absolute;
-    bottom: 15mm;
-    /* Match footer area */
-    right: 15mm;
-    /* Match padding */
-    font-size: 3rem;
-    opacity: 0.8;
-}
-
 /* Rechenmauer (Pyramid) Styles */
 .pyramid-container {
     display: flex;
@@ -918,11 +907,11 @@ input.brick-input {
     }
 
     .marked-verb {
-        border-bottom: 3px solid blue !important;
+        border-bottom: 3px dashed blue !important;
     }
 
     .marked-adj {
-        border-bottom: 3px solid green !important;
+        border-bottom: 3px dotted green !important;
     }
 }
 
@@ -954,15 +943,6 @@ input.brick-input {
     height: 0;
     border-bottom: 2px solid #000;
     margin: 2px 0;
-}
-
-.written-input {
-    width: 20px;
-    text-align: center;
-    border: 1px solid #ccc;
-    /* Helper borders */
-    font-family: inherit;
-    /* In print we might hide border? */
 }
 
 /* Squared Background for working out */
@@ -1163,14 +1143,17 @@ input.brick-input {
 
 .marked-verb {
     border-bottom-color: blue !important;
+    border-bottom-style: dashed !important;
 }
 
 .marked-adj {
     border-bottom-color: green !important;
+    border-bottom-style: dotted !important;
 }
 
 .marked-artikel {
     border-bottom-color: orange !important;
+    border-bottom-style: double !important;
 }
 
 .word-types-legend {
@@ -1622,11 +1605,11 @@ input.brick-input {
 }
 
 .marked-verb {
-    border-bottom: 3px solid blue !important;
+    border-bottom: 3px dashed blue !important;
 }
 
 .marked-adj {
-    border-bottom: 3px solid green !important;
+    border-bottom: 3px dotted green !important;
 }
 
 /* Feedback States */
@@ -1719,15 +1702,15 @@ input.brick-input {
 }
 
 .marked-verb {
-    border-bottom: 3px solid blue !important;
+    border-bottom: 3px dashed blue !important;
 }
 
 .marked-adj {
-    border-bottom: 3px solid green !important;
+    border-bottom: 3px dotted green !important;
 }
 
 .marked-artikel {
-    border-bottom: 3px solid orange !important;
+    border-bottom: 3px double orange !important;
 }
 
 .interactive-word.correct {

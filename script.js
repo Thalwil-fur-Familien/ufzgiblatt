@@ -10,7 +10,6 @@ window.updateURLState = updateURLState;
 window.toggleLogoVisibility = toggleLogoVisibility;
 window.toggleQRVisibility = toggleQRVisibility;
 window.validateInput = validateInput;
-window.switchLanguage = switchLanguage;
 
 let lang = getPreferredLanguage();
 // Update storage to ensure consistency
@@ -42,7 +41,6 @@ function updateGradeTopics() {
     });
 }
 
-const mascots = ['🦊', '🦉', '🦁', '🐼', '🐨', '🐯', '🦄', '🦖'];
 
 function trackEvent(name, props = {}) {
     if (window.posthog) {
@@ -216,10 +214,6 @@ function updateTopicSelector(targetTopic = null) {
     const marriedDiv = document.getElementById('marriedOptions');
     const timeDiv = document.getElementById('timeOptions');
     const moneyDiv = document.getElementById('moneyOptions');
-
-    customDiv.style.display = (topicSelector.value === 'custom') ? 'flex' : 'none';
-    marriedDiv.style.display = (topicSelector.value === 'married_100') ? 'flex' : 'none';
-    timeDiv.style.display = (topicSelector.value === 'time_reading') ? 'flex' : 'none';
 
     if (moneyDiv) {
         const isMoney = topicSelector.value === 'money_10' || topicSelector.value === 'money_100';
@@ -1211,17 +1205,20 @@ function createProblemElement(problemData, isSolution) {
             const punctuationStyle = isPunctuation ? 'margin-left: -8px;' : '';
 
             if (isSolution) {
+                // Distinct border styles so word types are distinguishable without color
                 if (word.type === 'noun') style = "border-bottom: 3px solid red;";
-                else if (word.type === 'verb') style = "border-bottom: 3px solid blue;";
-                else if (word.type === 'adj') style = "border-bottom: 3px solid green;";
-                else if (word.type === 'artikel') style = "border-bottom: 3px solid orange;";
+                else if (word.type === 'verb') style = "border-bottom: 3px dashed blue;";
+                else if (word.type === 'adj') style = "border-bottom: 3px dotted green;";
+                else if (word.type === 'artikel') style = "border-bottom: 3px double orange;";
 
                 sentenceHtml += `<span style="${style} padding:0 2px; ${punctuationStyle}">${word.text}</span>`;
             } else {
-                sentenceHtml += `<span class="interactive-word" 
-                    data-type="${word.type}" 
+                sentenceHtml += `<span class="interactive-word"
+                    data-type="${word.type}"
                     data-state="none"
                     style="${punctuationStyle}"
+                    role="button" tabindex="0"
+                    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleWordType(this);}"
                     onclick="toggleWordType(this)">${word.text}</span>`;
             }
         });
@@ -1284,6 +1281,7 @@ function createSheetElement(titleText, problemDataList, isSolution, pageInfo) {
     // Sheet Logo (Top Left)
     const sheetLogo = document.createElement('img');
     sheetLogo.src = basePath + 'images/logo/logo_ufzgiblatt1_text_below_centered.png';
+    sheetLogo.alt = 'ufzgiblatt.ch';
     sheetLogo.className = 'sheet-logo';
     if (document.getElementById('hideLogo').checked) {
         sheetLogo.classList.add('logo-hidden');
@@ -1441,44 +1439,9 @@ function validateInput(input) {
     if (isCorrect) {
         target.classList.add('correct');
         target.classList.remove('incorrect');
-        // valid check removed to avoid performance hit on many pages? 
-        // Actually user didn't ask for removal, but checkAllDone might need optimization or fix.
-        checkAllDone();
     } else {
         target.classList.add('incorrect');
         target.classList.remove('correct');
-    }
-}
-
-function checkAllDone() {
-    // Only check inputs for the sheet the user is typing in, or all?
-    // Checking all 1000 inputs is fine.
-    const inputs = document.querySelectorAll('.answer-input');
-    let allCorrect = true;
-
-    inputs.forEach(input => {
-        // Skip read-only inputs (solutions)
-        if (input.readOnly) return;
-
-        // Determine target for class check (parent for bricks, self for others)
-        const isBrick = input.classList.contains('brick-input');
-        const target = isBrick ? input.parentElement : input;
-
-        // If any field is not marked correct, we aren't done.
-        // Note: Empty fields are not 'correct' yet.
-        if (!target.classList.contains('correct')) {
-            allCorrect = false;
-        }
-    });
-
-    // Mascot logic - check if element exists first
-    const mascot = document.getElementById('mascot');
-    if (mascot) {
-        if (allCorrect) {
-            mascot.textContent = '🎉';
-        } else {
-            mascot.textContent = '🦊'; // Default
-        }
     }
 }
 
@@ -2029,7 +1992,6 @@ window.validateWord = function (el) {
 
     if (expected === actual) {
         el.classList.add('correct');
-        checkAllDone();
     } else {
         el.classList.add('incorrect');
     }
@@ -2131,37 +2093,3 @@ function updateLanguageButtons() {
     });
 }
 
-function switchLanguage(newLang) {
-    if (newLang === lang) return;
-
-    trackEvent('switch_language', { from: lang, to: newLang });
-
-    setPreferredLanguage(newLang);
-    lang = newLang;
-    T = TRANSLATIONS[lang];
-
-    // Update HTML lang attribute
-    const root = document.getElementById('htmlRoot');
-    if (root) root.lang = lang;
-
-    // Update translations
-    applyTranslations();
-
-    // Update Topic Definitions with new language
-    updateGradeTopics();
-
-    // Re-populate topics (labels change)
-    updateTopicSelector();
-
-    // Regenerate sheet (word problems rely on lang)
-    // Pass true to preserve seed/values where possible, but text changes
-    generateSheet(true);
-
-    // Update URL without reload
-    const url = new URL(window.location);
-    url.searchParams.set('lang', lang);
-    window.history.pushState({}, '', url);
-
-    updateLanguageButtons();
-    updateNavigationLinks();
-}
