@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="de" id="htmlRoot">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Üben & Bildschirmzeit verdienen - ufzgiblatt.ch</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="practice.css">
+    <script src="js/analytics.js"></script>
+</head>
+
+<body style="visibility: hidden; opacity: 0; transition: opacity 0.2s;">
+    <header class="site-header no-print">
+        <div class="header-content">
+            <div class="site-logo">
+                <a href="/">
+                    <span class="logo-text">ufzgiblatt<span class="logo-suffix">.ch</span></span>
+                </a>
+            </div>
+            <nav class="main-nav">
+                <a href="/#generator" class="nav-link" id="navGenerator">Arbeitsblätter</a>
+                <a href="practice" class="nav-link active" id="navPractice">Üben & Verdienen</a>
+                <div class="nav-dropdown">
+                    <a href="/#games" class="nav-link dropdown-trigger" id="navGames">Spiele</a>
+                    <div class="dropdown-content">
+                        <a href="geography-game" id="navGameGeo">Geographie</a>
+                    </div>
+                </div>
+            </nav>
+            <div class="lang-group">
+                <a href="?lang=de" class="lang-btn" id="lang-de">DE</a>
+                <a href="?lang=en" class="lang-btn" id="lang-en">EN</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="practice-main">
+
+        <!-- SETUP -->
+        <section id="setup-screen" class="practice-card">
+            <h1 id="practice-title">Üben & Bildschirmzeit verdienen</h1>
+            <p id="practice-intro" class="practice-intro"></p>
+
+            <div class="setup-row">
+                <label for="practice-grade" id="label-grade">Klasse</label>
+                <select id="practice-grade"></select>
+            </div>
+
+            <fieldset class="parent-settings">
+                <legend id="parent-legend">Einstellungen (für Eltern)</legend>
+                <div class="setup-row">
+                    <label for="practice-goal" id="label-goal">Ziel (Minuten)</label>
+                    <input type="number" id="practice-goal" min="5" max="240" step="5" value="30">
+                </div>
+                <div class="setup-row">
+                    <label for="practice-rate" id="label-rate">Basis-Minuten pro Aufgabe</label>
+                    <input type="number" id="practice-rate" min="0.1" max="5" step="0.1" value="0.5">
+                </div>
+                <p id="rate-hint" class="rate-hint"></p>
+            </fieldset>
+
+            <button id="btn-start" class="btn-primary btn-big">▶️ Los geht's!</button>
+
+            <div class="practice-log">
+                <h2 id="log-title">Frühere Übungen</h2>
+                <div id="log-list"></div>
+                <button id="btn-clear-log" class="btn-secondary btn-small">Verlauf löschen</button>
+            </div>
+        </section>
+
+        <!-- TASK -->
+        <section id="task-screen" class="practice-card" style="display:none;">
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <div id="progress-label" class="progress-label"></div>
+
+            <div id="task-goal-banner" class="goal-banner" style="display:none;"></div>
+
+            <div id="task-topic" class="task-topic"></div>
+            <div id="task-worth" class="task-worth"></div>
+
+            <div class="task-body">
+                <span id="task-question" class="task-question"></span>
+                <input type="number" id="task-input" class="task-input" inputmode="numeric" autocomplete="off">
+            </div>
+
+            <div id="task-feedback" class="task-feedback"></div>
+
+            <div class="task-buttons">
+                <button id="btn-check" class="btn-primary btn-big">Prüfen</button>
+                <button id="btn-next" class="btn-primary btn-big" style="display:none;">Weiter →</button>
+                <button id="btn-finish" class="btn-secondary">Fertig</button>
+            </div>
+        </section>
+
+        <!-- SUMMARY -->
+        <section id="summary-screen" class="practice-card" style="display:none;">
+            <h1 id="summary-title">Zusammenfassung</h1>
+
+            <div class="summary-highlight">
+                <div id="summary-minutes-label" class="summary-label"></div>
+                <div id="summary-minutes" class="summary-minutes"></div>
+            </div>
+
+            <div class="summary-grid">
+                <div class="summary-stat">
+                    <div id="summary-tasks" class="summary-value"></div>
+                    <div id="summary-tasks-label" class="summary-label"></div>
+                </div>
+                <div class="summary-stat">
+                    <div id="summary-firsttry" class="summary-value"></div>
+                    <div id="summary-firsttry-label" class="summary-label"></div>
+                </div>
+            </div>
+
+            <div id="summary-topics" class="summary-topics"></div>
+
+            <p id="summary-show" class="summary-show"></p>
+
+            <button id="btn-again" class="btn-primary btn-big">Nochmal üben</button>
+        </section>
+
+    </main>
+
+    <footer
+        style="display:flex; flex-direction:column; align-items:center; gap:5px; margin-top:40px; padding-bottom:20px;">
+        <a href="https://github.com/Thalwil-fur-Familien/ufzgiblatt/issues/new" target="_blank" class="feedback-button">
+            <svg height="16" viewBox="0 0 16 16" version="1.1" width="16" aria-hidden="true" class="github-icon">
+                <path fill="currentColor"
+                    d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z">
+                </path>
+            </svg>
+            <span id="labelFeedback">Feedback & Fehler melden</span>
+        </a>
+        <div id="build-info" style="margin-top:10px; font-size:0.8rem; color:#888;">Local Development Build</div>
+    </footer>
+
+    <script type="module">
+        import { initPractice } from './js/practice.js';
+        initPractice();
+    </script>
+</body>
+
+</html>

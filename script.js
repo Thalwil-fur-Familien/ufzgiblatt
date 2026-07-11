@@ -94,11 +94,15 @@ function applyTranslations() {
         'navGenerator': T.ui.navGenerator,
         'navGames': T.ui.navGames,
         'navGameGeo': T.ui.navGameGeo,
+        'navPractice': T.ui.navPractice,
         'navAbout': T.ui.navAbout,
         'titleGames': T.ui.titleGames,
         'titleAbout': T.ui.titleAbout,
         'gameCantonTitle': T.ui.gameCantonTitle,
         'gameCantonDesc': T.ui.gameCantonDesc,
+        'practiceCardTitle': T.ui.practiceCardTitle,
+        'practiceCardDesc': T.ui.practiceCardDesc,
+        'btnPractice': T.ui.btnPractice,
         'aboutIntro': T.ui.aboutIntro
     };
 
@@ -384,7 +388,8 @@ function updateURLState() {
         }
     }
 
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    // Keep the hash: it selects the visible section (#generator/#games)
+    const newUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
     window.history.replaceState({}, '', newUrl);
 
     // Also update QR Code on existing sheets

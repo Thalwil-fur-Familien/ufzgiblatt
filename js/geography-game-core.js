@@ -58,7 +58,7 @@ export async function initGeoGame(config) {
         if (UI.gameTitle) document.title = UI.gameTitle;
 
         // Apply Nav Translations
-        const ids = ['navGenerator', 'navGames', 'navGameGeo'];
+        const ids = ['navGenerator', 'navGames', 'navGameGeo', 'navPractice'];
         ids.forEach(id => {
             const el = document.getElementById(id);
             if (el && UI[id]) el.textContent = UI[id];

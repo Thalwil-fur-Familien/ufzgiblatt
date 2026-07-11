@@ -40,6 +40,8 @@ test.describe('Geography Game & Language Persistence', () => {
         // 1. Switch to English on the main page
         await page.click('#lang-en-header');
         await expect(page).toHaveURL(/lang=en/);
+        // Wait until the English page has actually initialized (it stores the preference)
+        await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 
         // 2. Open the main page fresh, without URL parameters
         await page.goto('/');
