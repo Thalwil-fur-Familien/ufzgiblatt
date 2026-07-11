@@ -349,15 +349,22 @@ export function generateProblem(type, currency = 'CHF', options = {}, index = -1
             }
         case 'time_analog_set':
             {
-                const minutes = getRandomInt(0, 3) * 15;
-                const hours = getRandomInt(1, 12);
+                // The interactive clock starts at 12:00, so that target would be pre-solved
+                let minutes, hours;
+                do {
+                    minutes = getRandomInt(0, 3) * 15;
+                    hours = getRandomInt(1, 12);
+                } while (hours === 12 && minutes === 0);
                 const minStr = minutes.toString().padStart(2, '0');
                 return { type: 'time_analog_set', hours, minutes, digital: `${hours}:${minStr}` };
             }
         case 'time_analog_set_complex':
             {
-                const minutes = getRandomInt(0, 59);
-                const hours = getRandomInt(0, 23);
+                let minutes, hours;
+                do {
+                    minutes = getRandomInt(0, 59);
+                    hours = getRandomInt(0, 23);
+                } while (hours % 12 === 0 && minutes === 0);
                 const hStr = hours.toString().padStart(2, '0');
                 const minStr = minutes.toString().padStart(2, '0');
                 return { type: 'time_analog_set', hours, minutes, digital: `${hStr}:${minStr}`, isComplex: true };

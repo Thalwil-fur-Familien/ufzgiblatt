@@ -263,15 +263,6 @@ function generateSheet(keepSeed = false) {
         trackEvent('generate_sheet', props);
     }
 
-    // Track generation (only if new seed/sheet)
-    if (!keepSeed) {
-        trackEvent('generate_sheet', {
-            grade: document.getElementById('gradeSelector').value,
-            topic: document.getElementById('topicSelector').value,
-            count: document.getElementById('pageCount').value
-        });
-    }
-
     const selector = document.getElementById('topicSelector');
     const type = selector.value;
     currentTitle = selector.options[selector.selectedIndex].text;
@@ -296,9 +287,10 @@ function generateSheet(keepSeed = false) {
     else if (type.includes('zahlenhaus')) numProblems = 4;
     else if (type === 'word_types') numProblems = 16;
 
-    // 2. Determine Page Count
+    // 2. Determine Page Count (clamped: huge values would freeze the browser)
     const pageCountInput = document.getElementById('pageCount');
-    const pageCount = parseInt(document.getElementById('pageCount').value) || 1;
+    const pageCount = Math.min(Math.max(parseInt(pageCountInput.value) || 1, 1), 50);
+    pageCountInput.value = pageCount;
 
     // 3. Generate Data for ALL pages
     currentSheetsData = [];
@@ -328,14 +320,13 @@ function generateSheet(keepSeed = false) {
 
 // Save current worksheet state to sessionStorage before navigating to geography game
 function saveWorksheetState() {
-    const state = {
-        grade: document.getElementById('gradeSelector').value,
-        topic: document.getElementById('topicSelector').value,
-        count: document.getElementById('pageCount').value,
-        seed: globalSeed,
-        lang: lang
-    };
-    sessionStorage.setItem('worksheetState', JSON.stringify(state));
+    // The URL query string carries the complete worksheet state
+    // (grade, topic, count, seed, solutions, currencies, custom modules, ...)
+    updateURLState();
+    const params = new URLSearchParams(window.location.search);
+    // Language preference is tracked separately (localStorage) and may change in the game
+    params.delete('lang');
+    sessionStorage.setItem('worksheetState', params.toString());
 }
 
 function updateURLState() {
@@ -1599,31 +1590,14 @@ function init() {
 }
 
 function loadStateFromURL() {
-    // First, check if we have saved state from geography game navigation
+    // If we return from the geography game, restore the full saved query string
+    // and fall through to the normal URL parsing below.
     const savedState = sessionStorage.getItem('worksheetState');
     if (savedState) {
-        const state = JSON.parse(savedState);
-
-        // Restore state
-        const gradeSelector = document.getElementById('gradeSelector');
-        if (gradeSelector) gradeSelector.value = state.grade;
-
-        updateTopicSelector(state.topic);
-
-        const topicSelector = document.getElementById('topicSelector');
-        if (topicSelector) topicSelector.value = state.topic;
-
-        const pageCount = document.getElementById('pageCount');
-        if (pageCount) pageCount.value = state.count;
-
-        setSeed(state.seed);
-
-        // Clear the saved state
         sessionStorage.removeItem('worksheetState');
-
-        // Update URL to reflect restored state
-        updateURLState();
-        return;
+        const restored = new URLSearchParams(savedState);
+        if (lang) restored.set('lang', lang);
+        window.history.replaceState({}, '', `${window.location.pathname}?${restored.toString()}`);
     }
 
     const params = new URLSearchParams(window.location.search);
@@ -1678,9 +1652,9 @@ function loadStateFromURL() {
         }
     }
 
-    // 4. Count
+    // 4. Count (clamped to the input's 1..50 range)
     if (params.has('count')) {
-        const count = params.get('count');
+        const count = Math.min(Math.max(parseInt(params.get('count')) || 1, 1), 50);
         const pageInput = document.getElementById('pageCount');
         if (pageInput) {
             pageInput.value = count;
@@ -1856,8 +1830,6 @@ window.stopTimeAdjustment = function () {
     }
 };
 
-window.onload = init;
-
 window.saveCurrentState = function () {
     updateURLState(); // Sync current state to URL
     const params = window.location.search;
@@ -1905,15 +1877,19 @@ window.renderSavedList = function () {
     // Sort by most recent
     saved.sort((a, b) => b.id - a.id);
 
+    const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+
     list.innerHTML = saved.map(item => `
         <div class="saved-item">
             <div class="saved-item-info">
-                <span class="saved-item-name">${item.name}</span>
-                <span class="saved-item-date">${item.timestamp}</span>
+                <span class="saved-item-name">${escapeHtml(item.name)}</span>
+                <span class="saved-item-date">${escapeHtml(item.timestamp)}</span>
             </div>
             <div class="saved-item-actions">
-                <button class="btn-load" onclick="loadSavedState(${item.id})">${T.ui.btnLoad}</button>
-                <button class="btn-delete" onclick="deleteSavedState(${item.id})">${T.ui.btnDelete}</button>
+                <button class="btn-load" onclick="loadSavedState(${Number(item.id)})">${T.ui.btnLoad}</button>
+                <button class="btn-delete" onclick="deleteSavedState(${Number(item.id)})">${T.ui.btnDelete}</button>
             </div>
         </div>
     `).join('');
@@ -2119,13 +2095,6 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
     init();
-}
-
-// Setup Section Navigation (Moved inside initialization flow or called directly)
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupSectionNavigation);
-} else {
-    setupSectionNavigation();
 }
 
 function updateLanguageButtons() {

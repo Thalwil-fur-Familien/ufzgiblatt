@@ -3,5 +3,12 @@
 
 posthog.init('phc_St9Kl05TiILCsblD5i9EUDNcsW6Yf8L6fGfpVQbat6H', {
     api_host: 'https://eu.i.posthog.com',
-    person_profiles: 'identified_only' // or 'always' depending on preference, 'identified_only' is cheaper/safer for anon
+    person_profiles: 'identified_only', // or 'always' depending on preference, 'identified_only' is cheaper/safer for anon
+    // Cookieless: no cookies / persistent identifiers, so no consent banner is
+    // required for a site aimed at families and children (nFADP/GDPR).
+    persistence: 'memory',
+    disable_persistence: true,
+    disable_surveys: true,
+    autocapture: false,
+    capture_pageview: false // page_view is tracked manually in script.js
 });
