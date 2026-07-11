@@ -1,12 +1,14 @@
 import { test, expect } from '@playwright/test';
+import { blockExternal } from './helpers.js';
 
-test.describe('Mathe Arbeitsblatt Generator GUI', () => {
+test.describe('Worksheet Generator GUI', () => {
     test.beforeEach(async ({ page }) => {
+        await blockExternal(page);
         await page.goto('/');
     });
 
     test('should load the page and render a title', async ({ page }) => {
-        await expect(page).toHaveTitle(/Mathe Arbeitsblatt Generator/);
+        await expect(page).toHaveTitle(/ufzgiblatt/);
         const header = page.locator('.sheet h1');
         await expect(header).toBeVisible();
     });
@@ -60,24 +62,24 @@ test.describe('Mathe Arbeitsblatt Generator GUI', () => {
         expect(restoredSeed).toBe(originalSeed);
     });
 
-    test('should toggle solutions visibility', async ({ page }) => {
-        // Default: solutions checkbox is unchecked
+    test('should append solution sheets when solutions are enabled', async ({ page }) => {
+        // Default: solutions checkbox is unchecked, one sheet
         await expect(page.locator('#solutionToggle')).not.toBeChecked();
+        await expect(page.locator('.sheet')).toHaveCount(1);
 
         // Check solutions
         await page.check('#solutionToggle');
 
         // Verify URL contains solutions=1
-        expect(page.url()).toContain('solutions=1');
+        await expect(page).toHaveURL(/solutions=1/);
 
-        // Verify sheet-title has "Lösungen"
-        const titles = await page.locator('.sheet h1').all();
-        for (const title of titles) {
-            await expect(title).toContainText('Lösungen');
-        }
+        // A solution sheet is appended after the problem sheet
+        await expect(page.locator('.sheet')).toHaveCount(2);
+        await expect(page.locator('.sheet h1').last()).toContainText('(Lösungen)');
+        await expect(page.locator('.sheet h1').first()).not.toContainText('(Lösungen)');
     });
 
-    test('should fix "Individuelle Aufgaben" bug and render content', async ({ page }) => {
+    test('should render content for "Individuelle Aufgaben" (custom topic)', async ({ page }) => {
         await page.selectOption('#topicSelector', 'custom');
 
         // Verify checkboxes appear
@@ -88,5 +90,10 @@ test.describe('Mathe Arbeitsblatt Generator GUI', () => {
         await expect(problems.first()).toBeVisible();
         const count = await problems.count();
         expect(count).toBeGreaterThan(0);
+    });
+
+    test('should clamp huge page counts from the URL', async ({ page }) => {
+        await page.goto('/?grade=1&topic=add_10&count=99999');
+        await expect(page.locator('#pageCount')).toHaveValue('50');
     });
 });

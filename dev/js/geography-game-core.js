@@ -1,6 +1,5 @@
 import { TRANSLATIONS, getPreferredLanguage, setPreferredLanguage } from './translations.js';
-import { globalSeed, setSeed, seededRandom } from './mathUtils.js';
-import { getURLParams, getPageFromHash } from './urlUtils.js';
+import { globalSeed, setSeed, seededRandom, shuffle } from './mathUtils.js';
 
 let T;
 let lang;
@@ -59,11 +58,13 @@ export async function initGeoGame(config) {
         if (UI.gameTitle) document.title = UI.gameTitle;
 
         // Apply Nav Translations
-        const ids = ['navGenerator', 'navGames', 'navGameGeo', 'labelFeedback', 'buildInfo'];
+        const ids = ['navGenerator', 'navGames', 'navGameGeo', 'navPractice'];
         ids.forEach(id => {
             const el = document.getElementById(id);
             if (el && UI[id]) el.textContent = UI[id];
         });
+        const feedbackLabel = document.getElementById('labelFeedback');
+        if (feedbackLabel && UI.feedback) feedbackLabel.textContent = UI.feedback;
 
         // Translations applied, show content
         document.body.style.visibility = 'visible';
@@ -76,7 +77,7 @@ export async function initGeoGame(config) {
     }
 
     // Load state from URL if present
-    const params = getURLParams();
+    const params = new URLSearchParams(window.location.search);
     if (params.has('seed')) {
         const seedValue = parseInt(params.get('seed'));
         if (!isNaN(seedValue)) {
@@ -102,7 +103,8 @@ export async function initGeoGame(config) {
     const enLink = document.getElementById('lang-en');
 
     if (deLink && enLink) {
-        const params = getURLParams();
+        const url = new URL(window.location.href);
+        const params = new URLSearchParams(url.search);
 
         if (lang === 'de') {
             deLink.classList.add('active');
@@ -127,9 +129,9 @@ export async function initGeoGame(config) {
 
 function updateNavigationLinks() {
     // Update links back to the main page
-    const params = getURLParams();
-    const lang = params.get('lang') || 'de';
-    const seed = params.get('seed') || '';
+    const currentParams = new URLSearchParams(window.location.search);
+    const lang = currentParams.get('lang') || 'de';
+    const seed = currentParams.get('seed') || '';
 
     const logoLink = document.querySelector('.site-logo a');
     const generatorLink = document.getElementById('navGenerator');
@@ -156,16 +158,18 @@ function updateNavigationLinks() {
 
     if (logoLink) {
         const href = logoLink.getAttribute('href');
-        const base = href.split(/[?#]/)[0];
-        const hash = getPageFromHash() || 'generator';
-        logoLink.href = `${base}#${hash}?${backParams.toString()}`;
+        const [baseHref, hash] = href.split('#');
+        const base = baseHref.split('?')[0];
+
+        logoLink.href = hash ? `${base}?${backParams.toString()}#${hash}` : `${base}?${backParams.toString()}`;
     }
 
     if (generatorLink) {
         const href = generatorLink.getAttribute('href');
-        const base = href.split(/[?#]/)[0];
-        const hash = 'generator';
-        generatorLink.href = `${base}#${hash}?${backParams.toString()}`;
+        const [baseHref, hash] = href.split('#');
+        const base = baseHref.split('?')[0];
+
+        generatorLink.href = hash ? `${base}?${backParams.toString()}#${hash}` : `${base}?${backParams.toString()}`;
     }
 }
 
@@ -491,14 +495,16 @@ function setupFlagMode() {
     }
 
     // Shuffle and pick batch
-    available.sort(() => seededRandom() - 0.5);
+    shuffle(available);
     let batch = available.slice(0, batchSize);
 
     // Create Flag Items
     batch.forEach(item => {
         const flagDiv = document.createElement('div');
         flagDiv.className = 'flag-item';
-        flagDiv.id = item.id; // Target ID for drop
+        // Prefixed: the raw region id would duplicate the (hidden) SVG path id,
+        // so getElementById would target the invisible map instead of the flag
+        flagDiv.id = 'flag-' + item.id;
 
         const flagFile = getFlagFilename(item.id, item.name);
 
@@ -521,7 +527,7 @@ function setupFlagMode() {
         dragContainer.style.display = 'flex';
 
         // Shuffle names for display
-        const nameBatch = [...batch].sort(() => seededRandom() - 0.5);
+        const nameBatch = shuffle([...batch]);
 
         nameBatch.forEach(item => {
             const el = document.createElement('div');
@@ -610,8 +616,7 @@ function setupDragMode() {
 
     // Pick top N or random N
     // Random N is better for variety
-    // Shuffle array
-    available.sort(() => seededRandom() - 0.5);
+    shuffle(available);
     const batch = available.slice(0, batchSize);
 
     const dragContainer = document.getElementById('drag-container');
@@ -658,7 +663,11 @@ function setupDragMode() {
 }
 
 function handleDragDrop(draggedId, targetId) {
-    const targetPath = document.getElementById(targetId);
+    // In flag mode the visible drop target is the prefixed flag div,
+    // not the (hidden) SVG map path with the same region id
+    const targetPath = geoState.gameMode === 'flag'
+        ? document.getElementById('flag-' + targetId)
+        : document.getElementById(targetId);
 
     // Clear selection state
     geoState.selectedItemId = null;
@@ -666,8 +675,10 @@ function handleDragDrop(draggedId, targetId) {
     if (selectedEl) selectedEl.classList.remove('selected');
 
     if (draggedId === targetId) {
-        // Correct
-        geoState.score++;
+        // Correct: only first-try answers score, matching Find mode
+        if (!geoState.dragFailures || !geoState.dragFailures[draggedId]) {
+            geoState.score++;
+        }
         geoState.solvedRegions.push(targetId);
 
         // Visuals
@@ -742,7 +753,9 @@ function handleDragDrop(draggedId, targetId) {
         if (geoState.dragFailures[draggedId] >= 3) {
             // Show hint for the CORRECT destination of the dragged item
             const correctId = draggedId;
-            const correctPath = document.getElementById(correctId);
+            const correctPath = geoState.gameMode === 'flag'
+                ? document.getElementById('flag-' + correctId)
+                : document.getElementById(correctId);
             if (correctPath) {
                 correctPath.classList.add('hint');
                 showHintArrow(correctPath);

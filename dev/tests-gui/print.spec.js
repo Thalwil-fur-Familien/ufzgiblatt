@@ -1,11 +1,12 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
+import { blockExternal } from './helpers.js';
 
 test.describe('Print Functionality', () => {
 
     test('Print button should trigger window.print()', async ({ page }) => {
-        // Navigate to the app
-        await page.goto('http://localhost:3000');
+        await blockExternal(page);
+        await page.goto('/');
 
         // Verify button is visible
         const printBtn = page.locator('#btnPrint');

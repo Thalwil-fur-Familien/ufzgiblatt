@@ -11,12 +11,9 @@
     --sheet-padding-top: 18mm;
     --sheet-logo-top: 5mm;
     --sheet-qr-top: 5mm;
-    --header-field-shift: 40px;
-    /* Vertical position of Name/Date fields */
+    --header-field-shift: 30px;
     --logo-blue: #1b3b5a;
     --logo-green: #91c13d;
-    --unit-height: 15mm;
-    /* Standard height for 1 problem unit (15 rows) */
 }
 
 * {
@@ -26,13 +23,6 @@
 html {
     overflow-y: scroll;
     /* Force scrollbar to prevent jump */
-    overflow-x: hidden;
-}
-
-body {
-    overflow-x: hidden;
-    width: 100%;
-    position: relative;
 }
 
 body {
@@ -221,280 +211,8 @@ body {
     background: transparent;
 }
 
-/* Worksheet Builder Styles (Interactive Mode) */
-#builder .controls {
-    background: #fff;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    margin-bottom: 30px;
-    border: 1px solid #edf2f7;
-    flex-wrap: nowrap;
-    /* Prevent wrapping into hidden columns */
-    height: auto;
-    max-height: none;
-}
-
-.builder-top-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    align-items: center;
-}
-
-.builder-top-controls .control-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.builder-top-controls label {
-    font-size: 0.85rem;
-    font-weight: 800;
-    color: #718096;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-}
-
-.builder-top-controls select {
-    padding: 10px 15px;
-    border-radius: 10px;
-    border: 2px solid #e2e8f0;
-    font-family: 'Nunito', sans-serif;
-    font-size: 1rem;
-    background: #f8fafc;
-    min-width: 150px;
-    transition: all 0.2s;
-}
-
-.builder-top-controls select:focus {
-    border-color: var(--primary-color);
-    outline: none;
-    background: #fff;
-}
-
-.builder-topic-options {
-    background: #f1f5f9;
-    padding: 8px 15px;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-}
-
-.builder-sheet-container {
-    width: 100%;
-    margin-top: 0;
-}
-
-/* Worksheet Grid Visualization in Builder Mode */
-/* Standardize Builder Grid */
-.builder-sheet-container .problem-grid {
-    position: relative;
-    grid-auto-flow: initial;
-    /* Disable for explicit placement */
-    border: none !important;
-    outline: none !important;
-    box-shadow: none !important;
-    border-radius: 4px;
-    padding: 0;
-    transition: background-color 0.4s ease, border-color 0.4s ease;
-    height: auto;
-    background-color: transparent;
-}
-
-/* Ensure title doesn't show outline on focus */
-.sheet h1[contenteditable]:focus {
-    outline: none !important;
-    border-bottom: 1px dashed #ccc;
-    /* Optional: keep a subtle underline or remove total? User said "frame". */
-    /* Let's try removing it all or just keeping cursor */
-    border: none !important;
-}
-
-
-
-/* Toggle Switch Styles */
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 44px;
-    height: 24px;
-}
-
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #cbd5e0;
-    transition: .4s;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 18px;
-    width: 18px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: .4s;
-}
-
-input:checked+.slider {
-    background-color: var(--primary-color);
-}
-
-input:focus+.slider {
-    box-shadow: 0 0 1px var(--primary-color);
-}
-
-input:checked+.slider:before {
-    transform: translateX(20px);
-}
-
-.slider.round {
-    border-radius: 24px;
-}
-
-.slider.round:before {
-    border-radius: 50%;
-}
-
-
-
-/* Draggable Problem Containers */
-.builder-problem-wrapper {
-    position: relative;
-    cursor: grab;
-    transition: transform 0.2s, box-shadow 0.2s;
-    user-select: none;
-    margin-bottom: 0;
-    background: rgba(255, 255, 255, 0.8);
-    border: 1px solid transparent;
-    border-radius: 8px;
-}
-
-.builder-problem-wrapper:hover {
-    border-color: rgba(79, 172, 254, 0.3);
-    background: #fff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.builder-problem-wrapper:active {
-    cursor: grabbing;
-}
-
-.builder-problem-wrapper.dragging {
-    opacity: 0.4;
-    transform: scale(0.98);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.builder-problem-wrapper .btn-remove-problem {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #fff;
-    border: 1px solid #fed7d7;
-    color: #e53e3e;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 14px;
-    opacity: 0;
-    transition: opacity 0.2s, background 0.2s;
-    z-index: 10;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.builder-problem-wrapper:hover .btn-remove-problem {
-    opacity: 1;
-}
-
-.builder-problem-wrapper .btn-remove-problem:hover {
-    background: #fff5f5;
-    border-color: #feb2b2;
-}
-
-.builder-problem-wrapper .btn-duplicate-problem {
-    position: absolute;
-    top: 5px;
-    right: 38px;
-    /* Position to the left of remove button */
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #fff;
-    border: 1px solid #bee3f8;
-    color: #3182ce;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 14px;
-    opacity: 0;
-    transition: opacity 0.2s, background 0.2s;
-    z-index: 10;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.builder-problem-wrapper:hover .btn-duplicate-problem {
-    opacity: 1;
-}
-
-.builder-problem-wrapper .btn-duplicate-problem:hover {
-    background: #ebf8ff;
-    border-color: #90cdf4;
-}
-
-.builder-problem-wrapper.drag-over {
-    border-top: 4px solid var(--primary-color);
-}
-
-/* Capacity & Progress (Updated for interactive) */
-.builder-capacity-info {
-    margin-left: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 5px;
-}
-
-
-
-.progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-    width: 0%;
-    transition: width 0.3s ease;
-}
-
-.progress-bar.warning {
-    background: #f59e0b;
-}
-
-.progress-bar.danger {
-    background: #ef4444;
-}
-
-.builder-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
+.nav-dropdown:hover .dropdown-content {
+    display: block;
 }
 
 .dropdown-content a {
@@ -638,15 +356,6 @@ section.active-section {
 
 
 
-/* Enforce vertical stacking for sheets on all screens */
-#sheetsWrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    width: 100%;
-}
-
 /* Control Panel (Screen Only) */
 .controls {
     text-align: center;
@@ -657,17 +366,14 @@ section.active-section {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
     display: flex;
-    gap: 10px;
+    gap: 1rem;
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     width: 100%;
-    max-width: 900px;
-    /* SLightly wider to fit buttons */
+    max-width: 800px;
     border: 1px solid rgba(255, 255, 255, 0.5);
 }
-
-
 
 .word-type-btn {
     padding: 8px 16px;
@@ -757,18 +463,6 @@ button {
     color: white;
 }
 
-/* Force Control Buttons to match Builder Dimensions */
-.controls button {
-    padding: 8px 16px !important;
-    font-size: 0.9rem !important;
-    min-width: 240px !important;
-    height: 38px !important;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 !important;
-}
-
 .btn-secondary {
     background: #6c757d;
     color: white;
@@ -790,26 +484,48 @@ button:hover {
     margin: 0;
 }
 
-@media print {
-    .no-print {
-        display: none !important;
+/* Mobile Responsiveness */
+@media screen and (max-width: 850px) {
+    .controls {
+        flex-direction: column;
+        padding: 1rem;
+        gap: 0.5rem;
+        width: 90%;
+    }
+
+    select,
+    button {
+        width: 100%;
+        font-size: 1.1rem;
+        /* Hit target size */
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    body {
+        padding: 10px;
+        overflow-x: hidden;
+        /* Prevent scrollbars from the unscaled wrapper width */
+    }
+
+    #sheetsWrapper {
+        /* Will be scaled by JS, but standard CSS here */
+        width: 210mm;
+        /* Match sheet width to ensure no clipping before scale */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        /* overflow: hidden; Removed to allow full content render */
     }
 }
-
-/* Mobile Responsiveness */
-/* (Mobile media query moved to end of file for precedence) */
-
-/* Specific Header responsiveness for very small screens */
-/* (Mobile media query moved to end of file for precedence) */
 
 /* Worksheet (Screen Preview & Print) */
 .sheet {
     background: var(--sheet-bg);
     width: 210mm;
-    height: 297mm;
-    /* Standard A4 Height */
-    min-height: 297mm;
-    max-height: 297mm;
+    min-height: 287mm;
     padding: var(--sheet-padding-top) 10mm 10mm;
     box-sizing: border-box;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -819,10 +535,6 @@ button:hover {
     /* Slightly smaller font */
     margin: auto;
     /* Center on screen */
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    /* Prevent content from overflowing */
 }
 
 .sheet-header {
@@ -855,342 +567,48 @@ button:hover {
 h1 {
     text-align: center;
     color: var(--primary-color);
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     font-size: 22pt;
-    margin-top: 5px;
-    height: 60px;
-    /* Fixed height so wrapping doesn't push grid */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1.1;
+    margin-top: 0;
 }
 
 .problem-grid {
     display: grid;
-    width: 100%;
-    box-sizing: border-box;
-    grid-template-columns: repeat(4, 1fr);
-    column-gap: 12px;
-    row-gap: 0;
-    /* Unit-based rows handle spacing */
-    grid-template-rows: repeat(15, var(--unit-height));
-    grid-auto-flow: dense;
-    align-content: start;
-    /* Changed from space-evenly for consistent layout */
-    margin-top: 5px;
-    /* Consistent vertical start position */
+    grid-template-columns: 1fr 1fr;
+    column-gap: 40px;
+    row-gap: 4px;
 }
 
 .problem {
-    display: grid;
-    width: 100%;
-    grid-template-columns: 1fr 15px 1fr 15px 50px;
-    /* 1 Op 2 Eq Input */
-    align-items: center;
-    padding: 2px;
-    /* Compact padding to prevent overflow */
-    height: 100%;
-    box-sizing: border-box;
-    overflow: visible;
-    /* Allow text to show if tight */
-    gap: 2px;
-}
-
-/* --- Builder Specific Styles --- */
-
-/* Builder Layout (Sidebar) */
-#builder.active-section,
-#generator.active-section {
     display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 30px;
-    padding: 20px;
-    max-width: 1600px;
-    margin: 0 auto;
-}
-
-.controls {
-    width: 320px;
-    flex-shrink: 0;
-    position: sticky;
-    top: 20px;
-    background: #fff;
-    padding: 20px;
-    /* Reduced from 25px to give more width */
-    border-radius: 16px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-    border: 1px solid #edf2f7;
-    z-index: 100;
-    max-height: calc(100vh - 40px);
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-/* Sidebar Sections */
-.builder-top-controls {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 15px;
-}
-
-.builder-sheet-container,
-#sheetsWrapper {
-    flex-grow: 1;
-    overflow-x: visible;
-    overflow-y: visible;
-    display: flex;
-    justify-content: center;
-    padding-bottom: 50px;
-    /* Space for scrolling */
-}
-
-/* Specific Sidebar Tweaks */
-.grade-tabs-container {
-    display: flex;
-    /* Ensure flex context */
-    flex-wrap: nowrap;
-    /* Prevent wrapping */
     justify-content: space-between;
-    gap: 2px;
-    /* Minimal gap */
-    padding: 2px;
-    /* Prevent container clipping */
-    border-bottom: none;
-    margin-bottom: 15px;
-    width: 100%;
-}
-
-.grade-tab {
-    flex: 1;
-    /* Stretch to fill space equally */
-    min-width: 0;
-    /* Allow shrinking below content size */
-    padding: 6px 0;
-    /* Vertical padding only */
-    text-align: center;
-    font-size: 0.85rem;
-    /* Compact font size */
-    border: 1px solid #cbd5e1;
-    /* Darker border for visibility */
-    border-radius: 8px;
-    margin-bottom: 5px;
-    white-space: nowrap;
-    /* Prevent text wrapping */
-}
-
-.grade-tab.active {
-    background-color: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-}
-
-.topic-chips-container {
-    justify-content: flex-start;
-    gap: 8px;
-    max-height: 360px;
-    /* Limit to approx 8 items */
-    overflow-y: auto;
-    /* Enable scrolling */
-    padding-right: 2px;
-    /* Avoid scrollbar overlap */
-}
-
-.topic-chip {
-    width: 100%;
-    /* Full width chips in sidebar for readability */
-    justify-content: flex-start;
-    padding: 10px 15px;
-    box-sizing: border-box;
-}
-
-/* Secondary Actions Stack */
-.builder-actions-secondary,
-.creator-actions-secondary {
-    flex-direction: column;
-    width: 100%;
-    gap: 10px;
-    margin-top: auto;
-    /* Push to bottom if height allows */
-}
-
-.builder-actions-secondary button {
-    width: 100%;
-}
-
-/* Responsive Fallback */
-@media screen and (max-width: 900px) {
-
-    #builder.active-section,
-    #generator.active-section {
-        flex-direction: column;
-        align-items: center;
-        padding: 10px;
-    }
-
-    .controls {
-        width: 100%;
-        max-width: 800px;
-        position: static;
-        max-height: none;
-        margin-bottom: 30px;
-    }
-
-    .grade-tabs-container,
-    .topic-chips-container {
-        justify-content: center;
-    }
-
-    .topic-chip {
-        width: auto;
-        /* Revert to auto width on mobile/top */
-    }
-
-    .builder-actions-secondary,
-    .creator-actions-secondary {
-        flex-direction: row;
-        flex-wrap: wrap;
-    }
-
-    .builder-actions-secondary button {
-        width: auto;
-        flex: 1;
-    }
-}
-
-/* Builder Wrapper spacing */
-
-.solution-problem-wrapper {
-    position: relative;
-    user-select: none;
-    z-index: 5;
-}
-
-.builder-problem-wrapper {
-    position: relative;
-    cursor: grab;
-    transition: transform 0.2s, box-shadow 0.2s;
-    user-select: none;
-    z-index: 10;
-}
-
-.builder-problem-wrapper:active {
-    cursor: grabbing;
-}
-
-.builder-problem-wrapper.dragging {
-    opacity: 0.5;
-    transform: scale(0.95);
-    z-index: 5;
-}
-
-.builder-problem-wrapper .btn-remove-problem {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: #ff5252;
-    color: white;
-    border: 2px solid white;
-    font-size: 14px;
-    cursor: pointer;
-    display: none;
-    z-index: 20;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     align-items: center;
-    justify-content: center;
-    line-height: 1;
+    padding: 4px 10px;
+    /* Reduced padding */
+    /* border-bottom: 1px dashed #eee; */
+    /* Optional guide lines */
 }
-
-.builder-problem-wrapper:hover .btn-remove-problem {
-    display: flex;
-}
-
-.drop-indicator {
-    position: absolute;
-    pointer-events: none;
-    background: rgba(79, 172, 254, 0.15);
-    /* Match primary-color alpha */
-    border: 2px dashed #4facfe;
-    border-radius: 8px;
-    z-index: 20;
-    /* Ensure on top of problems (z-index 10) */
-    display: none;
-    transition: all 0.1s ease;
-    /* Content Preview Styles */
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    opacity: 0.9;
-}
-
-.drop-indicator .problem {
-    width: 100%;
-    height: 100%;
-    border: none;
-    background: transparent;
-    transform: scale(0.95);
-    opacity: 0.6;
-}
-
-.drop-indicator.overlap {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: #ef4444;
-}
-
-/* Grid removed per user request
-.builder-sheet-container .problem-grid::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image:
-        linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-    background-size: calc(100% / 4) var(--unit-height);
-    pointer-events: none;
-    z-index: 0;
-    border-right: 1px solid rgba(0, 0, 0, 0.05);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-*/
 
 .number {
-    width: 100%;
-    /* Fill Grid Cell (1fr) */
-    font-family: 'Courier New', Courier, monospace;
-    /* Monospace for alignment */
+    width: 50px;
+    /* Adjusted width */
     text-align: right;
-    margin-right: 4px;
-    /* Slight spacing from operator */
 }
 
 .operator {
-    width: 100%;
-    /* Fill Grid Cell (15px) */
-    font-family: 'Courier New', Courier, monospace;
+    width: 25px;
     text-align: center;
 }
 
 .equals {
-    width: 100%;
-    /* Fill Grid Cell (15px) */
+    width: 25px;
     text-align: center;
-    font-family: 'Courier New', Courier, monospace;
 }
 
 .answer-box {
     width: 70px;
     height: 35px;
     border: 2px solid #ccc;
-    /* Grey for screen */
     border-radius: 8px;
     background-color: #fafafa;
     display: inline-block;
@@ -1261,16 +679,7 @@ input.answer-input.incorrect {
     border-radius: 50%;
     position: relative;
     background: white;
-    margin: 5px auto;
-}
-
-.clock-bottom-controls {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 15px;
-    margin-top: 5px;
+    margin: 25px auto;
 }
 
 .clock-center {
@@ -1314,22 +723,12 @@ input.answer-input.incorrect {
 .sheet-footer {
     position: absolute;
     /* Fix footer to bottom */
-    bottom: 10mm;
-    right: 10mm;
-    text-align: right;
+    bottom: 15mm;
+    left: 0;
+    width: 100%;
+    text-align: center;
     color: #888;
     font-size: 10pt;
-}
-
-/* Motivational Emoji */
-.mascot {
-    position: absolute;
-    bottom: 15mm;
-    /* Match footer area */
-    right: 15mm;
-    /* Match padding */
-    font-size: 3rem;
-    opacity: 0.8;
 }
 
 /* Rechenmauer (Pyramid) Styles */
@@ -1408,9 +807,6 @@ input.brick-input {
         width: 100% !important;
         display: block !important;
         transform: none !important;
-        padding: 0 !important;
-        /* Remove padding that causes extra page */
-        margin: 0 !important;
     }
 
     /* Ensure pyramids don't break across pages awkwardly */
@@ -1429,17 +825,6 @@ input.brick-input {
         display: none !important;
     }
 
-    @page {
-        margin: 0;
-        size: A4 portrait;
-    }
-
-    body {
-        margin: 0;
-        padding: 0;
-        background: white;
-    }
-
     main,
     section,
     .section-container {
@@ -1451,20 +836,10 @@ input.brick-input {
     }
 
     /* Print friendly inputs */
-    /* Print friendly inputs */
     input.answer-input {
-        border: 1px solid #ccc;
-        /* Grey to match screen */
-        /* Standard thin black line */
-        box-shadow: none;
-        background: transparent;
+        border: 2px solid #ccc;
+        background: none;
         color: #000;
-        border-radius: 4px;
-        /* Rounded corners for print */
-        font-family: 'Courier New', Courier, monospace;
-        width: 50px;
-        /* Fixed width matching numbers */
-        text-align: center;
     }
 
     /* Pyramid inputs are inside a bordered div, so they don't need a border */
@@ -1481,7 +856,7 @@ input.brick-input {
     .sheet {
         box-shadow: none;
         margin: 0 auto !important;
-        width: 210mm !important;
+        width: 100% !important;
         max-width: 210mm;
         height: auto;
         min-height: 286mm;
@@ -1510,7 +885,6 @@ input.brick-input {
 
     .problem-grid {
         display: grid !important;
-        grid-template-columns: repeat(4, 1fr) !important;
         break-inside: auto;
     }
 
@@ -1533,70 +907,11 @@ input.brick-input {
     }
 
     .marked-verb {
-        border-bottom: 3px solid blue !important;
+        border-bottom: 3px dashed blue !important;
     }
 
     .marked-adj {
-        border-bottom: 3px solid green !important;
-    }
-
-    .sheet-footer {
-        color: #000 !important;
-        display: block !important;
-        z-index: 2000 !important;
-        background: transparent !important;
-        /* Safer margins for print */
-        bottom: 5mm !important;
-        right: 5mm !important;
-    }
-
-    .builder-sheet-container .problem-grid {
-        border: none !important;
-        background: none !important;
-        background-image: none !important;
-    }
-
-    .problem,
-    .builder-problem-wrapper {
-        border: none !important;
-        box-shadow: none !important;
-        background: none !important;
-        background-image: none !important;
-    }
-
-    /* Aggressive Grid Artifact Removal */
-    .sheet,
-    .sheet * {
-        background-image: none !important;
-    }
-
-    /* Ensure no extra page */
-    .sheet {
-        /* Consolidated sheet styles */
-        box-shadow: none !important;
-        margin: 0 !important;
-        width: 210mm !important;
-        max-width: 210mm !important;
-        height: 287mm !important;
-        /* Match screen min-height exactly */
-        min-height: 287mm !important;
-        max-height: 287mm !important;
-        page-break-after: auto !important;
-        /* Changed from always */
-        break-after: auto !important;
-        border: none !important;
-        overflow: hidden !important;
-        page-break-inside: avoid !important;
-        /* Padding handled inside */
-        padding: 18mm 10mm 10mm !important;
-        /* Match screen padding-top */
-        position: relative !important;
-    }
-
-    /* Only add page break between multiple sheets, not after last one */
-    .sheet:not(:last-child) {
-        page-break-after: always !important;
-        break-after: page !important;
+        border-bottom: 3px dotted green !important;
     }
 }
 
@@ -1628,15 +943,6 @@ input.brick-input {
     height: 0;
     border-bottom: 2px solid #000;
     margin: 2px 0;
-}
-
-.written-input {
-    width: 20px;
-    text-align: center;
-    border: 1px solid #ccc;
-    /* Helper borders */
-    font-family: inherit;
-    /* In print we might hide border? */
 }
 
 /* Squared Background for working out */
@@ -1763,32 +1069,32 @@ input.brick-input {
     }
 
     .corner-top {
-        top: 15px;
+        top: 20px;
         left: 100px;
     }
 
     .corner-right {
-        top: 145px;
+        top: 150px;
         left: 180px;
     }
 
     .corner-left {
-        top: 145px;
+        top: 150px;
         left: 20px;
     }
 
     .side-right {
-        top: 80px;
+        top: 85px;
         left: 140px;
     }
 
     .side-bottom {
-        top: 145px;
+        top: 150px;
         left: 100px;
     }
 
     .side-left {
-        top: 80px;
+        top: 85px;
         left: 60px;
     }
 
@@ -1837,14 +1143,17 @@ input.brick-input {
 
 .marked-verb {
     border-bottom-color: blue !important;
+    border-bottom-style: dashed !important;
 }
 
 .marked-adj {
     border-bottom-color: green !important;
+    border-bottom-style: dotted !important;
 }
 
 .marked-artikel {
     border-bottom-color: orange !important;
+    border-bottom-style: double !important;
 }
 
 .word-types-legend {
@@ -2296,11 +1605,11 @@ input.brick-input {
 }
 
 .marked-verb {
-    border-bottom: 3px solid blue !important;
+    border-bottom: 3px dashed blue !important;
 }
 
 .marked-adj {
-    border-bottom: 3px solid green !important;
+    border-bottom: 3px dotted green !important;
 }
 
 /* Feedback States */
@@ -2393,15 +1702,15 @@ input.brick-input {
 }
 
 .marked-verb {
-    border-bottom: 3px solid blue !important;
+    border-bottom: 3px dashed blue !important;
 }
 
 .marked-adj {
-    border-bottom: 3px solid green !important;
+    border-bottom: 3px dotted green !important;
 }
 
 .marked-artikel {
-    border-bottom: 3px solid orange !important;
+    border-bottom: 3px double orange !important;
 }
 
 .interactive-word.correct {
@@ -2548,7 +1857,7 @@ input.brick-input {
     display: flex;
     justify-content: center;
     gap: 20px;
-    margin-top: 5px;
+    margin-top: 15px;
     background: #f8f9fa;
     padding: 10px;
     border-radius: 12px;
@@ -2556,9 +1865,8 @@ input.brick-input {
 
 .time-control-group {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
 }
 
 .time-label {
@@ -2766,196 +2074,4 @@ input.brick-input {
         height: 35px;
         font-size: 20px;
     }
-}
-
-/* --- Modern UI: Tabs & Chips Navigation --- */
-
-.nav-section-title {
-    font-size: 0.9rem;
-    font-weight: 800;
-    color: #a0aec0;
-    margin: 15px 0 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    width: 100%;
-    text-align: center;
-}
-
-.grade-tabs-container {
-    display: flex;
-    gap: 15px;
-    overflow-x: auto;
-    padding: 5px 20px 10px;
-    margin-bottom: 10px;
-    width: 100%;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    justify-content: center;
-    border-bottom: 2px solid #edf2f7;
-}
-
-.grade-tabs-container::-webkit-scrollbar {
-    display: none;
-}
-
-.grade-tab {
-    padding: 8px 12px;
-    cursor: pointer;
-    font-weight: bold;
-    color: #718096;
-    border-bottom: 3px solid transparent;
-    transition: all 0.2s;
-    white-space: nowrap;
-    position: relative;
-    top: 2px;
-    /* Overlap border */
-}
-
-.grade-tab:hover {
-    color: var(--primary-color);
-}
-
-.grade-tab.active {
-    border-bottom-color: var(--primary-color);
-    color: var(--primary-color);
-    background-color: transparent;
-    /* Ensure text is visible against background */
-}
-
-.topic-chips-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: flex-start;
-    /* Left Align */
-    width: 100%;
-    margin-bottom: 25px;
-}
-
-.topic-chip {
-    padding: 6px 12px;
-    /* Smaller padding */
-    background-color: #f7fafc;
-    border: 1px solid #edf2f7;
-    border-radius: 16px;
-    /* Slightly tighter radius */
-    cursor: pointer;
-    font-size: 0.9rem;
-    /* Smaller font */
-    color: var(--text-color);
-    transition: all 0.2s;
-    user-select: none;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: grab;
-    text-align: left;
-    /* Explicit left align */
-}
-
-.topic-chip:active {
-    cursor: grabbing;
-}
-
-.topic-chip:hover {
-    background-color: #edf2f7;
-    transform: translateY(-1px);
-    border-color: #cbd5e0;
-}
-
-.topic-chip.active {
-    background-color: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-    box-shadow: 0 4px 10px rgba(79, 172, 254, 0.3);
-}
-
-/* --- MOBILE RESPONSIVENESS (CONSOLIDATED) --- */
-@media screen and (max-width: 850px) {
-
-    html,
-    body {
-        overflow-x: hidden !important;
-        width: 100% !important;
-        position: relative;
-    }
-
-    body {
-        padding: 0 !important;
-    }
-
-    .controls {
-        flex-direction: column;
-        padding: 1rem;
-        gap: 0.5rem;
-        width: 95%;
-    }
-
-    select,
-    button {
-        width: 100%;
-        font-size: 1.1rem;
-    }
-
-    /* Mobile specific adjustments remain here */
-    .header-content {
-        flex-direction: column !important;
-        gap: 15px !important;
-        padding: 15px 10px !important;
-        align-items: center !important;
-    }
-
-    .site-logo {
-        justify-content: center;
-        width: 100%;
-    }
-
-    .main-nav {
-        gap: 1rem !important;
-        width: 100% !important;
-        justify-content: center !important;
-        flex-wrap: wrap;
-    }
-
-    .nav-link {
-        font-size: 0.9rem !important;
-    }
-
-    .logo-text {
-        font-size: 1.4rem !important;
-    }
-
-    .lang-group {
-        margin-top: 5px !important;
-        justify-content: center;
-        width: 100%;
-    }
-
-    .grade-tab {
-        padding: 8px 12px;
-        font-size: 0.9rem;
-        min-width: 60px;
-    }
-}
-
-/* Container to safely hold the transformed/scaled sheets - GLOBAL */
-.sheets-viewport {
-    width: 100%;
-    overflow-x: hidden;
-    /* Prevent horizontal scroll on body */
-    display: flex;
-    justify-content: center;
-    /* Center horizontally */
-    padding: 10px 0;
-}
-
-#sheetsWrapper,
-#builderSheetsWrapper {
-    width: 794px;
-    /* A4 width */
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transform-origin: top center;
 }

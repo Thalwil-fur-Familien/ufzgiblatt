@@ -125,5 +125,71 @@ describe('problemGenerators', () => {
             expect(p.answer).toBeDefined();
         });
 
+        it('money items always sum to the stated answer (many seeds)', () => {
+            for (let seed = 1; seed <= 500; seed++) {
+                setSeed(seed);
+                for (const type of ['money_10', 'money_100']) {
+                    for (const currency of ['CHF', 'EUR']) {
+                        const p = generateProblem(type, currency);
+                        const sum = p.items.reduce((a, b) => a + b, 0);
+                        expect(sum, `${type} ${currency} seed ${seed}`).toBeCloseTo(p.answer, 5);
+                        expect(p.items.length).toBeGreaterThan(0);
+                    }
+                }
+            }
+        });
+
+        it('frac_add answers are fully reduced', () => {
+            for (let seed = 1; seed <= 200; seed++) {
+                setSeed(seed);
+                const p = generateProblem('frac_add');
+                const [num, den = 1] = p.answer.split('/').map(Number);
+                expect(num).toBeCloseTo((p.numA + p.numB) / p.denA * den, 5);
+                // gcd of reduced fraction must be 1
+                let a = num, b = den;
+                while (b) { [a, b] = [b, a % b]; }
+                expect(a).toBe(1);
+            }
+        });
+
+        it('carry/borrow topics respect their constraints', () => {
+            for (let seed = 1; seed <= 200; seed++) {
+                setSeed(seed);
+                const carry = generateProblem('add_100_carry');
+                expect((carry.a % 10) + (carry.b % 10), `add carry seed ${seed}`).toBeGreaterThanOrEqual(10);
+                const simple = generateProblem('add_100_simple');
+                expect((simple.a % 10) + (simple.b % 10), `add simple seed ${seed}`).toBeLessThan(10);
+                const borrow = generateProblem('sub_100_carry');
+                expect(borrow.a % 10, `sub borrow seed ${seed}`).toBeLessThan(borrow.b % 10);
+                const noBorrow = generateProblem('sub_100_simple');
+                expect(noBorrow.a % 10, `sub simple seed ${seed}`).toBeGreaterThanOrEqual(noBorrow.b % 10);
+            }
+        });
+    });
+
+    describe('generateProblemsData', () => {
+        it('generates custom sheets including word_types without crashing (many seeds)', () => {
+            for (let seed = 1; seed <= 300; seed++) {
+                setSeed(seed);
+                const data = generateProblemsData('custom', 1, ['word_types', 'add_10', 'money_10'], ['CHF'], {}, 'de');
+                expect(data.length).toBeGreaterThan(0);
+                data.forEach(p => expect(p).toBeDefined());
+            }
+        });
+
+        it('word_types problems on custom sheets use the requested language', () => {
+            setSeed(7);
+            const data = generateProblemsData('custom', 1, ['word_types'], ['CHF'], {}, 'en');
+            const wt = data.filter(p => p.type === 'word_types');
+            expect(wt.length).toBeGreaterThan(0);
+            // English sentences contain word objects whose text is English; spot-check structure
+            wt.forEach(p => expect(p.sentence).toBeDefined());
+        });
+
+        it('generates the requested number of problems for a standard topic', () => {
+            setSeed(5);
+            const data = generateProblemsData('add_10', 12);
+            expect(data.length).toBe(12);
+        });
     });
 });
