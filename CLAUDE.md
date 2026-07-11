@@ -7,13 +7,12 @@ Plain static site: no build step, no framework. Serve the repo root.
 ## Hosting & deployment — IMPORTANT
 
 - **All web projects in this organization run on Cloudflare.** ufzgiblatt.ch
-  DNS is on Cloudflare and the live site is served by a Cloudflare origin
-  (Cloudflare Pages), NOT by GitHub Pages.
-- The GitHub Actions workflows (`deploy-dev.yml`, `deploy-prod.yml`) publish
-  to the `gh-pages` branch. As of 2026-07 the domain does not serve from
-  GitHub Pages, so those deploys are invisible on ufzgiblatt.ch until
-  deployment is rewired to Cloudflare Pages (wrangler or the Pages Git
-  integration). Do not "fix" deployment by pointing DNS at GitHub Pages.
+  is served by Cloudflare Pages via its Git integration with this repo —
+  deployment happens automatically on push, there is no deploy step in this
+  repo. GitHub Actions (`ci.yml`) run tests only. Never deploy via GitHub
+  Pages / gh-pages (the legacy `gh-pages` branch is dead weight).
+- The site is plain static files with no build step: the Pages project must
+  have an empty build command and `/` as output directory.
 - Extensionless URLs (`/practice`, `/geography-game`) must keep working on
   the host (Cloudflare Pages and `npx serve` both resolve `foo` →
   `foo.html`).
