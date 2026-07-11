@@ -20,6 +20,15 @@ export function getRandomInt(min, max) {
     return Math.floor(seededRandom() * (max - min + 1)) + min;
 }
 
+// Fisher-Yates shuffle (in place) driven by the seeded RNG; returns the array
+export function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(seededRandom() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
 export function gcd(x, y) {
     x = Math.abs(x);
     y = Math.abs(y);

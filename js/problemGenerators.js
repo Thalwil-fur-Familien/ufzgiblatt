@@ -1,4 +1,4 @@
-import { getRandomInt, seededRandom, gcd } from './mathUtils.js';
+import { getRandomInt, seededRandom, shuffle, gcd } from './mathUtils.js';
 import { TRANSLATIONS } from './translations.js';
 
 export function generateProblemsData(type, count, availableTopics = [], allowedCurrencies = ['CHF'], options = {}, lang = 'de') {
@@ -45,12 +45,12 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
         const PAGE_CAPACITY = 16;
         let currentLoad = 0;
 
-        const shuffledTopics = [...availableTopics].sort(() => seededRandom() - 0.5);
+        const shuffledTopics = shuffle([...availableTopics]);
 
         // Pre-shuffle sentences for word_types if present
         const currentWordTypes = TRANSLATIONS[lang].word_types;
         const wordTypeIndices = Array.from({ length: currentWordTypes.length }, (_, i) => i);
-        wordTypeIndices.sort(() => seededRandom() - 0.5);
+        shuffle(wordTypeIndices);
         let wordTypeCount = 0;
 
         shuffledTopics.forEach(topic => {
@@ -70,7 +70,7 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
 
             if (currentLoad + w <= PAGE_CAPACITY) {
                 const currency = getCurrencyForProblem();
-                data.push(generateProblem(topic, currency, options, topic === 'word_types' ? wordTypeIndices[wordTypeCount++ % WORD_TYPES_SENTENCES.length] : -1));
+                data.push(generateProblem(topic, currency, options, topic === 'word_types' ? wordTypeIndices[wordTypeCount++ % currentWordTypes.length] : -1, lang));
                 currentLoad += w;
                 retries = 0;
             } else {
@@ -94,7 +94,7 @@ export function generateProblemsData(type, count, availableTopics = [], allowedC
         let shuffledIndices = [];
         if (isWordTypes) {
             shuffledIndices = Array.from({ length: currentWordTypes.length }, (_, i) => i);
-            shuffledIndices.sort(() => seededRandom() - 0.5);
+            shuffle(shuffledIndices);
         }
 
         for (let i = 0; i < count; i++) {
@@ -170,7 +170,8 @@ export function generateProblem(type, currency = 'CHF', options = {}, index = -1
                 let b_tens = getRandomInt(0, max_b_tens);
                 let b_ones = getRandomInt(0, max_b_ones);
                 b = b_tens * 10 + b_ones;
-                if (b === 0) b = 1;
+                // b=1 would force borrowing when a ends in 0; subtracting a ten never does
+                if (b === 0) b = 10;
             }
             op = '-';
             break;
@@ -429,7 +430,10 @@ export function generateProblem(type, currency = 'CHF', options = {}, index = -1
                 let den = getRandomInt(2, 12);
                 let numA = getRandomInt(1, den - 1);
                 let numB = getRandomInt(1, den - numA);
-                return { type: 'fraction_op', numA, denA: den, numB, denB: den, op: '+', answer: `${numA + numB}/${den}` };
+                const sumNum = numA + numB;
+                const common = gcd(sumNum, den);
+                const answer = den / common === 1 ? `${sumNum / common}` : `${sumNum / common}/${den / common}`;
+                return { type: 'fraction_op', numA, denA: den, numB, denB: den, op: '+', answer };
             }
         case 'married_100':
             return generateMarriedNumbers(options.marriedMultiplesOf10 || false);
@@ -681,8 +685,21 @@ export function generateMoneyProblem(maxVal, currency = 'CHF') {
         }
     }
 
-    // Shuffle items
-    items.sort(() => seededRandom() - 0.5);
+    // Deterministic second pass (no skipping) so the coins always sum to the target
+    for (const val of available) {
+        while (remaining >= val - (step / 10) && items.length < 12) {
+            items.push(val);
+            remaining -= val;
+            remaining = Math.round(remaining * inv) / inv;
+        }
+    }
+
+    // If the item cap cut the fill short, the answer is what was actually laid out
+    if (remaining > step / 10) {
+        target = Math.round((target - remaining) * inv) / inv;
+    }
+
+    shuffle(items);
 
     return { type: 'money', items: items, answer: target, currency: currency };
 }
