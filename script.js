@@ -1686,6 +1686,8 @@ function toggleLogoVisibility() {
 }
 
 function renderQRCode(url) {
+    // QR codes are optional decoration; without the CDN library the app must still work
+    if (typeof QRCode === 'undefined') return;
     const containers = document.querySelectorAll('.qr-code-container');
     containers.forEach(container => {
         container.innerHTML = '';

@@ -58,11 +58,13 @@ export async function initGeoGame(config) {
         if (UI.gameTitle) document.title = UI.gameTitle;
 
         // Apply Nav Translations
-        const ids = ['navGenerator', 'navGames', 'navGameGeo', 'labelFeedback', 'buildInfo'];
+        const ids = ['navGenerator', 'navGames', 'navGameGeo'];
         ids.forEach(id => {
             const el = document.getElementById(id);
             if (el && UI[id]) el.textContent = UI[id];
         });
+        const feedbackLabel = document.getElementById('labelFeedback');
+        if (feedbackLabel && UI.feedback) feedbackLabel.textContent = UI.feedback;
 
         // Translations applied, show content
         document.body.style.visibility = 'visible';

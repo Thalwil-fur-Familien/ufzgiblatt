@@ -1,22 +1,26 @@
 import { test, expect } from '@playwright/test';
+import { blockExternal } from './helpers.js';
 
-test.describe('Seamless Language Switching & State Preservation', () => {
+test.describe('Language Switching & State Preservation', () => {
+    test.beforeEach(async ({ page }) => {
+        await blockExternal(page);
+    });
 
     test('should load state from URL including language', async ({ page }) => {
         // Navigate with all parameters: English, Grade 2, Rechenmauer 4, Count 5, Seed 999
         await page.goto('/?grade=2&topic=rechenmauer_4&count=5&seed=999&lang=en');
 
-        // Verify Page Count
+        await expect(page.locator('html')).toHaveAttribute('lang', 'en');
         await expect(page.locator('#pageCount')).toHaveValue('5');
 
         // Verify Topic Selection (English Text)
-        // Note: The value stays 'rechenmauer_4', text changes.
         await expect(page.locator('#topicSelector')).toHaveValue('rechenmauer_4');
         const selectedOption = page.locator('#topicSelector option:checked');
         await expect(selectedOption).toHaveText(/Number Pyramids/);
 
-        // Verify Language Toggle (should show "DE" because we are in EN)
-        await expect(page.locator('#langLinkHeader')).toHaveText('DE');
+        // The inactive DE button carries the full state as a link
+        await expect(page.locator('#lang-de-header')).toHaveAttribute('href', /lang=de/);
+        await expect(page.locator('#lang-de-header')).toHaveAttribute('href', /seed=999/);
     });
 
     test('should switch language and preserve all parameters', async ({ page }) => {
@@ -24,27 +28,28 @@ test.describe('Seamless Language Switching & State Preservation', () => {
         await page.goto('/?grade=2&topic=rechenmauer_4&count=5&seed=999&lang=en');
 
         // 2. Click switch to German
-        await page.click('#langLinkHeader');
+        await page.click('#lang-de-header');
 
-        // 3. Verify URL updates to lang=de
-        // Wait for URL to change (history.pushState happens almost instantly, but valid to check)
+        // 3. Verify URL keeps all parameters with the new language
         await expect(page).toHaveURL(/lang=de/);
         await expect(page).toHaveURL(/count=5/);
         await expect(page).toHaveURL(/seed=999/);
         await expect(page).toHaveURL(/topic=rechenmauer_4/);
 
         // 4. Verify UI Text (German)
+        await expect(page.locator('html')).toHaveAttribute('lang', 'de');
         const selectedOption = page.locator('#topicSelector option:checked');
-        await expect(selectedOption).toHaveText(/Rechenmauern/); // German text
-        await expect(page.locator('#langLinkHeader')).toHaveText('EN'); // Toggle should now say EN
+        await expect(selectedOption).toHaveText(/Rechenmauern/);
 
         // 5. Verify Inputs remained same
         await expect(page.locator('#pageCount')).toHaveValue('5');
     });
 
     test('should default to German if no lang specified', async ({ page }) => {
+        // The Playwright locale is pinned to de-CH in the config
         await page.goto('/');
         await expect(page.locator('html')).toHaveAttribute('lang', 'de');
-        await expect(page.locator('#langLinkHeader')).toHaveText('EN');
+        // The EN button is the inactive one, offering the switch
+        await expect(page.locator('#lang-en-header')).toHaveAttribute('href', /lang=en/);
     });
 });
