@@ -2056,9 +2056,11 @@ function setupSectionNavigation() {
     }
 
     links.forEach(link => {
-        link.addEventListener('click', (e) => {
+        const hash = link.getAttribute('href');
+        // Only section links (#...) switch sections; external links navigate normally
+        if (!hash || !hash.startsWith('#')) return;
+        link.addEventListener('click', () => {
             // No preventDefault to allow hash change
-            const hash = link.getAttribute('href');
             showSection(hash);
         });
     });
